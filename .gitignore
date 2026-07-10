@@ -83,3 +83,8 @@ Thumbs.db
 # Build artifacts (HDF5 data stores are generated from the CSVs; not committed)
 *.h5
 *.hdf5
+
+# ...except the bundled national-tier stores, which ship inside the package.
+# These are small (~MBs), built by scripts/build_hdf5.py, and committed so that
+# `pip install` is self-contained. Larger subnational tiers stay uncommitted.
+!starsim_data/data/*.h5

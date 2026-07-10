@@ -44,3 +44,7 @@ Repository = "https://github.com/starsimhub/starsim_data"
 
 [tool.setuptools.packages.find]
 include = ["starsim_data*"]
+
+[tool.setuptools.package-data]
+# Bundle the national-level HDF5 stores and location metadata inside the wheel.
+starsim_data = ["data/*.h5", "data/locations.csv"]
