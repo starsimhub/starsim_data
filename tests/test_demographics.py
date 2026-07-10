@@ -5,7 +5,6 @@ the real (large) UN files, and writes to a temp dir so the shipped package data 
 untouched.
 """
 
-import importlib
 import sys
 from pathlib import Path
 
@@ -13,13 +12,11 @@ import numpy as np
 import pandas as pd
 import pytest
 
+from starsim_data import loaders as ssload
+
 REPO = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(REPO / "scripts"))
 import build_demographics as bd  # noqa: E402
-
-# `starsim_data.load` the submodule is shadowed by the re-exported `load` function,
-# so grab the module object explicitly.
-ssload = importlib.import_module("starsim_data.load")
 
 YEARS = bd.YEARS
 AGES_MX = [0, 1, 5, 10]

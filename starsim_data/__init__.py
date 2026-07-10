@@ -14,7 +14,7 @@ df = ssd.load(location='kenya', which='prem2017')
 ```
 """
 
-from .load import load, list_datasets, list_locations
+from .loaders import load, list_datasets, list_locations
 
 __version__ = "0.1.0"
 
