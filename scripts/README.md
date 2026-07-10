@@ -4,7 +4,7 @@ Dev/CI-only scripts for turning the raw CSV tree into the bundled data files. Th
 
 ## build_hdf5.py
 
-Walks [`raw_data/`](../raw_data/) and writes one HDF5 file per dataset (contact source) into [`starsim_data/data/`](../starsim_data/data/), plus a copy of `locations.csv`. Each store is keyed by location, with one dataset per contact setting; matrices are cast to `float32` and compressed with gzip9 + byte-shuffle.
+Walks [`raw_data/contact_matrices/`](../raw_data/contact_matrices/) and writes one HDF5 file per dataset (contact source) into [`starsim_data/data/`](../starsim_data/data/). Each store is keyed by location, with one dataset per contact setting; matrices are cast to `float32` and compressed with gzip9 + byte-shuffle.
 
 ```bash
 python scripts/build_hdf5.py            # rebuild all datasets found in raw_data
@@ -15,16 +15,16 @@ Run this whenever `raw_data/` changes. Adding a new dataset requires no code cha
 
 ## download_wpp.py
 
-Downloads the UN World Population Prospects data this package needs (via the WPP Data Portal API) into [`raw_data/wpp/`](../raw_data/wpp/) as normalized CSVs. Requires a Bearer token in `scripts/.env` (git-ignored; register free at the WPP data portal). See that folder's README for the token setup and the manual-download alternative.
+Downloads the UN World Population Prospects data this package needs (via the WPP Data Portal API) into [`raw_data/demographics/`](../raw_data/demographics/) as normalized CSVs. Requires a Bearer token in `scripts/.env` (git-ignored; register free at the WPP data portal). See that folder's README for the token setup and the manual-download alternative.
 
 ```bash
-python scripts/download_wpp.py                 # -> raw_data/wpp/wpp_*.csv
+python scripts/download_wpp.py                 # -> raw_data/demographics/wpp_*.csv
 python scripts/download_wpp.py --skip-existing  # only fetch missing series
 ```
 
 ## build_demographics.py
 
-Builds `demographics.h5` (a group per series: `births`, `migration`, `deaths`, `population`) from the WPP CSVs in [`raw_data/wpp/`](../raw_data/wpp/) (produced by `download_wpp.py`, or downloaded manually), then:
+Builds `demographics.h5` (a group per series: `births`, `migration`, `deaths`, `population`) from the WPP CSVs in [`raw_data/demographics/`](../raw_data/demographics/) (produced by `download_wpp.py`, or downloaded manually), then:
 
 ```bash
 python scripts/build_demographics.py --check

@@ -1,10 +1,9 @@
 """
 Build the bundled HDF5 contact-matrix stores from the raw CSV tree.
 
-Dev/CI tool -- NOT part of the installed package. Walks `raw_data/` and writes
-one HDF5 file per dataset (contact source) into `starsim_data/data/`, plus a copy
-of `locations.csv`. Each store is keyed by location, with one dataset per contact
-layer:
+Dev/CI tool -- NOT part of the installed package. Walks `raw_data/contact_matrices/`
+and writes one HDF5 file per dataset (contact source) into `starsim_data/data/`. Each
+store is keyed by location, with one dataset per contact layer:
 
 ```
 prem2017.h5
@@ -24,14 +23,13 @@ the raw data changes; output is overwritten cleanly.
 Usage:
 
 ```bash
-python scripts/build_hdf5.py            # build all datasets found in raw_data
+python scripts/build_hdf5.py            # build all sources found in contact_matrices/
 python scripts/build_hdf5.py --check    # also round-trip validate against CSVs
 ```
 """
 
 import argparse
 import json
-import shutil
 from pathlib import Path
 
 import h5py
@@ -39,7 +37,7 @@ import numpy as np
 import pandas as pd
 
 REPO = Path(__file__).resolve().parent.parent
-RAW = REPO / "raw_data"
+CONTACT = REPO / "raw_data" / "contact_matrices"
 OUT = REPO / "starsim_data" / "data"
 
 # Contact layers, in a stable order. Each is a `{source}_contacts_{kind}.csv` file.
@@ -52,7 +50,7 @@ H5OPTS = dict(compression="gzip", compression_opts=9, shuffle=True)
 def discover_sources():
     """Return the sorted set of contact sources present in the raw tree (e.g. prem2017)."""
     sources = set()
-    for csv in RAW.glob("*/*_contacts_all.csv"):
+    for csv in CONTACT.glob("*/*_contacts_all.csv"):
         sources.add(csv.name.split("_contacts_")[0])
     return sorted(sources)
 
@@ -68,7 +66,7 @@ def build_source(source, check=False):
     n_locations = 0
     with h5py.File(out_path, "w") as f:
         f.attrs["spec"] = json.dumps({"layout": "matrix"})
-        for loc_dir in sorted(p for p in RAW.iterdir() if p.is_dir()):
+        for loc_dir in sorted(p for p in CONTACT.iterdir() if p.is_dir()):
             location = loc_dir.name
             wrote_any = False
             for kind in KINDS:
@@ -95,12 +93,9 @@ def main():
 
     OUT.mkdir(parents=True, exist_ok=True)
     sources = discover_sources()
-    print(f"Found {len(sources)} dataset(s) in {RAW}: {', '.join(sources)}")
+    print(f"Found {len(sources)} dataset(s) in {CONTACT}: {', '.join(sources)}")
     for source in sources:
         build_source(source, check=args.check)
-
-    shutil.copyfile(RAW / "locations.csv", OUT / "locations.csv")
-    print(f"  locations.csv -> {OUT / 'locations.csv'}")
     print("Done.")
 
 

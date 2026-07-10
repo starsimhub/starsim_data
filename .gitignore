@@ -89,8 +89,10 @@ Thumbs.db
 # `pip install` is self-contained. Larger subnational tiers stay uncommitted.
 !starsim_data/data/*.h5
 
-# UN WPP source downloads: large external files (CSV, gz, xlsx, ...), not committed.
-# Downloaded into raw_data/wpp/ and processed by scripts/build_demographics.py.
-# Ignore everything in that folder except its README.
-raw_data/wpp/*
-!raw_data/wpp/README.md
+# UN WPP demographics source. The normalized CSVs (raw_data/demographics/wpp_*.csv)
+# and README are tracked as the demographic source of truth; only the bulky raw
+# downloads (xlsx/gz/zip) and logs are scratch and ignored.
+raw_data/demographics/*.xlsx
+raw_data/demographics/*.csv.gz
+raw_data/demographics/*.zip
+raw_data/demographics/*.log

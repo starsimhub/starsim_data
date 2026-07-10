@@ -2,7 +2,7 @@
 Build the bundled demographic HDF5 stores from UN World Population Prospects (WPP) CSVs.
 
 Dev/CI tool -- NOT part of the installed package. Reads the WPP bulk CSV files you
-place in `raw_data/wpp/` (see `raw_data/wpp/README.md` for exactly what to download),
+place in `raw_data/demographics/` (see that folder's README for what to download),
 filters them to the countries this package ships (by ISO2 code) and to decadal years
 1950-2100, and writes a single `starsim_data/data/demographics.h5` with one group per
 series (each carrying its own `spec` describing its layout):
@@ -19,7 +19,7 @@ columns. Re-run whenever the raw data changes; output is overwritten cleanly.
 Usage:
 
 ```bash
-python scripts/build_demographics.py                 # read raw_data/wpp/
+python scripts/build_demographics.py                 # read raw_data/demographics/
 python scripts/build_demographics.py --wpp DIR        # read a different input dir
 python scripts/build_demographics.py --check          # round-trip validate via the loader
 ```
@@ -34,9 +34,9 @@ import numpy as np
 import pandas as pd
 
 REPO = Path(__file__).resolve().parent.parent
-DEFAULT_WPP = REPO / "raw_data" / "wpp"
+DEFAULT_WPP = REPO / "raw_data" / "demographics"
 OUT = REPO / "starsim_data" / "data"
-LOCATIONS_CSV = REPO / "raw_data" / "locations.csv"
+LOCATIONS_CSV = OUT / "locations.csv"      # canonical, bundled with the package
 
 YEARS = list(range(1950, 2101, 10))     # decadal snapshots, per the plan
 SEXES = ["Female", "Male"]              # drop WPP's "Total"; matches ss.Deaths sex_keys

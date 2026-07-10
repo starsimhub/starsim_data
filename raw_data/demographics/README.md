@@ -1,6 +1,6 @@
-# raw_data/wpp — UN World Population Prospects source files
+# raw_data/demographics — UN World Population Prospects source files
 
-This folder holds the **UN WPP source CSVs** used to build `starsim_data/data/demographics.h5` (which groups the births, deaths, migration, and population series). The CSVs are external data and are **not committed** (`.gitignore` keeps only this README); regenerate them with the download script below, or drop in bulk files manually. Either way they are a citable, versioned UN release, so re-fetching a given revision reproduces the data.
+This folder holds the **UN WPP source CSVs** used to build `starsim_data/data/demographics.h5` (which groups the births, deaths, migration, and population series). The three normalized CSVs (`wpp_indicators.csv`, `wpp_lifetable.csv`, `wpp_population.csv`) are the tracked demographic source of truth, parallel to `../contact_matrices/`; only the bulky raw bulk downloads (`.xlsx`/`.gz`/`.zip`) are git-ignored scratch. Regenerate the CSVs with the download script below, or drop in bulk files manually — either way they are a citable, versioned UN release, so re-fetching a given revision reproduces the data.
 
 ## Option A (recommended): download via the API
 
@@ -9,8 +9,8 @@ This folder holds the **UN WPP source CSVs** used to build `starsim_data/data/de
 It needs a **Bearer token** in `scripts/.env` (register free at the [UN WPP Data Portal](https://population.un.org/dataportal) — the data endpoints require it, though the indicator/location metadata endpoints are open). The `.env` file is git-ignored. Then:
 
 ```bash
-python scripts/download_wpp.py                 # writes raw_data/wpp/wpp_*.csv
-python scripts/build_demographics.py --check    # builds starsim_data/data/*.h5
+python scripts/download_wpp.py                 # writes raw_data/demographics/wpp_*.csv
+python scripts/build_demographics.py --check    # builds starsim_data/data/demographics.h5
 ```
 
 `download_wpp.py --skip-existing` re-fetches only the series whose CSVs are missing.

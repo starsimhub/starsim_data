@@ -3,7 +3,7 @@ Download UN World Population Prospects (WPP) demographic data via the Data Porta
 
 Dev/CI tool -- NOT part of the installed package. Fetches the indicators this package
 needs, for its countries, at decadal years 1950-2100, and writes normalized CSVs into
-`raw_data/wpp/`. Those CSVs are then consumed by `scripts/build_demographics.py`
+`raw_data/demographics/`. Those CSVs are then consumed by `scripts/build_demographics.py`
 (the same builder used for manually-downloaded bulk files), which produces the
 bundled HDF5 stores.
 
@@ -14,7 +14,7 @@ https://population.un.org/dataportal). The token file is git-ignored. The metada
 Usage:
 
 ```bash
-python scripts/download_wpp.py            # -> raw_data/wpp/wpp_*.csv
+python scripts/download_wpp.py            # -> raw_data/demographics/wpp_*.csv
 python scripts/build_demographics.py --check
 ```
 """
@@ -28,8 +28,8 @@ from pathlib import Path
 import pandas as pd
 
 REPO = Path(__file__).resolve().parent.parent
-WPP_OUT = REPO / "raw_data" / "wpp"
-LOCATIONS_CSV = REPO / "raw_data" / "locations.csv"
+WPP_OUT = REPO / "raw_data" / "demographics"
+LOCATIONS_CSV = REPO / "starsim_data" / "data" / "locations.csv"   # canonical, bundled
 ENV = Path(__file__).resolve().parent / ".env"
 
 API = "https://population.un.org/dataportalapi/api/v1"
