@@ -1,8 +1,8 @@
 """
 Load bundled contact-matrix data.
 
-The data ships inside the package as one HDF5 file per dataset (``prem2017.h5``,
-``prem2021.h5``, ...) under ``starsim_data/data/``, each keyed by location with one
+The data ships inside the package as one HDF5 file per dataset (`prem2017.h5`,
+`prem2021.h5`, ...) under `starsim_data/data/`, each keyed by location with one
 matrix per contact layer. This module resolves those files and returns matrices as
 pandas DataFrames.
 """
@@ -20,7 +20,7 @@ KINDS = ("all", "home", "work", "school", "community")
 
 
 def _data_file(name):
-    """Return a filesystem path to a bundled data file, e.g. ``prem2017.h5``."""
+    """Return a filesystem path to a bundled data file, e.g. `prem2017.h5`."""
     return resources.files("starsim_data") / "data" / name
 
 
@@ -41,13 +41,13 @@ def _match_location(location, keys):
 
 
 def list_datasets():
-    """Return the available datasets (contact sources), e.g. ``['prem2017', 'prem2021']``."""
+    """Return the available datasets (contact sources), e.g. `['prem2017', 'prem2021']`."""
     data_dir = resources.files("starsim_data") / "data"
     return sorted(p.name[:-3] for p in data_dir.iterdir() if p.name.endswith(".h5"))
 
 
 def list_locations(which):
-    """Return the sorted locations available in dataset ``which`` (e.g. 'prem2017')."""
+    """Return the sorted locations available in dataset `which` (e.g. 'prem2017')."""
     with h5py.File(_data_file(f"{which}.h5"), "r") as f:
         return sorted(f.keys())
 
@@ -57,10 +57,10 @@ def load(location, which="prem2017", kind="all"):
     Load a contact matrix.
 
     Args:
-        location (str): location name, e.g. ``'Kenya'`` (case- and space-insensitive).
-        which (str): dataset / contact source, e.g. ``'prem2017'`` or ``'prem2021'``.
-        kind (str): contact layer -- one of ``'all'``, ``'home'``, ``'work'``,
-            ``'school'``, ``'community'``.
+        location (str): location name, e.g. `'Kenya'` (case- and space-insensitive).
+        which (str): dataset / contact source, e.g. `'prem2017'` or `'prem2021'`.
+        kind (str): contact layer -- one of `'all'`, `'home'`, `'work'`,
+            `'school'`, `'community'`.
 
     Returns:
         pandas.DataFrame: the (n, n) contact matrix as float32.

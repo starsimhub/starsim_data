@@ -1,28 +1,32 @@
 """
 Build the bundled HDF5 contact-matrix stores from the raw CSV tree.
 
-Dev/CI tool -- NOT part of the installed package. Walks ``raw_data/`` and writes
-one HDF5 file per dataset (contact source) into ``starsim_data/data/``, plus a copy
-of ``locations.csv``. Each store is keyed by location, with one dataset per contact
-layer::
+Dev/CI tool -- NOT part of the installed package. Walks `raw_data/` and writes
+one HDF5 file per dataset (contact source) into `starsim_data/data/`, plus a copy
+of `locations.csv`. Each store is keyed by location, with one dataset per contact
+layer:
 
-    prem2017.h5
-      /Kenya/all        (n, n) float32
-      /Kenya/home
-      /Kenya/work
-      /Kenya/school
-      /Kenya/community
-      /United_States/...
-      ...
+```
+prem2017.h5
+  /Kenya/all        (n, n) float32
+  /Kenya/home
+  /Kenya/work
+  /Kenya/school
+  /Kenya/community
+  /United_States/...
+  ...
+```
 
 Matrices are cast to float32 and written with gzip9 + byte-shuffle (see
 reimplementation_plan.md for why this is the size/speed sweet spot). Re-run whenever
 the raw data changes; output is overwritten cleanly.
 
-Usage::
+Usage:
 
-    python scripts/build_hdf5.py            # build all datasets found in raw_data
-    python scripts/build_hdf5.py --check    # also round-trip validate against CSVs
+```bash
+python scripts/build_hdf5.py            # build all datasets found in raw_data
+python scripts/build_hdf5.py --check    # also round-trip validate against CSVs
+```
 """
 
 import argparse
@@ -58,7 +62,7 @@ def read_matrix(path):
 
 
 def build_source(source, check=False):
-    """Write ``starsim_data/data/<source>.h5`` for one contact source."""
+    """Write `starsim_data/data/<source>.h5` for one contact source."""
     out_path = OUT / f"{source}.h5"
     n_locations = 0
     with h5py.File(out_path, "w") as f:
