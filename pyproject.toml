@@ -5,16 +5,18 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "starsim_data"
 version = "0.1.0"
-description = "National-level contact matrices for epidemic modeling with Starsim"
+description = "Demographic data and contact matrices for disease modeling with Starsim"
 readme = "README.md"
 requires-python = ">=3.10"
 license = "MIT"
-license-files = ["LICENSE*", "NOTICE.md"]
+license-files = ["LICENSE", "licenses/*", "NOTICE.md"]
 keywords = ["contact matrices", "demography", "epidemiology", "starsim", "disease modeling"]
 
 authors = [
   { name = "Starsim Development Team", email = "info@starsim.org" },
   { name = "Cliff Kerr" },
+  { name = "Romesh Abeysuriya" },
+  { name = "Robyn Stuart" },
 ]
 
 classifiers = [

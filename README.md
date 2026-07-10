@@ -86,4 +86,4 @@ print(M.shape)  # (85, 85)
 
 The repository's code, packaging, and curation are licensed under the [MIT License](LICENSE).
 
-The contact-matrix data files under `data/` are third-party datasets distributed under their own upstream licenses — **Apache-2.0** for `mistry2021` and **GPL-3.0** for `prem2017`/`prem2021` — not under MIT. See [NOTICE.md](NOTICE.md) for details and required attributions.
+The contact-matrix data files are third-party datasets distributed under their own upstream licenses — **Apache-2.0** for `mistry2021` and **GPL-3.0** for `prem2017`/`prem2021` — not under MIT. The full text of each upstream license is in the [`licenses/`](licenses/) folder, and [NOTICE.md](NOTICE.md) has the per-source details and required attributions.
