@@ -1,0 +1,46 @@
+[build-system]
+requires = ["setuptools>=64"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "starsim_data"
+version = "0.1.0"
+description = "National-level contact matrices for epidemic modeling with Starsim"
+readme = "README.md"
+requires-python = ">=3.10"
+license = "MIT"
+license-files = ["LICENSE", "NOTICE.md"]
+keywords = ["contact matrices", "demography", "epidemiology", "starsim", "disease modeling"]
+
+authors = [
+  { name = "Starsim Development Team", email = "info@starsim.org" },
+  { name = "Cliff Kerr" },
+]
+
+classifiers = [
+  "Intended Audience :: Science/Research",
+  "Operating System :: OS Independent",
+  "Programming Language :: Python :: 3",
+  "Topic :: Scientific/Engineering",
+  "Development Status :: 3 - Alpha",
+]
+
+# NOTE: The contact-matrix data files under `data/` are third-party datasets
+# under their own upstream licenses (Apache-2.0, GPL-3.0), NOT MIT. See NOTICE.md.
+dependencies = [
+  "numpy>=1.24",
+  "pandas>=2.0",
+  "h5py>=3.0",
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=7.4",
+]
+
+[project.urls]
+Homepage = "https://starsim.org"
+Repository = "https://github.com/starsimhub/starsim_data"
+
+[tool.setuptools.packages.find]
+include = ["starsim_data*"]
