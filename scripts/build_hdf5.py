@@ -30,6 +30,7 @@ python scripts/build_hdf5.py --check    # also round-trip validate against CSVs
 """
 
 import argparse
+import json
 import shutil
 from pathlib import Path
 
@@ -66,6 +67,7 @@ def build_source(source, check=False):
     out_path = OUT / f"{source}.h5"
     n_locations = 0
     with h5py.File(out_path, "w") as f:
+        f.attrs["spec"] = json.dumps({"layout": "matrix"})
         for loc_dir in sorted(p for p in RAW.iterdir() if p.is_dir()):
             location = loc_dir.name
             wrote_any = False

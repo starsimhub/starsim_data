@@ -88,3 +88,9 @@ Thumbs.db
 # These are small (~MBs), built by scripts/build_hdf5.py, and committed so that
 # `pip install` is self-contained. Larger subnational tiers stay uncommitted.
 !starsim_data/data/*.h5
+
+# UN WPP source downloads: large external files (CSV, gz, xlsx, ...), not committed.
+# Downloaded into raw_data/wpp/ and processed by scripts/build_demographics.py.
+# Ignore everything in that folder except its README.
+raw_data/wpp/*
+!raw_data/wpp/README.md

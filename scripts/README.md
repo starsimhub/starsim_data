@@ -13,4 +13,23 @@ python scripts/build_hdf5.py --check    # also round-trip validate against the C
 
 Run this whenever `raw_data/` changes. Adding a new dataset requires no code change here — drop its `<source>_contacts_<setting>.csv` files into the country folders and re-run; the script discovers sources automatically, and `starsim_data.list_datasets()` will pick up the new `.h5`.
 
-Requires `h5py`, `numpy`, and `pandas` (all runtime/dev dependencies of the package).
+## download_wpp.py
+
+Downloads the UN World Population Prospects data this package needs (via the WPP Data Portal API) into [`raw_data/wpp/`](../raw_data/wpp/) as normalized CSVs. Requires a Bearer token in `scripts/.env` (git-ignored; register free at the WPP data portal). See that folder's README for the token setup and the manual-download alternative.
+
+```bash
+python scripts/download_wpp.py                 # -> raw_data/wpp/wpp_*.csv
+python scripts/download_wpp.py --skip-existing  # only fetch missing series
+```
+
+## build_demographics.py
+
+Builds `demographics.h5` (a group per series: `births`, `migration`, `deaths`, `population`) from the WPP CSVs in [`raw_data/wpp/`](../raw_data/wpp/) (produced by `download_wpp.py`, or downloaded manually), then:
+
+```bash
+python scripts/build_demographics.py --check
+```
+
+It classifies each WPP CSV by its columns (so exact filenames don't matter), filters to the package's countries and to decadal years 1950–2100, and writes tidy stores keyed by location. Birth and migration are crude national rates; deaths are age/sex-specific mortality (`mx`, 5-year abridged bins); population is by 5-year age groups and sex (absolute persons).
+
+Both scripts require `h5py`, `numpy`, and `pandas` (all runtime/dev dependencies of the package).
