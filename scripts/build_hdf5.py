@@ -43,6 +43,11 @@ OUT = REPO / "starsim_data" / "data"
 # Contact layers, in a stable order. Each is a `{source}_contacts_{kind}.csv` file.
 KINDS = ["all", "home", "work", "school", "community"]
 
+# Width (in years) of each source's age bins, used to label the matrix axes with the
+# start age of each bin (e.g. prem's 16 bins -> 0, 5, ..., 75). Sources not listed here
+# fall back to a positional 0..n-1 axis.
+AGE_WIDTH = {"prem2017": 5, "prem2021": 5, "mistry2021": 1}
+
 # HDF5 dataset creation options: float32 + gzip9 + byte-shuffle. Chunk = one matrix.
 H5OPTS = dict(compression="gzip", compression_opts=9, shuffle=True)
 
@@ -60,12 +65,20 @@ def read_matrix(path):
     return pd.read_csv(path, header=None).to_numpy(dtype=np.float32)
 
 
+def _ages(source, n):
+    """Return the start age of each of the `n` age bins for `source` (or None if unknown)."""
+    width = AGE_WIDTH.get(source)
+    if width is None:
+        return None
+    return [i * width for i in range(n)]
+
+
 def build_source(source, check=False):
     """Write `starsim_data/data/<source>.h5` for one contact source."""
     out_path = OUT / f"{source}.h5"
     n_locations = 0
+    ages = None
     with h5py.File(out_path, "w") as f:
-        f.attrs["spec"] = json.dumps({"layout": "matrix"})
         for loc_dir in sorted(p for p in CONTACT.iterdir() if p.is_dir()):
             location = loc_dir.name
             wrote_any = False
@@ -74,6 +87,8 @@ def build_source(source, check=False):
                 if not csv.exists():
                     continue
                 mat = read_matrix(csv)
+                if ages is None:
+                    ages = _ages(source, mat.shape[0])
                 f.create_dataset(f"{location}/{kind}", data=mat, **H5OPTS)
                 if check:
                     back = f[f"{location}/{kind}"][:]
@@ -81,6 +96,10 @@ def build_source(source, check=False):
                 wrote_any = True
             if wrote_any:
                 n_locations += 1
+        spec = {"layout": "matrix"}
+        if ages is not None:
+            spec["ages"] = ages
+        f.attrs["spec"] = json.dumps(spec)
     size_mb = out_path.stat().st_size / 1e6
     print(f"  {out_path.name}: {n_locations} locations, {size_mb:.1f} MB")
 

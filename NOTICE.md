@@ -1,10 +1,17 @@
 # Data licensing and attribution
 
-This repository aggregates third-party contact-matrix datasets. The repository's own code, packaging, and curation are licensed under the MIT License (see [LICENSE](LICENSE)). The **data files under `data/` are not MIT-licensed** — each dataset retains the license and copyright of its original authors, as listed below. This is a mere aggregation of independent datasets; bundling them here does not relicense any of them.
+This repository aggregates third-party demographic and contact-matrix datasets. The repository's own code, packaging, and curation are licensed under the MIT License (see [LICENSE](LICENSE)). The **bundled data files are not MIT-licensed** — each dataset retains the license and copyright of its original authors, as listed below. This is a mere aggregation of independent datasets; bundling them here does not relicense any of them.
 
 If you use these data, you must comply with the applicable upstream license and cite the corresponding paper.
 
 ## Sources
+
+### Demographics — UN World Population Prospects 2024 (CC BY 3.0 IGO)
+
+- **Data source:** [UN World Population Prospects 2024](https://population.un.org/wpp/), United Nations, Department of Economic and Social Affairs, Population Division.
+- **Indicators used:** crude birth rate (CBR), crude net-migration rate (CNMR), age/sex mortality rate `m(x)` (abridged life table), and population by 5-year age groups and sex — Medium variant, 1950–2100.
+- **License / terms:** distributed under the [UN WPP terms of use](https://population.un.org/wpp/) (Creative Commons Attribution 3.0 IGO, CC BY 3.0 IGO).
+- **Citation:** United Nations, Department of Economic and Social Affairs, Population Division (2024). *World Population Prospects 2024.*
 
 ### `mistry2021` — Mistry et al. 2021 (Apache-2.0)
 
@@ -31,4 +38,4 @@ The Apache-2.0 license requires that its copyright notice, this attribution, and
 
 ## Provenance
 
-The data in this repository was derived from [epistorm/epydemix-data](https://github.com/epistorm/epydemix-data) (GPL-3.0 — full text in [licenses/LICENSE_EPYDEMIX](licenses/LICENSE_EPYDEMIX)), trimmed to national-level (level 0) contact matrices only and reorganized into a flattened file layout. Demographic data, subnational data, and the `litvinova_2025` source from the upstream repository are not included here.
+The **contact matrices** were derived from [epistorm/epydemix-data](https://github.com/epistorm/epydemix-data) (GPL-3.0 — full text in [licenses/LICENSE_EPYDEMIX](licenses/LICENSE_EPYDEMIX)), trimmed to national-level (level 0) matrices only and reorganized into a flattened file layout. Subnational data, the `litvinova_2025` source, and epydemix-data's own demographic/age-distribution files are not included; the **demographic data** in this package comes from the UN World Population Prospects (above) instead.

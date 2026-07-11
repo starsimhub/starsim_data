@@ -2,6 +2,7 @@
 
 import numpy as np
 import pandas as pd
+import sciris as sc
 import pytest
 
 import starsim_data as ssd
@@ -21,11 +22,22 @@ def test_list_locations():
     assert locs == sorted(locs)
 
 
-def test_load_returns_dataframe():
+def test_load_returns_sciris_dataframe():
     df = ssd.load(location="Kenya", which="prem2017")
+    assert isinstance(df, sc.dataframe)  # drop-in replacement for a pandas DataFrame
     assert isinstance(df, pd.DataFrame)
     assert df.shape == (16, 16)          # prem sources are 16 five-year age bins
     assert df.to_numpy().dtype == np.float32
+
+
+def test_matrix_axes_are_start_ages():
+    df = ssd.load(location="Kenya", which="prem2017")
+    # prem's 16 five-year bins -> rows/columns labelled 0, 5, ..., 75.
+    assert list(df.index) == list(range(0, 80, 5))
+    assert list(df.columns) == list(range(0, 80, 5))
+
+    m = ssd.load(location=ssd.list_locations("mistry2021")[0], which="mistry2021")
+    assert list(m.index) == list(range(85))          # single-year bins 0..84
 
 
 def test_mistry_matrix_shape():

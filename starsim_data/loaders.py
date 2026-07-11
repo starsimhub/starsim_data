@@ -6,11 +6,15 @@ are two families of dataset, and `load` returns the natural shape for each:
 
 - Contact matrices -- one file per source (`prem2017.h5`, `prem2021.h5`,
   `mistry2021.h5`), each a `layout='matrix'` store. `load` returns a square `(n, n)`
-  DataFrame; the `kind` argument selects the contact setting (`all`, `home`, ...).
+  frame whose rows and columns are indexed by the start age of each bin (e.g.
+  `0, 5, ..., 75`); the `kind` argument selects the contact setting (`all`, `home`, ...).
 - Demographic time series from UN WPP -- grouped in `demographics.h5`, one group per
-  series (`births`, `deaths`, `migration`, `population`). `load` returns a tidy
-  DataFrame with WPP-native column names, so e.g. `deaths` drops straight into
+  series (`births`, `deaths`, `migration`, `population`). `load` returns a tidy frame
+  with WPP-native column names, so e.g. `deaths` drops straight into
   `ss.Deaths(death_rate=...)`.
+
+Every `load` result is a `sciris.dataframe`, a drop-in replacement for a pandas
+`DataFrame`.
 """
 
 import json
@@ -18,7 +22,7 @@ from importlib import resources
 
 import h5py
 import numpy as np
-import pandas as pd
+import sciris as sc
 
 __all__ = ["load", "list_datasets", "list_locations"]
 
@@ -99,9 +103,9 @@ def _spec(group):
 
 
 def _melt_year_sex_age(arr, years, sexes, ages, age_col, value_col):
-    """Melt a (year, sex, age) array into a tidy DataFrame with WPP-native columns."""
+    """Melt a (year, sex, age) array into a tidy dataframe with WPP-native columns."""
     ny, ns, na = arr.shape
-    return pd.DataFrame({
+    return sc.dataframe({
         "Time": np.repeat(years, ns * na),
         "Sex": np.tile(np.repeat(sexes, na), ny),
         age_col: np.tile(ages, ny * ns),
@@ -122,10 +126,12 @@ def load(location, which="prem2017", kind="all"):
             `'all'`, `'home'`, `'work'`, `'school'`, `'community'`. Ignored otherwise.
 
     Returns:
-        pandas.DataFrame: for contact matrices, a square `(n, n)` matrix. For
-        demographic series, a tidy frame -- `births`/`migration` have columns
-        `[Time, CBR]`/`[Time, CNMR]`; `deaths` has `[Time, Sex, AgeGrpStart, mx]`;
-        `population` has `[Time, Sex, AgeGrp, Value]`.
+        sciris.dataframe: a drop-in replacement for a pandas `DataFrame`. For contact
+        matrices, a square `(n, n)` matrix whose rows and columns are indexed by the
+        start age of each bin (e.g. `0, 5, ..., 75`). For demographic series, a tidy
+        frame -- `births`/`migration` have columns `[Time, CBR]`/`[Time, CNMR]`;
+        `deaths` has `[Time, Sex, AgeGrpStart, mx]`; `population` has
+        `[Time, Sex, AgeGrp, Value]`.
 
     Example:
         >>> import starsim_data as ssd
@@ -146,11 +152,15 @@ def load(location, which="prem2017", kind="all"):
                 raise ValueError(f"kind must be one of {KINDS}, not {kind!r}")
             if kind not in group[key]:
                 raise KeyError(f"kind {kind!r} not available for {location!r} in {which!r}")
-            return pd.DataFrame(np.asarray(group[f"{key}/{kind}"][:], dtype=np.float32))
+            mat = np.asarray(group[f"{key}/{kind}"][:], dtype=np.float32)
+            # Label both axes with the start age of each bin (e.g. 0, 5, ..., 75), so
+            # rows/columns index by age rather than by position.
+            ages = spec.get("ages")
+            return sc.dataframe(mat, index=ages, columns=ages)
 
         data = group[key][:]
         if layout == "crude":  # births, migration: one value per year
-            return pd.DataFrame({"Time": np.asarray(spec["years"]),
+            return sc.dataframe({"Time": np.asarray(spec["years"]),
                                  spec["value_col"]: np.asarray(data, dtype=np.float32)})
         if layout in ("mortality", "population"):
             return _melt_year_sex_age(data, np.asarray(spec["years"]), np.asarray(spec["sexes"]),

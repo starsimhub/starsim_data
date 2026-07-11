@@ -2,88 +2,84 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-National-level population contact matrices for epidemic modeling and simulation with [Starsim](https://starsim.org). This repository is a trimmed, reorganized subset of [epydemix-data](https://github.com/epistorm/epydemix-data): it contains **national (country-level) contact matrices only**, with a flattened file layout for simple loading.
+National-level **demographic data** and **contact matrices** for disease modeling with [Starsim](https://starsim.org), bundled as compact HDF5 and loaded with a single function. 
 
-Contact matrices describe the average number of contacts between individuals in different age groups across settings (home, work, school, community, and all settings combined). They are sourced from the following studies:
-
-- [Inferring high-resolution human mixing patterns for disease modeling](https://www.nature.com/articles/s41467-020-20544-y) (`mistry2021`) — 85×85, single-year age groups (0–84, last group is 84+).
-- [Projecting contact matrices in 177 geographical regions: an update and comparison with empirical data for the COVID-19 era](https://journals.plos.org/ploscompbiol/article?id=10.1371/journal.pcbi.1009098) (`prem2021`) — 16×16, 5-year age groups (0–4, 5–9, …, 75+).
-- [Projecting social contact matrices in 152 countries using contact surveys and demographic data](https://journals.plos.org/ploscompbiol/article?id=10.1371/journal.pcbi.1005697) (`prem2017`) — 16×16, 5-year age groups (0–4, 5–9, …, 75+).
-
-When using these contact matrices, please cite the relevant paper(s) for each source you use. See [NOTICE.md](NOTICE.md) for full attribution and per-source data licenses.
-
-## What's included (and what isn't)
-
-Relative to upstream [epydemix-data](https://github.com/epistorm/epydemix-data), this repository is deliberately minimal:
-
-- ✅ **National (level 0) contact matrices** for 187 countries.
-- ✅ Sources `mistry2021`, `prem2021`, `prem2017` (whichever are available per country).
-- ❌ No demographic / age-distribution data.
-- ❌ No subnational data (states, provinces, US counties).
-- ❌ No `litvinova_2025` source or US sex/race-ethnicity attributes.
-
-## File layout
-
-Each country has its own folder containing one CSV per (source, setting) combination. There are no nested subfolders:
-
-```
-data/
-├── locations.csv
-├── United_States/
-│   ├── mistry2021_contacts_all.csv
-│   ├── mistry2021_contacts_home.csv
-│   ├── mistry2021_contacts_work.csv
-│   ├── mistry2021_contacts_school.csv
-│   ├── mistry2021_contacts_community.csv
-│   ├── prem2021_contacts_all.csv
-│   ├── prem2021_contacts_home.csv
-│   ├── ...
-│   └── prem2017_contacts_community.csv
-├── Sierra_Leone/
-│   ├── prem2021_contacts_all.csv
-│   └── ...
-└── ...
-```
-
-File names follow the pattern `<source>_contacts_<setting>.csv`, where:
-
-- `<source>` is one of `mistry2021`, `prem2021`, `prem2017`.
-- `<setting>` is one of `all`, `home`, `work`, `school`, `community`.
-
-Each CSV is a square matrix of contact rates (no header, no index) that can be loaded directly with NumPy or pandas.
-
-## Supported geographies
-
-The [`data/locations.csv`](data/locations.csv) file lists the available countries and which contact sources each one has. Country names use `_` for spaces within a name (e.g. `Sierra_Leone`, `South_Africa`). All entries are level 0 (country).
-
-| Column | Description |
-|---|---|
-| `location` | Country name (folder name), using `_` for spaces. |
-| `level` | Geographic granularity; always `0` (country) in this repository. |
-| `iso_code` | [ISO 3166-1 alpha-2](https://en.wikipedia.org/wiki/ISO_3166-1_alpha-2) country code (e.g. `US`, `DE`, `GB`). |
-| `primary_contact_source` | The recommended default contact source for the country. |
-| `contact_sources` | Pipe-separated list of all available sources for the country (e.g. `prem2021\|prem2017`). |
-| `population_source` | Source of the underlying population data. |
-
-## Usage
-
-Load a contact matrix directly from the CSV files:
+Example usage:
 
 ```python
-import numpy as np
+import starsim_data as ssd
 
-def load_contact_matrix(location, source, setting="all", data_dir="data"):
-    """Load a square contact matrix as a NumPy array."""
-    path = f"{data_dir}/{location}/{source}_contacts_{setting}.csv"
-    return np.loadtxt(path, delimiter=",")
-
-# Example: home contacts for the United States (Mistry 2021, 85x85)
-M = load_contact_matrix("United_States", "mistry2021", "home")
-print(M.shape)  # (85, 85)
+ssd.list_datasets()                              # what's available
+ssd.load('kenya', which='deaths')                # UN WPP mortality rates (tidy DataFrame)
+ssd.load('kenya', which='prem2017', kind='home') # a contact matrix (square DataFrame)
 ```
+
+Location names are matched case- and space-insensitively (`'kenya'`, `'Kenya'`, `'united states'` all work). Use `ssd.list_locations(which)` to see the countries available for a given dataset.
+
+## Installation
+
+```bash
+pip install starsim_data # or, from a clone: pip install -e .
+```
+
+---
+
+# What's included
+
+There are two families of data. `ssd.load()` returns a [Sciris](https://sciris.org) (`pandas`-compatible) dataframe whose shape depends on the dataset.
+
+## 1. Demographics (UN World Population Prospects 2024)
+
+Sourced from the [UN WPP 2024](https://population.un.org/wpp/), Medium variant, for 186 countries every 10 years from 1950 to 2100 (16 time points). Grouped in `demographics.h5`, exposed as four datasets whose `load()` result is a [Starsim](https://starsim.org)-ready dataframe with UN-native column names:
+
+| `which=` | What it is | Age resolution | Columns returned |
+|---|---|---|---|
+| `births` | Crude birth rate (per 1,000) | none (national) | `[Time, CBR]` |
+| `deaths` | Age/sex mortality rate `m(x)` | 5-year abridged (`0, 1–4, 5–9, …, 100+`) | `[Time, Sex, AgeGrpStart, mx]` |
+| `migration` | Crude net-migration rate (per 1,000) | none (national) | `[Time, CNMR]` |
+| `population` | Population counts (absolute persons) | 5-year (`0–4, 5–9, …, 100+`) | `[Time, Sex, AgeGrp, Value]` |
+
+These drop straight into Starsim: `deaths` matches `ss.Deaths`'s expected columns, `births` feeds `ss.Births`/`ss.Pregnancy`, and `population` gives age–sex pyramids for initialization.
+
+**Not included:**
+
+- ❌ Annual resolution — only every 10th year (1950, 1960, …, 2100).
+- ❌ Subnational demographics (states, provinces, counties).
+- ❌ Age-specific fertility (births are the crude rate only) or age-specific migration (crude rate only) — the UN provides no age breakdown for these.
+- ❌ "Both sexes"/"Total" rows (Female + Male only) and non-Median projection variants.
+
+## 2. Contact matrices
+
+*Note: These data were adapted from the excellent [Epydemix](https://github.com/epistorm/epydemix-data) project*
+
+Age-structured contact rates — the average number of contacts between age groups — across five settings (`all`, `home`, `work`, `school`, `community`), selected with the `kind=` argument. `load()` returns a square dataframe whose rows and columns are indexed by the start age of each bin (e.g. `0, 5, …, 75`), so you can select by age with `M.loc[25, 30]`. Data included are a trimmed subset of [epydemix-data](https://github.com/epistorm/epydemix-data):
+
+| `which=` | Matrix | Age groups | Countries | Source study |
+|---|---|---|---|---|
+| `prem2017` | 16×16 | 5-year (`0–4, …, 75+`) | 152 | [Prem et al. 2017](https://journals.plos.org/ploscompbiol/article?id=10.1371/journal.pcbi.1005697) |
+| `prem2021` | 16×16 | 5-year (`0–4, …, 75+`) | 177 | [Prem et al. 2021](https://journals.plos.org/ploscompbiol/article?id=10.1371/journal.pcbi.1009098) |
+| `mistry2021` | 85×85 | single-year (`0–84`, last is `84+`) | 36 | [Mistry et al. 2021](https://www.nature.com/articles/s41467-020-20544-y) |
+
+Not every country has every source; use `ssd.list_locations('prem2021')` etc. to check. 
+
+*Note:* `epydemix` has additional datasets for subnational contact matrices that are not included here.
+
+---
+
+## Geographies
+
+All data is level 0 (country). 187 distinct countries appear across the datasets; coverage varies by source (186 for demographics; 36–177 for contact matrices). Country keys use `_` for spaces (e.g. `United_States`, `Sierra_Leone`), but `load()` accepts spaces and any case. The bundled `locations.csv` lists each country's ISO 3166-1 alpha-2 code and available contact sources.
+
+## Citing
+
+When you use these data, cite the underlying sources: the [UN World Population Prospects 2024](https://population.un.org/wpp/) for demographics, and the relevant contact-matrix study (Prem 2017, Prem 2021, and/or Mistry 2021) for each source you use. See [NOTICE.md](NOTICE.md) for full attributions.
+
+## Building from source
+
+The bundled `.h5` files are generated from the human-readable sources in [`raw_data/`](raw_data/) by the scripts in [`scripts/`](scripts/). See those folders' READMEs to regenerate or update the data.
 
 ## License
 
 The repository's code, packaging, and curation are licensed under the [MIT License](LICENSE).
 
-The contact-matrix data files are third-party datasets distributed under their own upstream licenses — **Apache-2.0** for `mistry2021` and **GPL-3.0** for `prem2017`/`prem2021` — not under MIT. The full text of each upstream license is in the [`licenses/`](licenses/) folder, and [NOTICE.md](NOTICE.md) has the per-source details and required attributions.
+The bundled data files are third-party datasets under their own upstream licenses — the UN WPP data under its [terms of use](https://population.un.org/wpp/), and the contact matrices under **Apache-2.0** (`mistry2021`) and **GPL-3.0** (`prem2017`/`prem2021`) — not under MIT. Full upstream license texts are in [`licenses/`](licenses/), and [NOTICE.md](NOTICE.md) has the per-source details and required attributions.

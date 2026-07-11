@@ -31,7 +31,7 @@ classifiers = [
 # under their own upstream licenses (Apache-2.0, GPL-3.0), NOT MIT. See NOTICE.md.
 dependencies = [
   "numpy>=1.24",
-  "pandas>=2.0",
+  "sciris>=3.0",
   "h5py>=3.0",
 ]
 
