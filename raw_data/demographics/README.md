@@ -25,6 +25,17 @@ Alternatively, download these from the [WPP download page](https://population.un
 | **Abridged Life Table** (estimates + projection halves) | `/deaths` | `ISO2_code`, `Time`, `Sex`, `AgeGrpStart`, `mx` |
 | **Population by 5-year age groups and sex** | `/population` | `ISO2_code`, `Time`, `AgeGrp` (or `AgeGrpStart`), `PopMale`, `PopFemale` |
 
+## Known gap: Namibia
+
+The CSVs currently in this folder are missing **Namibia**. Its ISO-2 code is the string `NA`, which pandas' default `na_values` read as NaN, so it was filtered out of the location list before the download even ran. The code is fixed (every reader of `locations.csv` now passes `keep_default_na=False`), but the raw data predates the fix and has to be refetched:
+
+```bash
+python scripts/download_wpp.py            # needs scripts/.env with a WPP Bearer token
+python scripts/build_demographics.py --check
+```
+
+`build_demographics.py` warns about any location in `locations.csv` that ends up with no data, and `tests/test_provenance.py::test_namibia_has_demographic_data` is marked `xfail` until this is done — remove that marker once it passes.
+
 ## Notes
 
 - Only **Female** and **Male** are kept (WPP's "Total"/"Both sexes" rows are dropped), matching Starsim's `ss.Deaths` sex conventions.

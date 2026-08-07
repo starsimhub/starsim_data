@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "starsim_data"
-version = "0.1.0"
+version = "0.2.0"
 description = "Demographic data and contact matrices for disease modeling with Starsim"
 readme = "README.md"
 requires-python = ">=3.10"
@@ -36,8 +36,20 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+# `pycountry` is a *build-time* dependency only: scripts/build_locations.py bakes the
+# ISO codes and aliases it provides into data/locations.csv, so the resolver at runtime
+# reads the CSV and needs nothing extra.
 dev = [
   "pytest>=7.4",
+  "pycountry",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+markers = [
+  "network: requires network access (deselected by default in CI)",
+  "slow: takes more than a second or so",
+  "integration: exercises several components together",
 ]
 
 [project.urls]

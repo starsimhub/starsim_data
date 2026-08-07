@@ -8,13 +8,18 @@ are two families of dataset, and `load` returns the natural shape for each:
   `mistry2021.h5`), each a `layout='matrix'` store. `load` returns a square `(n, n)`
   frame whose rows and columns are indexed by the start age of each bin (e.g.
   `0, 5, ..., 75`); the `kind` argument selects the contact setting (`all`, `home`, ...).
-- Demographic time series from UN WPP -- grouped in `demographics.h5`, one group per
-  series (`births`, `deaths`, `migration`, `population`). `load` returns a tidy frame
-  with WPP-native column names, so e.g. `deaths` drops straight into
+- Demographic time series from UN WPP -- grouped in `demographics-<revision>.h5`, one
+  group per series (`births`, `deaths`, `migration`, `population`). `load` returns a
+  tidy frame with WPP-native column names, so e.g. `deaths` drops straight into
   `ss.Deaths(death_rate=...)`.
 
-Every `load` result is a `sciris.dataframe`, a drop-in replacement for a pandas
-`DataFrame`.
+Demographic stores are versioned by UN WPP revision. `load` uses the newest bundled
+revision unless `revision=` says otherwise, so a new WPP release is an additive
+rebuild rather than a silent change to data already in use; see `list_revisions()`.
+
+Locations are resolved by name, ISO-2/ISO-3 code, official name or alias -- see
+`starsim_data.locations`. Every `load` result is a `sciris.dataframe`, a drop-in
+replacement for a pandas `DataFrame`, carrying its source provenance in `.attrs`.
 """
 
 import json
@@ -24,12 +29,15 @@ import h5py
 import numpy as np
 import sciris as sc
 
-__all__ = ["load", "list_datasets", "list_locations"]
+from .locations import resolve
+
+__all__ = ["load", "list_datasets", "list_locations", "list_revisions", "provenance"]
 
 # Contact settings available within each contact-matrix dataset.
 KINDS = ("all", "home", "work", "school", "community")
 
-DEMOGRAPHICS = "demographics.h5"
+# Demographic stores are named `demographics-<revision>.h5`, e.g. demographics-2024.h5.
+DEMOGRAPHICS_PREFIX = "demographics-"
 
 
 def _data_dir():
@@ -41,58 +49,100 @@ def _data_file(name):
     return _data_dir() / name
 
 
-def _match_location(location, keys):
-    """Resolve user input like 'kenya' or 'united states' to a stored key like 'Kenya'.
+def _demographics_stores():
+    """Return `{revision: path}` for the bundled demographic stores."""
+    stores = {}
+    for path in _data_dir().iterdir():
+        if path.name.startswith(DEMOGRAPHICS_PREFIX) and path.name.endswith(".h5"):
+            stores[path.name[len(DEMOGRAPHICS_PREFIX):-len(".h5")]] = path
+    return stores
 
-    Matching is case-insensitive and treats spaces and underscores as equivalent.
-    Returns the matched key, or None if there is no match.
-    """
-    def norm(s):
-        return s.strip().lower().replace(" ", "_")
 
-    wanted = norm(location)
-    for key in keys:
-        if norm(key) == wanted:
-            return key
-    return None
+def list_revisions():
+    """Return the bundled UN WPP revisions, oldest first; the last is the default."""
+    return sorted(_demographics_stores())
 
 
 def list_datasets():
     """Return all available datasets: contact sources plus WPP demographic series."""
     names = []
-    for p in _data_dir().iterdir():
-        if p.name == DEMOGRAPHICS:
-            with h5py.File(p, "r") as f:
-                names += list(f.keys())          # births, deaths, migration, population
-        elif p.name.endswith(".h5"):
-            names.append(p.name[:-3])            # prem2017, prem2021, mistry2021
-    return sorted(names)
+    for path in _data_dir().iterdir():
+        if not path.name.endswith(".h5"):
+            continue
+        if path.name.startswith(DEMOGRAPHICS_PREFIX):
+            with h5py.File(path, "r") as f:
+                names += list(f.keys())         # births, deaths, migration, population
+        else:
+            names.append(path.name[:-len(".h5")])   # prem2017, prem2021, mistry2021
+    return sorted(set(names))
 
 
-def _open(which):
+def _open(which, revision=None):
     """Open the store holding `which`, returning (file, group). Caller closes the file.
 
     For a contact source the group is the file root; for a demographic series it is the
-    corresponding group inside demographics.h5.
+    corresponding group inside the demographic store for `revision`.
     """
     matrix_path = _data_file(f"{which}.h5")
     if matrix_path.is_file():
+        if revision is not None:
+            raise ValueError(f"revision={revision!r} does not apply to {which!r}; contact "
+                             f"sources are already versioned by name (see list_datasets())")
         f = h5py.File(matrix_path, "r")
         return f, f
-    demo_path = _data_file(DEMOGRAPHICS)
-    if demo_path.is_file():
-        f = h5py.File(demo_path, "r")
+
+    stores = _demographics_stores()
+    if revision is None:
+        wanted = sorted(stores)[-1:]            # newest bundled revision
+    else:
+        wanted = [str(revision)] if str(revision) in stores else []
+        if not wanted:
+            raise ValueError(f"unknown revision {revision!r}; available: {sorted(stores)}")
+
+    for rev in wanted:
+        f = h5py.File(stores[rev], "r")
         if which in f:
             return f, f[which]
         f.close()
+
     raise ValueError(f"unknown dataset {which!r}; available: {list_datasets()}")
 
 
-def list_locations(which):
+def list_locations(which, revision=None):
     """Return the sorted locations available in dataset `which`."""
-    f, group = _open(which)
+    f, group = _open(which, revision)
     try:
         return sorted(group.keys())
+    finally:
+        f.close()
+
+
+def provenance(which=None, revision=None):
+    """Return where a dataset came from: source, license, citation and build details.
+
+    Args:
+        which (str): dataset name; if None, return a dict keyed by every dataset.
+        revision (str/int): for demographic series, the UN WPP revision (default newest).
+
+    Returns:
+        sciris.objdict: with keys including `source`, `source_url`, `license`,
+        `citation`, `built` and `builder`. Contents vary by source.
+
+    Example:
+        >>> import starsim_data as ssd
+        >>> ssd.provenance('prem2017').license
+        'GPL-3.0'
+    """
+    if which is None:
+        return sc.objdict({name: provenance(name) for name in list_datasets()})
+    f, _ = _open(which, revision)
+    try:
+        # Provenance is per-store (all series in a demographic store share a source),
+        # so read it from the file root rather than the group.
+        raw = f.attrs.get("provenance")
+        if raw is None:
+            return sc.objdict(dataset=which, note="no provenance recorded in this store")
+        return sc.objdict(json.loads(raw))
     finally:
         f.close()
 
@@ -102,7 +152,7 @@ def _spec(group):
     return json.loads(raw) if raw is not None else {"layout": "matrix"}
 
 
-def _melt_year_sex_age(arr, years, sexes, ages, age_col, value_col):
+def _melt_year_sex_age(arr, years, sexes, ages, *, age_col, value_col):
     """Melt a (year, sex, age) array into a tidy dataframe with WPP-native columns."""
     ny, ns, na = arr.shape
     return sc.dataframe({
@@ -113,38 +163,42 @@ def _melt_year_sex_age(arr, years, sexes, ages, age_col, value_col):
     })
 
 
-def load(location, which="prem2017", kind="all"):
+def load(location, which="prem2017", kind="all", revision=None):
     """
     Load data for a location.
 
     Args:
-        location (str): location name, e.g. `'Kenya'` (case- and space-insensitive).
+        location (str): location name, ISO-2/ISO-3 code, official name or alias, e.g.
+            `'Kenya'`, `'KE'`, `'KEN'`; case-, accent- and punctuation-insensitive.
         which (str): dataset -- a contact source (`'prem2017'`, `'prem2021'`,
             `'mistry2021'`) or a demographic series (`'births'`, `'deaths'`,
             `'migration'`, `'population'`). See `list_datasets()`.
         kind (str): for contact-matrix datasets only, the contact setting -- one of
             `'all'`, `'home'`, `'work'`, `'school'`, `'community'`. Ignored otherwise.
+        revision (str/int): for demographic series only, the UN WPP revision to read
+            (default: the newest bundled). See `list_revisions()`.
 
     Returns:
-        sciris.dataframe: a drop-in replacement for a pandas `DataFrame`. For contact
-        matrices, a square `(n, n)` matrix whose rows and columns are indexed by the
-        start age of each bin (e.g. `0, 5, ..., 75`). For demographic series, a tidy
-        frame -- `births`/`migration` have columns `[Time, CBR]`/`[Time, CNMR]`;
-        `deaths` has `[Time, Sex, AgeGrpStart, mx]`; `population` has
-        `[Time, Sex, AgeGrp, Value]`.
+        sciris.dataframe: a drop-in replacement for a pandas `DataFrame`, with source
+        provenance in `.attrs['provenance']`. For contact matrices, a square `(n, n)`
+        matrix whose rows and columns are indexed by the start age of each bin (e.g.
+        `0, 5, ..., 75`). For demographic series, a tidy frame -- `births`/`migration`
+        have columns `[Time, CBR]`/`[Time, CNMR]`; `deaths` has
+        `[Time, Sex, AgeGrpStart, mx]`; `population` has `[Time, Sex, AgeGrp, Value]`.
+
+    Raises:
+        ValueError: if `which`, `kind` or `revision` is not recognized.
+        KeyError: if the location is unknown, or is absent from this dataset.
 
     Example:
         >>> import starsim_data as ssd
         >>> M = ssd.load(location='kenya', which='prem2017')          # (16, 16)
-        >>> d = ssd.load(location='kenya', which='deaths')            # tidy mortality
+        >>> d = ssd.load(location='KEN', which='deaths')              # tidy mortality
     """
-    f, group = _open(which)
+    f, group = _open(which, revision)
     try:
         spec = _spec(group)
-        key = _match_location(location, group.keys())
-        if key is None:
-            raise KeyError(f"location {location!r} not found in {which!r} "
-                           f"(have {len(group.keys())} locations; see list_locations({which!r}))")
+        key = resolve(location, valid=group.keys(), dataset=which)
         layout = spec["layout"]
 
         if layout == "matrix":
@@ -156,15 +210,24 @@ def load(location, which="prem2017", kind="all"):
             # Label both axes with the start age of each bin (e.g. 0, 5, ..., 75), so
             # rows/columns index by age rather than by position.
             ages = spec.get("ages")
-            return sc.dataframe(mat, index=ages, columns=ages)
+            df = sc.dataframe(mat, index=ages, columns=ages)
+        elif layout == "crude":  # births, migration: one value per year
+            data = group[key][:]
+            df = sc.dataframe({"Time": np.asarray(spec["years"]),
+                               spec["value_col"]: np.asarray(data, dtype=np.float32)})
+        elif layout in ("mortality", "population"):
+            data = group[key][:]
+            df = _melt_year_sex_age(data, np.asarray(spec["years"]), np.asarray(spec["sexes"]),
+                                    np.asarray(spec["ages"]),
+                                    age_col=spec["age_col"], value_col=spec["value_col"])
+        else:
+            raise ValueError(f"unrecognized layout {layout!r} in {which!r}")  # pragma: no cover
 
-        data = group[key][:]
-        if layout == "crude":  # births, migration: one value per year
-            return sc.dataframe({"Time": np.asarray(spec["years"]),
-                                 spec["value_col"]: np.asarray(data, dtype=np.float32)})
-        if layout in ("mortality", "population"):
-            return _melt_year_sex_age(data, np.asarray(spec["years"]), np.asarray(spec["sexes"]),
-                                      np.asarray(spec["ages"]), spec["age_col"], spec["value_col"])
-        raise ValueError(f"unrecognized layout {layout!r} in {which!r}")  # pragma: no cover
+        raw = f.attrs.get("provenance")
+        if raw is not None:
+            df.attrs["provenance"] = sc.objdict(json.loads(raw))
+        df.attrs["location"] = key
+        df.attrs["dataset"] = which
+        return df
     finally:
         f.close()

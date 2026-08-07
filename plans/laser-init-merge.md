@@ -259,8 +259,8 @@ Resolved on review:
 4. **No `starsim-init` equivalent** (§6).
 5. **Regenerate tier-0 demographics per WPP revision**, keeping old vintages loadable (invariant 2).
 6. **Match Starsim's toolchain**: `.flake8`, `pylint`, Quarto — not ruff, not mkdocs (§3.7).
+7. **The `ss.Births` `Time`/`Year` mismatch is fixed in Starsim, not here** (§3.1). `ss.Deaths` and `ss.Pregnancy` both already use `Time`, so `ss.Births` is the inconsistent one, and fixing it upstream means this package needs no per-module special-casing. Handed off as [`plans/births-fix.md`](births-fix.md); P0 item 6 is therefore delegated, not dropped — do not add a `Year`-emitting workaround here in the meantime.
 
 Still open:
 
-- Whether the `ss.Births` `Time`/`Year` mismatch (§3.1) is fixed here (emit `Year`) or in Starsim (accept `Time`). Fixing it in Starsim is tidier — `ss.Deaths` already uses `Time`, so `ss.Births` is the inconsistent one — but it means a coordinated change across two repos.
 - Whether the node table ships as a tier-1 release asset or gets small enough at admin-0/1 to bundle outright. Answerable once one is built and measured.

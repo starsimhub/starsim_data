@@ -12,9 +12,10 @@ import starsim_data as ssd
 ssd.list_datasets()                              # what's available
 ssd.load('kenya', which='deaths')                # UN WPP mortality rates (tidy DataFrame)
 ssd.load('kenya', which='prem2017', kind='home') # a contact matrix (square DataFrame)
+ssd.provenance('prem2017')                       # where it came from, and its license
 ```
 
-Location names are matched case- and space-insensitively (`'kenya'`, `'Kenya'`, `'united states'` all work). Use `ssd.list_locations(which)` to see the countries available for a given dataset.
+Locations can be named however you like: `'Kenya'`, `'kenya'`, `'KE'`, `'KEN'` and `'Republic of Kenya'` are the same country, as are `'USA'`, `'US'`, `'united states'` and `'United States of America'`. ISO-2/ISO-3 codes, official names, common abbreviations (`UK`, `DRC`) and French/Spanish/Portuguese names all resolve; accents, case and punctuation are ignored, so `"Côte d'Ivoire"` and `'cote divoire'` both work. A name that doesn't match raises, with suggestions — it is never resolved to the nearest guess. Use `ssd.list_locations(which)` for the countries in a given dataset, `ssd.list_all_locations()` for every known location, and `ssd.resolve()`/`ssd.location_info()` to inspect the mapping.
 
 ## Installation
 
@@ -30,7 +31,7 @@ There are two families of data. `ssd.load()` returns a [Sciris](https://sciris.o
 
 ## 1. Demographics (UN World Population Prospects 2024)
 
-Sourced from the [UN WPP 2024](https://population.un.org/wpp/), Medium variant, for 186 countries every 10 years from 1950 to 2100 (16 time points). Grouped in `demographics.h5`, exposed as four datasets whose `load()` result is a [Starsim](https://starsim.org)-ready dataframe with UN-native column names:
+Sourced from the [UN WPP 2024](https://population.un.org/wpp/), Medium variant, for 186 countries every 10 years from 1950 to 2100 (16 time points). Grouped in `demographics-2024.h5`, exposed as four datasets whose `load()` result is a [Starsim](https://starsim.org)-ready dataframe with UN-native column names:
 
 | `which=` | What it is | Age resolution | Columns returned |
 |---|---|---|---|
@@ -47,6 +48,9 @@ These drop straight into Starsim: `deaths` matches `ss.Deaths`'s expected column
 - ❌ Subnational demographics (states, provinces, counties).
 - ❌ Age-specific fertility (births are the crude rate only) or age-specific migration (crude rate only) — the UN provides no age breakdown for these.
 - ❌ "Both sexes"/"Total" rows (Female + Male only) and non-Median projection variants.
+- ❌ Namibia, for now — it was dropped by a bug that read its ISO-2 code `NA` as "missing". The bug is fixed but the data needs refetching; see [CHANGELOG.md](CHANGELOG.md). Namibia's contact matrices were never affected.
+
+Demographic data is versioned by UN WPP revision. `load()` reads the newest bundled revision; pass `revision=` to pin an older one, and see `ssd.list_revisions()` for what's available. A new WPP release therefore adds a store rather than changing data already in use.
 
 ## 2. Contact matrices
 
@@ -68,11 +72,20 @@ Not every country has every source; use `ssd.list_locations('prem2021')` etc. to
 
 ## Geographies
 
-All data is level 0 (country). 187 distinct countries appear across the datasets; coverage varies by source (186 for demographics; 36–177 for contact matrices). Country keys use `_` for spaces (e.g. `United_States`, `Sierra_Leone`), but `load()` accepts spaces and any case. The bundled `locations.csv` lists each country's ISO 3166-1 alpha-2 code and available contact sources.
+All data is level 0 (country). 187 distinct countries appear across the datasets; coverage varies by source (186 for demographics; 36–177 for contact matrices). Canonical keys use `_` for spaces (e.g. `United_States`, `Sierra_Leone`), but you can pass any recognized name, code or alias — see the resolution rules above. The bundled `locations.csv` lists each country's ISO 3166-1 alpha-2 and alpha-3 codes, official name, aliases and available contact sources; `ssd.location_info(location)` returns a row of it.
+
+`ssd.parse_level()` accepts `'admin1'`, `'ADM2'`, `'3'` or a bare integer. Nothing above level 0 has data yet; it exists so the vocabulary is settled before subnational data arrives.
 
 ## Citing
 
 When you use these data, cite the underlying sources: the [UN World Population Prospects 2024](https://population.un.org/wpp/) for demographics, and the relevant contact-matrix study (Prem 2017, Prem 2021, and/or Mistry 2021) for each source you use. See [NOTICE.md](NOTICE.md) for full attributions.
+
+Each dataset also carries its attribution as data. `ssd.provenance(which)` returns the source, URL, license, citation and build details for a dataset, and every frame from `load()` has the same in `df.attrs['provenance']` — so the citation travels with the data rather than needing to be looked up:
+
+```python
+ssd.provenance('mistry2021').citation   # 'Mistry D, Litvinova M, ...'
+ssd.provenance('deaths').license        # 'CC BY 3.0 IGO'
+```
 
 ## Building from source
 
