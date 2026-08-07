@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "starsim_data"
-version = "0.3.0"
+version = "0.4.0"
 description = "Demographic data and contact matrices for disease modeling with Starsim"
 readme = "README.md"
 requires-python = ">=3.10"
@@ -49,12 +49,21 @@ dev = [
   "pycountry",
 ]
 
+# Full geometry and raster aggregation. Imported lazily, so `import starsim_data` works
+# without them and only the spatial functions raise if they are missing.
+spatial = [
+  "geopandas>=1.0",
+  "pyogrio>=0.8",
+  "rastertoolkit>=0.5",
+]
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 markers = [
   "network: requires network access (deselected by default in CI)",
   "slow: takes more than a second or so",
   "integration: exercises several components together",
+  "spatial: needs the [spatial] extra (these skip automatically without it)",
 ]
 
 [project.urls]

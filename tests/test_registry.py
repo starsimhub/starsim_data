@@ -17,6 +17,7 @@ def test_bundled_datasets_are_tier_0():
 def test_descriptor_fields():
     ds = ssd.registry.dataset("deaths")
     assert ds.layout == "mortality"
+    assert ds.levels == (0,)
     assert ds.level == 0
     assert ds.license == "CC BY 3.0 IGO"
     assert ds.n_locations == len(ssd.list_locations("deaths"))
@@ -50,7 +51,7 @@ def test_source_rejects_an_unknown_revision():
 
 def test_detailed_listing_is_a_frame():
     df = ssd.list_datasets(detailed=True)
-    assert set(df.columns) == {"dataset", "description", "layout", "tier", "level",
+    assert set(df.columns) == {"dataset", "description", "layout", "tier", "levels",
                                "locations", "revisions", "license"}
     assert len(df) == len(ssd.list_datasets())
 

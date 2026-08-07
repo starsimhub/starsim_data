@@ -179,7 +179,7 @@ Two schema details deserve to survive the port. **P-codes** are the join key for
 
 Beyond a straight port, there is a lighter primitive worth adding. `laser-init` always carries full geometry because it wants choropleths, but a metapopulation model mostly needs **centroids, areas, populations and a distance matrix** — not polygons. A **node table** (`nodeid`, `dot_name`, `pcode`, `lat`, `lon`, `area_km2`, `population`, `level`) for admin-0 and admin-1 worldwide would be a few MB, would fit tier 1, and would unlock gravity-model connectivity with **no `geopandas` dependency at all**.
 
-**Decision: ship both, with the node table as the default.** `ssd.load_nodes('kenya', level=1)` returns the lightweight table and needs nothing beyond the base install; `ssd.load_shapes('kenya', level=1)` (or `load_nodes(..., geometry=True)`) returns the full GeoPackage-backed GeoDataFrame and requires `[spatial]`. The node table is generated from the same boundary sources at build time, so the two are guaranteed consistent — the node table is a projection of the geometry, not an independent dataset, and `nodeid`/`pcode` join them. This keeps the common case free of `geopandas` while leaving nothing out for anyone who wants maps or exact areas.
+**Decision: ship both, with the node table as the default.** `ssd.load_nodes('kenya', level=1)` returns the lightweight table and needs nothing beyond the base install; `ssd.fetch_shapes('kenya', level=1)` returns the full GeoDataFrame and requires `[spatial]`. *Built as `fetch_shapes`, not `load_shapes`: geometry is tier 2, and §2's rule is that anything which can touch the network gets a different verb from `load()`.* The node table is generated from the same boundary sources at build time, so the two are guaranteed consistent — the node table is a projection of the geometry, not an independent dataset, and `nodeid`/`pcode` join them. This keeps the common case free of `geopandas` while leaving nothing out for anyone who wants maps or exact areas.
 
 ### 5.4 Connectivity and the gravity model
 
@@ -221,7 +221,7 @@ The parameterisation is standard and worth adopting for consistency across IDM t
 
 ## 8. Prioritized plan
 
-*Status: P0 shipped in 0.2.0, P1 in 0.3.0 (item 12 dropped — see decision 8). P2 not started. See [CHANGELOG.md](../CHANGELOG.md).*
+*Status: P0 shipped in 0.2.0, P1 in 0.3.0 (item 12 dropped — see decision 8), P2 in 0.4.0. See [CHANGELOG.md](../CHANGELOG.md).*
 
 | # | Item | Source | Effort | New deps | Tier |
 |---|---|---|---|---|---|
@@ -264,6 +264,8 @@ Resolved on review:
 7. **The `ss.Births` `Time`/`Year` mismatch is fixed in Starsim, not here** (§3.1). `ss.Deaths` and `ss.Pregnancy` both already use `Time`, so `ss.Births` is the inconsistent one, and fixing it upstream means this package needs no per-module special-casing. Handed off to the Starsim repo as a separate prompt and **since fixed there**; no `Year`-emitting workaround was added on this side.
 8. **No CLI.** P1 item 12 is dropped. `laser-init` is a CLI with a library underneath; this is a library, and its users reach it from Python or from Starsim, not from a shell. Everything the CLI would have exposed is a library call instead — `list_datasets(detailed=True)`, `fetch()`, `plot()`, `cache_info()`, `clear_cache()`, `options` — which is also one fewer interface to document and keep in step. A CLI can be added later over that surface if a real use case turns up; the reverse is much harder.
 
+9. **The node table bundles; it does not need a tier-1 release asset.** This was the last open question, and building one answered it: levels 0 and 1 for 184 countries is **3,254 nodes in 1.4 MB**, against a package that was already ~13 MB. So the node table joins tier 0, `load_nodes()` is offline and instant like `load()`, and tier 1 currently has no occupants at all — the tier stays in the model for subnational *demographics*, which would be far larger, but nothing needs it yet.
+
 Still open:
 
-- Whether the node table ships as a tier-1 release asset or gets small enough at admin-0/1 to bundle outright. Answerable once one is built and measured.
+- Nothing. P0–P2 are built; see [CHANGELOG.md](../CHANGELOG.md) for what shipped when.

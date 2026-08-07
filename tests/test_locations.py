@@ -111,7 +111,7 @@ def test_parse_level(raw, expected):
     assert ssd.parse_level(raw) == expected
 
 
-@pytest.mark.parametrize("bad", ["admin9", "5", -1, "banana", "", None, True])
+@pytest.mark.parametrize("bad", ["admin9", "6", -1, "banana", "", None, True])
 def test_parse_level_rejects_bad_input(bad):
     with pytest.raises(ValueError):
         ssd.parse_level(bad)

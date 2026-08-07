@@ -2,6 +2,26 @@
 
 All notable changes to `starsim_data` are recorded here. Versions follow [semantic versioning](https://semver.org); the *data* is versioned too, so a change to a bundled dataset is a release, not an amendment.
 
+## 0.4.0 (2026-08-07)
+
+The spatial tier ([laser-init merge plan](plans/laser-init-merge.md) P2). Base install gains one bundled file and no new dependencies; full geometry and rasters are behind a new `[spatial]` extra.
+
+### Added
+
+- **The node table** (`ssd.load_nodes`), bundled. For every administrative unit at levels 0 and 1: `nodeid`, `location`, `iso3`, `level`, `name`, `pcode`, `dot_name`, `parent`, `lat`, `lon`, `area_km2`, `population`, `source`. 3,254 nodes across 184 countries in 1.4 MB, readable with no geospatial dependencies — which settles the question the plan left open: it bundles rather than shipping as a release asset. Built by `scripts/build_nodes.py` from UNOCHA COD-AB where it exists (the source of the p-codes, ~110 countries) and geoBoundaries CGAZ v6.0.0 elsewhere; the two disagree in places about how a country subdivides, so every row records which source it came from. `population` is national-only by design.
+- **`ssd.distances()`** — the great-circle distance matrix between node centroids, which with `load_nodes()` gives a gravity model its `P_i`, `P_j` and `D_ij`. The gravity formulation itself stays in the model.
+- **`ssd.fetch_shapes()`** — administrative boundaries with full geometry, from UNOCHA, geoBoundaries or GADM, normalized onto one schema and joining to the node table on `pcode`. `source=None` tries UNOCHA then geoBoundaries. **GADM is never reached automatically**: it is non-commercial only, so it must be named explicitly, and the constraint is enforced as data (`ShapeSource.redistributable`) rather than remembered — the node-table build refuses any source that sets it False.
+- **`ssd.fetch_raster()`, `ssd.aggregate_raster()`, `ssd.fetch_nodes()`** — WorldPop 1 km gridded population, and summing it inside each administrative unit. This is the step that turns a boundary file into a metapopulation. `ssd.rescale_to_national()` reconciles WorldPop's modelled totals with UN WPP's (they differ by about 1.2% for Kenya 2020).
+- **`ssd.choropleth()`**, and a `nodes` panel for `plot()` that draws centroids without needing any geospatial dependency.
+- **`[spatial]` extra** (`geopandas`, `pyogrio`, `rastertoolkit`), imported lazily: `import starsim_data` works without them, and only the spatial functions raise if they are missing.
+- **`docs/datasources.qmd`** — the source comparison (coverage, admin depth, update cadence, licensing, what each is good for), adapted from `laser-init`'s `docs/datasources.md` and extended to this package's sources. Quarto, matching Starsim's docs. NOTICE.md gains entries for UNOCHA, geoBoundaries, WorldPop and GADM.
+
+### Changed
+
+- `Dataset.level` becomes `Dataset.levels`, a tuple, since the node table spans two. `level` remains as a property giving the finest available.
+- `parse_level()` now accepts up to level 5, not 4 — geoBoundaries and GADM both publish that deep, and the old cap made valid levels unreachable.
+- Layout shapers take an options dict rather than a bare `kind`, so a layout can use whichever per-call arguments apply to it; `load()` gains `level=`, which it rejects for anything but the node table.
+
 ## 0.3.0 (2026-08-07)
 
 Second tranche of the [laser-init merge plan](plans/laser-init-merge.md) (P1). No new packages are installed: everything here is built on sciris and the standard library.

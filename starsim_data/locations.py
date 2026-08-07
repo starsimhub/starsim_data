@@ -35,7 +35,9 @@ __all__ = ["resolve", "location_info", "list_all_locations", "parse_level"]
 # Columns whose values are matched directly, in addition to the `aliases` column.
 NAME_COLS = ("location", "iso_code", "iso3", "official_name")
 
-MAX_LEVEL = 4  # 0=country, 1=state/province, 2=district, ... (see parse_level)
+# 0=country, 1=state/province, 2=district, ... (see parse_level). 5 is the finest
+# level any of the boundary sources in `starsim_data.shapes` publishes.
+MAX_LEVEL = 5
 
 
 def normalize(name):
@@ -171,14 +173,14 @@ def parse_level(level):
 
     Accepts `'admin1'`, `'ADM2'`, `'3'` or a bare `int`. Level 0 is the country;
     higher levels are progressively finer subdivisions (1 = state/province,
-    2 = district/county). Only level 0 has data today -- this exists so that the
-    vocabulary is fixed before subnational data arrives.
+    2 = district/county). The upper bound is 5, the finest level any of the boundary
+    sources in `starsim_data.shapes` publishes.
 
     Args:
         level (str/int): the level to parse.
 
     Returns:
-        int: the level number, 0 to 4.
+        int: the level number, 0 to 5.
 
     Raises:
         ValueError: if `level` cannot be parsed or is out of range.

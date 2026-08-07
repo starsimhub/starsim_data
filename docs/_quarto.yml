@@ -1,0 +1,12 @@
+# Minimal Quarto project so `quarto render docs` works standalone. The pages here are
+# also meant to be includable from the Starsim docs site, which is why they carry no
+# site chrome of their own.
+project:
+  type: default
+  output-dir: _site
+
+format:
+  html:
+    theme: cosmo
+    toc: true
+    toc-depth: 3

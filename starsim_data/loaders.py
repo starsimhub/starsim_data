@@ -82,7 +82,7 @@ def list_datasets(detailed=False, tier=None):
                               description=ds.description,
                               layout=ds.layout,
                               tier=ds.tier,
-                              level=ds.level,
+                              levels=", ".join(str(x) for x in ds.levels),
                               locations=ds.n_locations,
                               revisions=", ".join(ds.revisions),
                               license=ds.license) for ds in known.values()])
@@ -160,8 +160,9 @@ def _melt_year_sex_age(arr, years, sexes, ages, *, age_col, value_col):
     })
 
 
-def _shape_matrix(group, key, spec, kind):
+def _shape_matrix(group, key, spec, opts):
     """Square contact matrix, rows and columns labelled by the start age of each bin."""
+    kind = opts["kind"]
     if kind not in KINDS:
         raise ValueError(f"kind must be one of {KINDS}, not {kind!r}")
     if kind not in group[key]:
@@ -171,26 +172,44 @@ def _shape_matrix(group, key, spec, kind):
     return sc.dataframe(mat, index=ages, columns=ages)
 
 
-def _shape_crude(group, key, spec, kind):  # pylint: disable=unused-argument
+def _shape_crude(group, key, spec, opts):  # pylint: disable=unused-argument
     """One national value per year, e.g. the crude birth rate."""
     return sc.dataframe({"Time": np.asarray(spec["years"]),
                          spec["value_col"]: np.asarray(group[key][:], dtype=np.float32)})
 
 
-def _shape_year_sex_age(group, key, spec, kind):  # pylint: disable=unused-argument
+def _shape_year_sex_age(group, key, spec, opts):  # pylint: disable=unused-argument
     """A (year, sex, age) array, melted tidy."""
     return _melt_year_sex_age(group[key][:], np.asarray(spec["years"]),
                               np.asarray(spec["sexes"]), np.asarray(spec["ages"]),
                               age_col=spec["age_col"], value_col=spec["value_col"])
 
 
+def _shape_nodes(group, key, spec, opts):
+    """The node table for one location: one row per administrative unit."""
+    arr = group[key][:]
+    df = sc.dataframe({name: arr[name] for name in arr.dtype.names})
+    for col in df.columns:                      # h5py hands back bytes for vlen strings
+        if df[col].dtype == object:
+            df[col] = df[col].str.decode("utf-8")
+    level = opts.get("level")
+    if level is not None:
+        level = ssd.parse_level(level)
+        df = df[df.level == level]
+        if not len(df):
+            raise ValueError(f"no level-{level} nodes for {key!r}; available levels: "
+                             f"{spec.get('levels', [])}")
+    return df.reset_index(drop=True)
+
+
 ssd.registry.register_layout("matrix", _shape_matrix)
 ssd.registry.register_layout("crude", _shape_crude)
 ssd.registry.register_layout("mortality", _shape_year_sex_age)
 ssd.registry.register_layout("population", _shape_year_sex_age)
+ssd.registry.register_layout("nodes", _shape_nodes)
 
 
-def load(location, which="prem2017", kind="all", revision=None):
+def load(location, which="prem2017", kind="all", revision=None, level=None):
     """
     Load data for a location.
 
@@ -204,6 +223,9 @@ def load(location, which="prem2017", kind="all", revision=None):
             `'all'`, `'home'`, `'work'`, `'school'`, `'community'`. Ignored otherwise.
         revision (str/int): for demographic series only, the UN WPP revision to read
             (default: the newest bundled). See `list_revisions()`.
+        level (int/str): for the node table only, the administrative level to return
+            (None returns every level). See `load_nodes()`, the readable spelling of
+            `load(..., which='nodes', level=...)`.
 
     Returns:
         sciris.dataframe: a drop-in replacement for a pandas `DataFrame`, with source
@@ -224,7 +246,10 @@ def load(location, which="prem2017", kind="all", revision=None):
     """
     ds = ssd.registry.dataset(which)
     if ds.loader is not None:  # a registered dataset that is not a bundled store
-        return ds.loader(location, kind=kind, revision=revision)
+        return ds.loader(location, kind=kind, revision=revision, level=level)
+    if level is not None and ds.layout != "nodes":
+        raise ValueError(f"level={level!r} does not apply to {which!r}; only the node "
+                         f"table is addressed by administrative level")
     if ds.tier > 0:
         # `load` never touches the network; say so rather than quietly downloading.
         raise ValueError(f"{which!r} is not bundled (tier {ds.tier}); use "
@@ -234,7 +259,8 @@ def load(location, which="prem2017", kind="all", revision=None):
     try:
         spec = _spec(group)
         key = ssd.resolve(location, valid=group.keys(), dataset=which)
-        df = ssd.registry.get_layout(spec["layout"])(group, key, spec, kind)
+        opts = dict(kind=kind, level=level)
+        df = ssd.registry.get_layout(spec["layout"])(group, key, spec, opts)
 
         raw = f.attrs.get("provenance")
         if raw is not None:

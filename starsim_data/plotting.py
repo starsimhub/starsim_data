@@ -10,7 +10,8 @@ check there is.
 import starsim_data as ssd
 ssd.plot('kenya')                            # a 4-panel summary: pyramid, rates, mx, matrix
 ssd.plot('kenya', which='population')        # just the age pyramid
-ssd.plot('kenya', which='prem2017')          # just the contact matrix
+ssd.plot('kenya', which='nodes', level=1)    # where the admin units are (centroids)
+ssd.choropleth('kenya', level=1)             # ... and filled polygons, with [spatial]
 ```
 
 One plotter per layout, looked up in `PLOTTERS`; a new layout can add itself by assigning
@@ -26,7 +27,7 @@ import numpy as np
 import sciris as sc
 import starsim_data as ssd
 
-__all__ = ["plot"]
+__all__ = ["plot", "choropleth"]
 
 # The panels in the default summary figure, in order; those absent for a location are
 # skipped rather than left blank.
@@ -87,6 +88,28 @@ def _plot_mortality(ax, df, location, year=None):
     ax.legend(frameon=False)
 
 
+def _plot_nodes(ax, df, location, year=None):  # pylint: disable=unused-argument
+    """Where the administrative units are: centroids, sized by area.
+
+    The map without the map -- enough to see that the units are in the right country and
+    the right shape of cluster, with no geospatial dependency. `choropleth()` draws the
+    actual polygons.
+    """
+    sizes = 20 + 180 * np.sqrt(df.area_km2 / df.area_km2.max())
+    filled = df.population.notna()
+    if filled.any() and filled.all():
+        colors, label = df.population, "Population"
+    else:
+        colors, label = df.area_km2, "Area (km$^2$)"
+    points = ax.scatter(df.lon, df.lat, s=sizes, c=colors, cmap="viridis",
+                        edgecolor="k", linewidth=0.4, alpha=0.85)
+    ax.set_xlabel("Longitude")
+    ax.set_ylabel("Latitude")
+    ax.set_aspect("equal", adjustable="datalim")
+    ax.set_title(f"{location}: {len(df)} node(s), level {df.level.iloc[0]}")
+    ax.get_figure().colorbar(points, ax=ax, label=label)
+
+
 def _plot_matrix(ax, df, location, year=None):  # pylint: disable=unused-argument
     """Contact matrix heatmap, axes labelled by the start age of each bin."""
     ages = np.asarray(df.index)
@@ -105,10 +128,11 @@ PLOTTERS = {
     "crude": _plot_crude,
     "mortality": _plot_mortality,
     "matrix": _plot_matrix,
+    "nodes": _plot_nodes,
 }
 
 
-def _panels(location, which):
+def _panels(location, which, level=None):
     """Return the `(dataset, dataframe)` pairs to draw.
 
     A summary figure skips datasets that are missing for this location -- not every
@@ -129,7 +153,8 @@ def _panels(location, which):
                                if d.tier == 0 and d.layout in PLOTTERS)
             raise ValueError(f"cannot plot {name!r}; plottable datasets are {plottable}")
         try:
-            out.append((ds, ssd.load(location, which=name)))
+            out.append((ds, ssd.load(location, which=name, **({"level": level}
+                                                              if ds.layout == "nodes" else {}))))
         except KeyError:            # this location is absent from that dataset
             if not summary:
                 raise
@@ -138,7 +163,7 @@ def _panels(location, which):
     return out
 
 
-def plot(location, which=None, year=None, fig_kw=None):
+def plot(location, which=None, year=None, level=1, fig_kw=None):
     """
     Plot data for a location, as a quick check before it goes into a model.
 
@@ -149,6 +174,7 @@ def plot(location, which=None, year=None, fig_kw=None):
             any the location lacks.
         year (int): the year to show for the single-year panels (age pyramid, mortality
             curve). Defaults to the most recent year that is not a projection.
+        level (int/str): the administrative level, for `which='nodes'` only.
         fig_kw (dict): passed to `plt.subplots`, e.g. `dict(figsize=(12, 8))`.
 
     Returns:
@@ -159,7 +185,7 @@ def plot(location, which=None, year=None, fig_kw=None):
         >>> fig = ssd.plot('kenya')                       # doctest: +SKIP
         >>> fig = ssd.plot('kenya', which='population')   # doctest: +SKIP
     """
-    panels = _panels(location, which)
+    panels = _panels(location, which, level=level)
     ncols = 1 if len(panels) == 1 else 2
     nrows = int(np.ceil(len(panels) / ncols))
     fig_kw = sc.mergedicts(dict(figsize=(6 * ncols, 4.5 * nrows), layout="constrained"), fig_kw)
@@ -173,3 +199,56 @@ def plot(location, which=None, year=None, fig_kw=None):
     for ax in flat[len(panels):]:
         ax.set_visible(False)
     return fig
+
+
+def choropleth(location, level=1, value="population", shapes=None, ax=None, cmap="viridis",
+               fig_kw=None, **kwargs):
+    """
+    Draw a filled map of an administrative value -- the geometry version of `plot(which='nodes')`.
+
+    Requires the `[spatial]` extra, because it needs real polygons. If you only want to
+    see roughly where the units are, `plot(location, which='nodes')` does that with the
+    bundled centroids and no extra dependencies.
+
+    Args:
+        location (str): location name, ISO-2/ISO-3 code, official name or alias.
+        level (int/str): administrative level to draw (default 1).
+        value (str): the column to colour by. `'population'` (default) fetches it from
+            WorldPop; any other name must already be a column of `shapes`.
+        shapes (GeoDataFrame): draw these instead of fetching, e.g. a frame you have
+            already merged your own values onto.
+        ax (matplotlib.axes.Axes): draw into this axes rather than making a figure.
+        cmap (str): the colormap.
+        fig_kw (dict): passed to `plt.subplots` when creating a figure.
+        **kwargs: passed to `GeoDataFrame.plot`, e.g. `scheme=`, `vmin=`, `vmax=`.
+
+    Returns:
+        matplotlib.axes.Axes: the axes drawn into.
+
+    Raises:
+        ImportError: if the `[spatial]` extra is not installed.
+        ValueError: if `value` is not available.
+
+    Example:
+        >>> import starsim_data as ssd
+        >>> ax = ssd.choropleth('kenya', level=1)   # doctest: +SKIP
+    """
+    if shapes is None:
+        shapes = ssd.fetch_shapes(location, level=level)
+        if value == "population":
+            nodes = ssd.fetch_nodes(location, level=level)
+            shapes = shapes.merge(nodes[["pcode", "population"]], on="pcode", how="left")
+    if value not in shapes.columns:
+        raise ValueError(f"{value!r} is not a column of the shapes; available: "
+                         f"{[c for c in shapes.columns if c != 'geometry']}")
+
+    if ax is None:
+        fig_kw = sc.mergedicts(dict(figsize=(7, 7), layout="constrained"), fig_kw)
+        _, ax = plt.subplots(**fig_kw)
+    shapes.plot(column=value, ax=ax, cmap=cmap, legend=True, edgecolor="white",
+                linewidth=0.3, legend_kwds=dict(label=value.replace("_", " ").capitalize(),
+                                                shrink=0.7),
+                **kwargs)
+    ax.set_axis_off()
+    ax.set_title(f"{shapes.location.iloc[0]}, level {level}")
+    return ax

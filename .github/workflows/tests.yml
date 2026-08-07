@@ -63,3 +63,25 @@ jobs:
         run: python scripts/build_locations.py --check
       - name: Tests still pass against the rebuilt data
         run: pytest tests -q -m "not network"
+
+  # The node table is deliberately left out of the job above: rebuilding it pulls ~420 MB
+  # of boundary data from GitHub, which is too much to spend on every pull request. Run it
+  # by hand when the boundary sources change.
+  check_nodes_are_reproducible:
+    name: Node table rebuild is reproducible
+    if: github.event_name == 'workflow_dispatch'
+    timeout-minutes: 30
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v7
+      - uses: actions/setup-python@master
+        with:
+          python-version: '3.12'
+          architecture: x64
+      - name: Install starsim_data
+        run: pip install -e .[dev,spatial]
+      - name: Rebuild the node table and validate via the loader
+        run: python scripts/build_nodes.py --check
+      - name: Tests still pass against the rebuilt node table
+        run: pytest tests -q -m "not network"

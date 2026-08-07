@@ -9,7 +9,7 @@ discovered once by reading the HDF5 stores in `data/`; anything else can be adde
 `register_dataset()`.
 
 `LAYOUTS` maps a layout name to the function that turns a stored array into a dataframe
-(`matrix`, `crude`, `mortality`, `population`). This replaces dispatching on
+(`matrix`, `crude`, `mortality`, `population`, `nodes`). This replaces dispatching on
 `spec['layout']` through an if-chain, and means a new data family is a new shaper plus a
 registry entry rather than another branch inside `load()`.
 
@@ -46,6 +46,7 @@ DESCRIPTIONS = {
     "deaths": "Age/sex mortality rate m(x), 5-year abridged, UN WPP",
     "migration": "Crude net-migration rate (per 1,000), UN WPP",
     "population": "Population by 5-year age group and sex (persons), UN WPP",
+    "nodes": "Administrative units: centroids, areas, p-codes and hierarchy",
 }
 MATRIX_DESCRIPTION = "Age-structured contact matrix by setting"
 
@@ -66,7 +67,7 @@ class Dataset:
         name (str): the dataset name, as passed to `load(which=...)`.
         layout (str): how the values are stored; see `LAYOUTS`.
         tier (int): 0 bundled in the wheel, 1 downloaded release asset, 2 fetched upstream.
-        level (int): administrative level (0 = country).
+        levels (tuple): the administrative levels covered; `(0,)` for national data.
         sources (tuple): `Source` records, oldest revision first.
         license (str): the upstream data license, e.g. `'CC BY 3.0 IGO'`.
         n_locations (int): how many locations the dataset covers.
@@ -77,12 +78,17 @@ class Dataset:
     name: str
     layout: str
     tier: int = 0
-    level: int = 0
+    levels: Tuple[int, ...] = (0,)
     sources: Tuple[Source, ...] = ()
     license: str = ""
     n_locations: int = 0
     description: str = ""
     loader: Optional[Callable] = field(default=None, repr=False)
+
+    @property
+    def level(self):
+        """The finest administrative level available."""
+        return max(self.levels)
 
     @property
     def revisions(self):
@@ -119,8 +125,9 @@ def register_layout(name, shaper, overwrite=False):
 
     Args:
         name (str): the layout name, matching `spec['layout']` in the store.
-        shaper (callable): called as `shaper(group, key, spec, kind)` and returning a
-            `sciris.dataframe`.
+        shaper (callable): called as `shaper(group, key, spec, opts)` and returning a
+            `sciris.dataframe`. `opts` carries the per-call arguments that apply to some
+            layouts but not others -- `kind` for contact matrices, `level` for nodes.
         overwrite (bool): whether to replace an existing layout of the same name.
     """
     if name in LAYOUTS and not overwrite:
@@ -196,7 +203,7 @@ def _discover():
                 found[name] = Dataset(name=name,
                                       layout=spec["layout"],
                                       tier=0,
-                                      level=spec.get("level", 0),
+                                      levels=tuple(spec.get("levels", [spec.get("level", 0)])),
                                       sources=(source,),
                                       license=license_,
                                       n_locations=len(node),

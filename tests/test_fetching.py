@@ -177,5 +177,7 @@ def test_fetch_life_table_has_the_full_glossary():
 def test_fetch_caches_and_records_the_download():
     ssd.fetch("kenya", which="births", years=2020, verbose=False)
     info = ssd.cache_info()
-    assert any("Demographic_Indicators" in name for name in info.file)
-    assert all(info.url.str.startswith("https://population.un.org"))
+    # Scope to the WPP subdirectory: the cache is shared with the boundary sources.
+    wpp = info[info.file.str.startswith("wpp/")]
+    assert any("Demographic_Indicators" in name for name in wpp.file)
+    assert all(wpp.url.str.startswith("https://population.un.org"))

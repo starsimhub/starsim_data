@@ -28,7 +28,7 @@ caches; see `cache_info()` and `options`. `plot()` draws the data for a quick ch
 before it goes into a model.
 """
 
-__version__ = "0.3.0"
+__version__ = "0.4.0"
 
 # This is the one module that uses `from` imports, to assemble the public namespace.
 # Everywhere else in the package, follow Starsim's convention: `import starsim_data as
@@ -42,9 +42,15 @@ from .locations import resolve, location_info, list_all_locations, parse_level
 from .loaders import load, list_datasets, list_locations, list_revisions, provenance
 from .cache import cache_dir, cache_info, cache_provenance, cached_download, clear_cache
 from .fetching import fetch, list_fetchable
-from .plotting import plot
+from .plotting import plot, choropleth
+from .nodes import load_nodes, distances, node_name
+from .shapes import fetch_shapes, list_shape_sources
+from .rasters import fetch_nodes, fetch_raster, aggregate_raster, rescale_to_national
 
-__all__ = ["load", "fetch", "plot", "provenance", "options", "registry",
+__all__ = ["load", "fetch", "plot", "choropleth", "provenance", "options", "registry",
+           "load_nodes", "distances", "node_name",
+           "fetch_shapes", "list_shape_sources",
+           "fetch_nodes", "fetch_raster", "aggregate_raster", "rescale_to_national",
            "list_datasets", "list_locations", "list_revisions", "list_fetchable",
            "resolve", "location_info", "list_all_locations", "parse_level",
            "register_dataset", "register_layout",

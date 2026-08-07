@@ -14,6 +14,10 @@ Each store carries a root `spec` attribute recording its `layout`, so `load()` r
 - `/deaths` (`layout='mortality'`) — age/sex mortality rate `mx`, a `(year, sex, age)` array per location.
 - `/population` (`layout='population'`) — population by 5-year age groups and sex (absolute persons), `(year, sex, age)` per location.
 
+**Node table** (`layout='nodes'`), built from UNOCHA COD-AB and geoBoundaries by [`scripts/build_nodes.py`](../../scripts/build_nodes.py):
+
+- `nodes.h5` — one compound dataset per location, holding every administrative unit at levels 0 and 1: `nodeid`, `location`, `iso3`, `level`, `name`, `pcode`, `dot_name`, `parent`, `lat`, `lon`, `area_km2`, `population`, `source`. Read with `starsim_data.load_nodes()`.
+
 Plus `locations.csv` — the canonical country metadata file, read by all the build scripts and by the runtime location resolver. It is **part source, part generated**: `location`, `level`, `iso_code`, `primary_contact_source`, `contact_sources` and `population_source` are hand-maintained, while `iso3`, `official_name` and `aliases` are filled by [`scripts/build_locations.py`](../../scripts/build_locations.py) from `pycountry`. Edit the former by hand; regenerate the latter.
 
 Note that this file must be read with `keep_default_na=False` (or with the `csv` module, as the resolver does): Namibia's ISO-2 code is the string `NA`, which pandas' defaults turn into NaN.
@@ -24,7 +28,10 @@ To regenerate:
 python scripts/build_locations.py --check      # locations.csv derived columns
 python scripts/build_hdf5.py --check           # contact matrices, from raw_data/contact_matrices/
 python scripts/build_demographics.py --check   # demographics, from raw_data/demographics/
+python scripts/build_nodes.py --check          # node table, from the boundary sources
 ```
+
+`build_nodes.py` is the odd one out: its inputs are too big for `raw_data/` and are downloaded into the package cache instead, so a cold rebuild pulls ~420 MB. That is why it is not part of the automatic reproducibility check in CI.
 
 Each `.h5` also carries a root `provenance` attribute recording its source, license, citation and build details; see `starsim_data.provenance()`.
 

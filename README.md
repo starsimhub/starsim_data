@@ -126,9 +126,47 @@ Settings are read from the environment but acted on lazily, so importing the pac
 
 ## Geographies
 
-All data is level 0 (country). 187 countries are covered: every one has all four demographic series, while contact-matrix coverage varies by source (36–177). Canonical keys use `_` for spaces (e.g. `United_States`, `Sierra_Leone`), but you can pass any recognized name, code or alias — see the resolution rules above. The bundled `locations.csv` lists each country's ISO 3166-1 alpha-2 and alpha-3 codes, official name, aliases and available contact sources; `ssd.location_info(location)` returns a row of it.
+Demographics and contact matrices are national (level 0): 187 countries, every one with all four demographic series, and contact-matrix coverage varying by source (36–177). Canonical keys use `_` for spaces (e.g. `United_States`, `Sierra_Leone`), but you can pass any recognized name, code or alias — see the resolution rules above. The bundled `locations.csv` lists each country's ISO 3166-1 alpha-2 and alpha-3 codes, official name, aliases and available contact sources; `ssd.location_info(location)` returns a row of it.
 
-`ssd.parse_level()` accepts `'admin1'`, `'ADM2'`, `'3'` or a bare integer. Nothing above level 0 has data yet; it exists so the vocabulary is settled before subnational data arrives.
+### The node table
+
+Subnational geography is bundled too, as a **node table**: for each administrative unit, where it is, how big it is and how it fits in the hierarchy. That is most of what a metapopulation model needs, it is a couple of MB for the whole world, and it reads with no geospatial dependencies:
+
+```python
+ssd.load_nodes('kenya')                # 1 row: the country, with its UN WPP population
+ssd.load_nodes('kenya', level=1)       # 47 counties: centroids, areas, p-codes
+ssd.distances('kenya', level=1)        # the 47x47 great-circle distance matrix, in km
+ssd.plot('kenya', which='nodes', level=1)
+```
+
+Columns are `nodeid`, `location`, `iso3`, `level`, `name`, `pcode`, `dot_name`, `parent`, `lat`, `lon`, `area_km2`, `population` and `source`. Two are worth knowing about: **`pcode`** is the join key — for most countries it is the humanitarian p-code that subnational health data is keyed on — and **`dot_name`** is the readable hierarchical path (`Kenya:Baringo`), whose first component is always a location `load()` accepts.
+
+Levels 0 and 1 are covered for 184 countries, built from UNOCHA COD-AB where it exists (~110 countries, and the source of the p-codes) and geoBoundaries CGAZ v6.0.0 elsewhere. The two disagree in places about how a country subdivides, so every row records which source it came from. Hong Kong, Macao and Puerto Rico have no boundaries in either source and are absent. `population` is filled at level 0 only — subnational population is a download, not a lookup, and lives in the spatial extra below.
+
+`ssd.parse_level()` accepts `'admin1'`, `'ADM2'`, `'3'` or a bare integer, up to 5.
+
+### Boundaries, rasters and maps: the `[spatial]` extra
+
+Actual polygons are far too big for a wheel, so they are fetched and cached, and they need the optional geospatial stack:
+
+```bash
+pip install starsim_data[spatial]
+```
+
+```python
+ssd.list_shape_sources()                       # UNOCHA / geoBoundaries / GADM, and their terms
+gdf = ssd.fetch_shapes('kenya', level=2)       # 290 sub-counties, with geometry
+nodes = ssd.fetch_nodes('kenya', level=1)      # the node table, population filled from WorldPop
+ssd.choropleth('kenya', level=1)               # a filled map
+```
+
+`fetch_shapes()` tries UNOCHA then geoBoundaries. **GADM is never tried automatically**: it is licensed for non-commercial use only, so it has to be asked for by name (`source='gadm'`), and nothing derived from it is ever bundled or redistributed. Shapes join to the node table on `pcode` and `dot_name`.
+
+`fetch_nodes()` sums a WorldPop 1 km raster inside each unit. WorldPop's constrained estimates are modelled rather than counted and will not equal the UN WPP national total — about 1.2% low for Kenya in 2020 — so if your model needs them to agree, `ssd.rescale_to_national(nodes)` makes that choice explicit.
+
+Together, `load_nodes()` and `distances()` are the inputs a gravity model needs (`P_i`, `P_j`, `D_ij`); the gravity formulation itself belongs in the model, not in a data package.
+
+[`docs/datasources.qmd`](docs/datasources.qmd) compares every source in detail — coverage, admin depth, update cadence, licensing and what each is actually good for.
 
 ## Citing
 

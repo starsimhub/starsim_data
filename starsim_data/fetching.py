@@ -352,7 +352,6 @@ for _name in ("life_table", "indicators"):
         name=_name,
         layout="long" if _s.shape == "long" else _s.shape,
         tier=2,
-        level=0,
         license=WPP_LICENSE,
         description=_s.description,
     ))
