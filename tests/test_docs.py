@@ -17,7 +17,7 @@ REPO = Path(__file__).resolve().parent.parent
 DOCS = REPO / "docs"
 SECTIONS = ("start", "data", "internals")
 
-sys.path.insert(0, str(REPO / "scripts"))
+sys.path.insert(0, str(REPO / "docs" / "assets"))
 import build_docs_theme as theme  # noqa: E402
 
 
@@ -30,9 +30,9 @@ def test_every_section_has_pages():
         assert list((DOCS / section).glob("*.qmd")), f"docs/{section} is empty"
 
 
-def test_generated_theme_is_up_to_date():
-    """`assets/starsim-theme.html` carries the sidebar navigation, so it has to match."""
-    result = subprocess.run([sys.executable, str(REPO / "scripts" / "build_docs_theme.py"),
+def test_generated_config_is_up_to_date():
+    """The sidebar navigation and the API reference are generated, so they must match."""
+    result = subprocess.run([sys.executable, str(REPO / "docs" / "assets" / "build_docs_theme.py"),
                              "--check"], capture_output=True, text=True, check=False)
     assert result.returncode == 0, result.stdout + result.stderr
 
@@ -41,6 +41,36 @@ def test_navigation_covers_every_page():
     listed = {page["href"] for section in theme.navigation() for page in section["pages"]}
     expected = {f"docs/{p.parent.name}/{re.sub(r'^[0-9]+-', '', p.stem)}.html" for p in pages()}
     assert listed == expected
+
+
+def test_reference_covers_every_public_symbol():
+    """Every name a module exports must appear exactly once in the API reference.
+
+    This is the property that makes the generated reference maintainable: adding a
+    function to a module's `__all__` puts it in the documentation, and nothing has to
+    list symbols by hand.
+    """
+    import starsim_data as ssd
+
+    listed = [name for _, _, names in theme.reference() for name in names]
+    assert len(listed) == len(set(listed)), "a symbol appears in two reference groups"
+
+    expected = set()
+    for module_name, _, _ in theme.GROUPS:
+        module = getattr(ssd, module_name)
+        for name in module.__all__:
+            expected.add(name if name in set(ssd.__all__) else f"{module_name}.{name}")
+    assert set(listed) == expected
+
+
+def test_every_public_export_is_documented():
+    """Nothing in the package's own `__all__` may be missing from the reference."""
+    import starsim_data as ssd
+
+    listed = {name.split(".")[-1] for _, _, names in theme.reference() for name in names}
+    # `registry` is a module rather than a documentable symbol.
+    missing = set(ssd.__all__) - listed - {"registry"}
+    assert not missing, f"public exports missing from the API reference: {sorted(missing)}"
 
 
 def test_sections_match_the_great_docs_config():

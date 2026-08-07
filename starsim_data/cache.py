@@ -30,7 +30,8 @@ from pathlib import Path
 import sciris as sc
 import starsim_data as ssd
 
-__all__ = ["cache_dir", "cache_info", "clear_cache"]
+__all__ = ["cache_dir", "cache_info", "cache_provenance", "cached_download",
+           "clear_cache"]
 
 SIDECAR_SUFFIX = ".provenance.json"
 

@@ -60,19 +60,6 @@ National population is read from this package's own bundled WPP data. Subnationa
 
 Needs the `[spatial]` extra as well as `[dev]`: `pip install -e ".[dev,spatial]"`.
 
-## build_docs_theme.py
-
-Generates [`assets/starsim-theme.html`](../assets/starsim-theme.html), the head snippet that makes the documentation site match the rest of the Starsim docs: the full page list in the left sidebar, a Starsim-style footer, and a fix so figures scale to the content column.
-
-```bash
-python scripts/build_docs_theme.py            # -> assets/starsim-theme.html
-python scripts/build_docs_theme.py --check    # verify it is up to date; write nothing
-```
-
-The sidebar navigation is generated from the section directories under `docs/` rather than written by hand, and `tests/test_docs.py` runs `--check`, so a page added or renamed without regenerating fails the test suite rather than quietly disappearing from the navigation.
-
-Unlike the other scripts here, this one produces a documentation asset rather than package data, and needs neither the data nor the network.
-
 ## Dependencies
 
 These scripts require `h5py`, `numpy`, `pandas`, plus `pycountry` for `build_locations.py` and `geopandas`/`pyogrio` for `build_nodes.py` — `pip install -e ".[dev,spatial]"` covers all of them. `provenance.py` is a shared helper, not a script: it stamps each store with its source, license, citation and build details, which `starsim_data.provenance()` then reads back.
