@@ -1,0 +1,105 @@
+---
+title: "Data tiers"
+guide-section: "Getting started"
+tags: [Architecture, Concepts]
+---
+
+Some of the data this package provides is included in the wheel and some is downloaded when it is first needed. Which of the two applies is always determined by the function being called, and the tier model is the vocabulary used throughout the documentation to describe that division.
+
+## The three tiers
+
+| Tier | Location | Accessed through | Network access |
+|---|---|---|---|
+| 0 | Inside the wheel | `load()`, `load_nodes()`, `distances()` | Never |
+| 1 | Release assets, downloaded once | *(currently unused)* | On first use |
+| 2 | Fetched from upstream, cached | `fetch()`, `fetch_shapes()`, `fetch_nodes()`, `fetch_raster()` | On a cache miss |
+
+```{python}
+import starsim_data as ssd
+
+ssd.list_datasets(detailed=True)[['dataset', 'tier', 'levels', 'locations']]
+```
+
+## Tier 0: bundled data
+
+The demographic series, the contact matrices, `locations.csv` and the node table are included in the wheel, amounting to roughly 14 MB.
+
+The consequence is that installing a given version of the package supplies every user with byte-identical data, and requires no network access. Three properties follow from this, and together they are the reason the arrangement is worth the size of the wheel.
+
+The first is that the package can be used offline. Models are run on air-gapped machines, on aircraft, and in settings where connectivity cannot be assumed, and a data package that requires a server is unavailable in all of those cases.
+
+The second is that tests are deterministic. A test suite that downloads its inputs will fail when an upstream server is unavailable, for reasons unrelated to the code under test. Every core test in this package reads only bundled data.
+
+The third is that analyses are straightforwardly citable. Stating the package version fully specifies the data that was used. Stating that the data was downloaded from the UN on a particular date specifies rather less, since revisions replace earlier estimates.
+
+::: {.callout-important}
+## `load()` does not access the network
+This is enforced rather than merely intended. Requesting a dataset above tier 0 from `load()` produces an error instead of an implicit download:
+
+```{python}
+#| error: true
+ssd.load('kenya', which='life_table')
+```
+:::
+
+## Tier 1: release assets
+
+This tier was intended for data too large for the wheel but small enough to download quickly and to version alongside a release.
+
+It is currently unoccupied. The node table is the obvious candidate, but it is small enough not to need it: levels 0 and 1 for 184 countries amount to 3,254 rows and 1.4 MB, which is a modest addition to a wheel of this size, so it is bundled instead. The tier remains part of the model because subnational demographic series — birth and death rates by province, for instance — would be substantially larger and would require somewhere to live if they were added.
+
+## Tier 2: data fetched from upstream
+
+This tier holds data that cannot reasonably be bundled at any size:
+
+- Annual WPP series, complete life tables, and non-Medium projection variants. The bundled demographics are decadal snapshots of the Medium variant, which is sufficient for most models; the corresponding bulk files range from 17 MB to 290 MB.
+- Administrative boundaries with geometry. A single country at admin level 2 is tens of megabytes, and all countries at that level would be several hundred.
+- Gridded population rasters, at 1–40 MB per country-year.
+
+These are reached through a different verb, `fetch` rather than `load`, and are cached locally.
+
+```{python}
+ssd.cache_dir()
+```
+
+```python
+ssd.cache_info()      # what is cached, its source, and when it was retrieved
+ssd.clear_cache()     # or clear_cache('wpp/*')
+```
+
+The cache location follows `ssd.options.cache_dir`, or the `STARSIM_DATA_CACHE_DIR` environment variable, and otherwise defaults to a platform-appropriate directory. No directory is created until something is actually cached, so importing the package does not modify any filesystem state.
+
+## Why the boundary is drawn by size
+
+The tier boundary is determined by size rather than by subject matter. The clearest illustration is that the same UN WPP 2024 release appears in both tier 0 and tier 2: decadal snapshots of four indicators occupy 3 MB and are bundled, whereas the complete annual life tables occupy 290 MB and are not.
+
+The alternative division — bundling demographic data and fetching spatial data — would be simpler to state but inaccurate in both directions. It would exclude the node table, which fits comfortably in the wheel, and it would imply that annual life tables could be bundled, which they cannot.
+
+## Why the verbs differ
+
+`load()` and `fetch()` could have been a single function with a `download` argument. They were kept separate for two reasons.
+
+A call that takes a few hundred milliseconds and a call that may take several minutes and several hundred megabytes should not be written identically. When reading an unfamiliar analysis script, `fetch` identifies the network dependency without the reader needing to know what `which='life_table'` implies about file sizes. Separating the verbs also expresses the tier-0 guarantee in the API itself rather than only in documentation.
+
+The same reasoning produced `fetch_shapes()` rather than `load_shapes()`, and `fetch_nodes()` alongside `load_nodes()`: the latter pair return the same table, but one is a lookup and the other requires a download.
+
+## Summary
+
+```{python}
+#| echo: false
+import pandas as pd
+pd.DataFrame([
+    dict(requirement="Age structure, mortality, births, contact matrices",
+         call="load()", tier=0, cost="instant"),
+    dict(requirement="Positions, areas and separations of administrative units",
+         call="load_nodes(), distances()", tier=0, cost="instant"),
+    dict(requirement="Annual rates, life tables, other variants",
+         call="fetch()", tier=2, cost="17-290 MB, once"),
+    dict(requirement="Polygon geometry, for mapping or spatial joins",
+         call="fetch_shapes()", tier=2, cost="1-50 MB per country"),
+    dict(requirement="Subnational population estimates",
+         call="fetch_nodes()", tier=2, cost="1-40 MB per country"),
+])
+```
+
+An analysis confined to the first two rows requires no network access at all, and the data it uses is fully specified by a version number.

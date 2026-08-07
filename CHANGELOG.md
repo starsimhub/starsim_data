@@ -14,7 +14,7 @@ The spatial tier ([laser-init merge plan](plans/laser-init-merge.md) P2). Base i
 - **`ssd.fetch_raster()`, `ssd.aggregate_raster()`, `ssd.fetch_nodes()`** — WorldPop 1 km gridded population, and summing it inside each administrative unit. This is the step that turns a boundary file into a metapopulation. `ssd.rescale_to_national()` reconciles WorldPop's modelled totals with UN WPP's (they differ by about 1.2% for Kenya 2020).
 - **`ssd.choropleth()`**, and a `nodes` panel for `plot()` that draws centroids without needing any geospatial dependency.
 - **`[spatial]` extra** (`geopandas`, `pyogrio`, `rastertoolkit`), imported lazily: `import starsim_data` works without them, and only the spatial functions raise if they are missing.
-- **`docs/datasources.qmd`** — the source comparison (coverage, admin depth, update cadence, licensing, what each is good for), adapted from `laser-init`'s `docs/datasources.md` and extended to this package's sources. Quarto, matching Starsim's docs. NOTICE.md gains entries for UNOCHA, geoBoundaries, WorldPop and GADM.
+- **A documentation site**, built with [great-docs](https://posit-dev.github.io/great-docs/): nine narrative pages in `docs/` covering the tier model, the schema of every dataset, location resolution, the spatial tier, the source comparison, the internal architecture, provenance, and how the bundled files are generated — plus an API reference generated from the docstrings. Code examples are executed at build time, so the frames and figures shown are the package's actual output. Configuration is `great-docs.yml`; `.github/workflows/docs.yml` builds and deploys it. NOTICE.md gains entries for UNOCHA, geoBoundaries, WorldPop and GADM.
 
 ### Changed
 

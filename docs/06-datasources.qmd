@@ -1,0 +1,181 @@
+---
+title: "Data sources"
+guide-section: "The data"
+tags: [Reference, Data]
+---
+
+The sources drawn on by this package disagree with one another in places, cover different sets of countries, are revised on different schedules, and are distributed under different terms. This page compares them: what each is suited to, where its limitations lie, and how to choose between them.
+
+Much of the material on boundaries and rasters is adapted from the corresponding page in [`laser-init`](https://github.com/laser-base/laser-init).
+
+The operative attribution and licence text is in [NOTICE.md](https://github.com/starsimhub/starsim_data/blob/main/NOTICE.md). Each dataset also carries its attribution as data, retrievable with `ssd.provenance(which)` or from `df.attrs['provenance']` on any frame returned by `load()` or `fetch()`.
+
+## What comes from where
+
+| Data | Source | Tier | How you get it |
+|---|---|---|---|
+| Births, deaths, migration, population | UN WPP 2024 | 0 — bundled | `load()` |
+| Contact matrices | Prem 2017 / Prem 2021 / Mistry 2021 | 0 — bundled | `load()` |
+| Node table: centroids, areas, p-codes | UNOCHA COD-AB, geoBoundaries | 0 — bundled | `load_nodes()` |
+| Annual series, life tables, other variants | UN WPP 2024 bulk files | 2 — fetched | `fetch()` |
+| Administrative boundaries with geometry | UNOCHA, geoBoundaries, GADM | 2 — fetched | `fetch_shapes()` |
+| Gridded population | WorldPop | 2 — fetched | `fetch_raster()`, `fetch_nodes()` |
+
+Tier 0 is contained in the wheel, requires no network access, and is byte-identical for everyone using the same version. Tier 2 is downloaded on demand and cached, being too large to bundle. The boundary between them is determined by size rather than by subject matter, which is why the same UN WPP release appears in both rows.
+
+---
+
+## Demographics
+
+### UN World Population Prospects
+
+**Provider:** UN Department of Economic and Social Affairs, Population Division · [population.un.org/wpp](https://population.un.org/wpp/) · CC BY 3.0 IGO
+
+The standard national demographic series, covering all countries from 1950 to 2100 and revised every two years.
+
+| | |
+|---|---|
+| **Coverage** | 187 countries (plus aggregates this package drops) |
+| **Levels** | National only — WPP has no subnational dimension at all |
+| **Variants** | Medium (bundled), plus High, Low, Constant fertility and others via `fetch()` |
+| **Update** | Biennial: 2022, 2024, … |
+
+**Strengths.** The estimates are standardised across every country, which makes cross-country comparison meaningful, and the time series is long and methodologically consistent. The methodology is well documented, and revisions are frequent enough that the data remains current.
+
+**Limitations.** The data is national only; province-level rates cannot be derived from it. Projections are scenarios rather than predictions. Estimates change between revisions, sometimes substantially, since a new census can revise a country's recorded history — which is why this package versions the data by revision (`load(..., revision=2024)`) rather than replacing it in place.
+
+**Two access routes.** The bundled store is built at release time from the WPP Data Portal API, filtered to decadal years and to this package's countries, and then frozen; this is what `load()` reads, at roughly 3 MB and without network access. `fetch()` instead reads the UN's public bulk CSVs, which provide annual resolution, complete life tables and other variants at the cost of a 17–290 MB download. The Data Portal API requires a free Bearer token whereas the bulk files do not, which is why `fetch()` uses the latter and only the build scripts use the former.
+
+**A hazard worth knowing about.** Namibia's ISO-2 code is the string `NA`, which pandas interprets as a missing value unless `keep_default_na=False` is passed. Every reader in this package disables that coercion, and there is a regression test for it; anyone processing WPP CSVs independently should be aware of the same problem.
+
+---
+
+## Contact matrices
+
+Three sources are included. None supersedes the others: they differ in age resolution and country coverage, and to a lesser extent in method.
+
+| Source | Matrix | Age bins | Countries | License |
+|---|---|---|---|---|
+| `prem2017` | 16×16 | 5-year, 0–75+ | 152 | GPL-3.0 |
+| `prem2021` | 16×16 | 5-year, 0–75+ | 177 | GPL-3.0 |
+| `mistry2021` | 85×85 | single-year, 0–84+ | 36 | Apache-2.0 |
+
+**Prem et al. 2017 and 2021** project contact patterns onto countries lacking their own survey, using household composition and demographic structure. The 2021 paper is an update covering more countries, with a revised method and a comparison against empirical data, and is generally preferable except when reproducing earlier work. Both provide the same five settings: `all`, `home`, `work`, `school` and `community`.
+
+**Mistry et al. 2021** offers a different trade-off: considerably finer age resolution (single years to 84) for considerably fewer countries (36). It is appropriate where the age structure of transmission matters at a finer grain than five-year bins, such as school-entry effects or single-year cohorts, and where the restricted coverage is acceptable.
+
+Not every country appears in every source, so `list_locations('prem2021')` is worth consulting first. The matrices were adapted from [epydemix-data](https://github.com/epistorm/epydemix-data) and trimmed to national level; epydemix additionally provides subnational matrices, which are not included here.
+
+---
+
+## Administrative boundaries
+
+The three boundary sources are complementary rather than interchangeable, which is why all three are available and why `fetch_shapes()` uses a fallback chain rather than a single default.
+
+### UNOCHA COD-AB
+
+**Provider:** UN Office for the Coordination of Humanitarian Affairs · via the [laser-base mirror](https://github.com/laser-base/unocha) · CC BY 3.0 IGO
+
+| | |
+|---|---|
+| **Coverage** | ~110 countries, weighted towards humanitarian operations |
+| **Levels** | 0–4, varying by country |
+| **Format** | Per-country zstd-compressed GeoPackage, 0.2–5 MB |
+| **Key** | **P-code** |
+
+**Strengths.** The p-codes are the reason this source is tried first. A p-code is the identifier on which most subnational humanitarian and health data is keyed, including surveillance line lists, campaign coverage and datasets published on HDX, so boundaries carrying p-codes can be joined to such data directly whereas boundaries carrying a source-specific identifier cannot. The boundaries themselves are usually the official government ones, vetted through UN operations, and are updated promptly during a response.
+
+**Limitations.** Coverage extends to approximately 110 countries and is weighted towards those with humanitarian operations; stable middle- and high-income countries are frequently absent.
+
+**On the global fallback.** UNOCHA also publishes a single global geodatabase on HDX, of 1–2 GB, which some tools fall back to when a country is missing. This package does not, on the grounds that a download of that size triggered implicitly by a library call would be unreasonable, and that geoBoundaries covers the same gap in a few megabytes. The geodatabase can of course be downloaded separately and read with geopandas.
+
+### geoBoundaries
+
+**Provider:** William & Mary geoLab · [geoboundaries.org](https://www.geoboundaries.org) · CC BY 4.0
+
+| | |
+|---|---|
+| **Coverage** | Near-universal (~200 countries) |
+| **Levels** | 0–5, varying by country |
+| **Format** | Per-country zip, 1–50 MB; plus global CGAZ GeoPackages |
+| **Key** | `shapeID` (not a p-code) |
+
+**Strengths.** This is the source that fills the coverage gap, and also the more reproducible of the two open options: releases are tagged, so pinning a version pins the boundaries. This package pins v6.0.0. The methodology is peer-reviewed and documented, and the global CGAZ composites reduce a worldwide build to one download rather than two hundred.
+
+**Limitations.** Quality varies by country and level rather more than GADM's does. Identifiers are geoBoundaries `shapeID`s, so subnational data keyed on p-codes will not join without a crosswalk. Annual releases lag behind recent boundary changes.
+
+### GADM
+
+**Provider:** Global Administrative Areas · [gadm.org](https://gadm.org) · **non-commercial use only**
+
+| | |
+|---|---|
+| **Coverage** | Universal |
+| **Levels** | 0–5, the deepest hierarchies of the three |
+| **Format** | Per-country GeoPackage with every level in one file, 1–100 MB |
+| **Key** | `GID_n` |
+
+**Strengths.** The most complete and most detailed of the three, with names in several languages and frequent updates.
+
+**The licence is the constraint.** GADM is free for non-commercial use only, which makes it unusable in much applied public-health work, and which means this package may fetch it on request but may never redistribute anything derived from it. Two consequences follow:
+
+- GADM is not part of the automatic fallback chain. `fetch_shapes(..., source='gadm')` must be requested by name, and prints a reminder of the terms.
+- The bundled node table is not built from GADM, and the build script will refuse to build it from any source whose descriptor sets `redistributable=False`. The constraint is recorded as data on the source descriptor rather than as a comment.
+
+### Choosing between them
+
+With no `source` argument, `fetch_shapes()` tries UNOCHA and then geoBoundaries. This is a reasonable default for most disease modelling, giving p-codes where they exist and coverage elsewhere. It is worth overriding when:
+
+- **you need level 4–5** — geoBoundaries or GADM;
+- **you are reproducing a published analysis** — whichever it used, pinned;
+- **you need a specific country's official boundaries** — check all three against the national statistical office, they do disagree;
+- **you are joining to p-coded data** — UNOCHA, and if UNOCHA lacks the country you need a crosswalk rather than a substitute.
+
+One caution: the three sources do not always agree on how many units a country contains, or where the boundaries fall. Mixing sources across countries within one analysis is usually acceptable; mixing them across years for the same country usually is not. The node table records `source` per row for this reason.
+
+---
+
+## Gridded population
+
+### WorldPop
+
+**Provider:** WorldPop, University of Southampton · [worldpop.org](https://www.worldpop.org) · CC BY 4.0
+
+| | |
+|---|---|
+| **Coverage** | Global, with gaps for very small territories |
+| **Resolution** | 1 km (this package); 100 m available upstream |
+| **Years** | 2000–2030 across two product series |
+| **Format** | GeoTIFF, 1–40 MB per country-year |
+| **Method** | Random-forest disaggregation of census counts |
+
+Summing the grid within each polygon yields a population for each node, which is the step that turns a boundary file into a metapopulation. `fetch_nodes()` performs it.
+
+**Strengths.** Global, open, fine-grained, UN-adjusted and extensively validated. The time series allows a model's spatial population structure to change over time rather than being held fixed.
+
+**Limitations.** These are modelled estimates rather than enumerated counts. The constrained product used here does not reproduce the UN WPP national total for the same year; for Kenya in 2020 it is approximately 1.2% lower. Neither figure is incorrect, as they estimate slightly different quantities. Where a model requires the national total to match WPP, `rescale_to_national()` performs that adjustment explicitly rather than leaving two totals in circulation. Accuracy is also better in urban than in rural areas, and the standard products carry no uncertainty estimates.
+
+WorldPop's server is also slow, at roughly 0.3 MB/s, so the first request for a country takes some time and subsequent ones are served from the cache. Very small territories return an empty file rather than an HTTP error; this is detected and reported rather than passed on as a malformed raster.
+
+---
+
+## Reproducibility
+
+Upstream sources change over time. Four measures keep an analysis reproducible in spite of that:
+
+1. **Pin the package version.** Everything in tier 0 is byte-identical for a given `starsim_data` version, so pinning the version pins the demographics, the contact matrices and the node table together.
+2. **Pin the revision, not just the version.** `load(..., revision=2024)` fixes the WPP release explicitly, so a future rebuild that adds WPP 2026 does not change data already in use.
+3. **Keep the provenance.** Every frame carries `.attrs['provenance']` — source, URL, license, citation, build timestamp and git SHA. Cached downloads get a sidecar with the URL, timestamp, size and SHA-256. Record it alongside your results; `ssd.cache_info()` shows what a run actually used.
+4. **Record the boundary source.** It is available in `nodes.source` and in the provenance of any fetched geometry. Two analyses of the same country using different boundary sources are not directly comparable, and the discrepancy is difficult to detect after the fact.
+
+---
+
+## Not included
+
+The following are omitted deliberately, and are noted here so that their absence is not mistaken for an oversight:
+
+- **Subnational demographics.** WPP provides none. National statistical offices, DHS and IPUMS are the usual alternatives.
+- **Age-specific fertility and migration.** WPP publishes crude national rates only for these.
+- **Other population rasters** — LandScan, GHSL, GRID3, Meta HRSL. WorldPop was chosen for openness and global consistency; the others are better for particular questions.
+- **OpenStreetMap and Natural Earth boundaries.** OpenStreetMap is community-maintained and of excellent quality in some places and unreliable in others; Natural Earth is simplified for cartography rather than for analysis.
+- **Health-system, mobility and climate data.** Out of scope for this package.

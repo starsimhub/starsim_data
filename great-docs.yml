@@ -1,0 +1,136 @@
+# Great Docs configuration for starsim_data.
+# https://posit-dev.github.io/great-docs/user-guide/configuration.html
+#
+# Build with:   great-docs build       (output in great-docs/_site/, gitignored)
+# Preview with: great-docs preview
+#
+# Narrative pages live in docs/ and are ordered by their filename prefix; the homepage is
+# generated from README.md, so the README stays the single front door for GitHub, PyPI
+# and the docs site alike.
+
+parser: google
+
+# starsim_data's modules do `import starsim_data as ssd` (Starsim's convention), which
+# reads as a cyclic alias to the dynamic introspector. Static analysis handles it fine.
+dynamic: false
+
+user_guide: docs
+
+site_url: "https://starsimhub.github.io/starsim_data/"
+
+site:
+  toc: true
+  toc-depth: 3
+
+# Matplotlib figures are emitted at their native pixel size, which for a multi-panel
+# figure is wider than the content column. Scale them to fit instead of clipping.
+# !important because the theme stylesheet loads after this block and sets max-width: none.
+include_in_header:
+  - text: |
+      <style>
+        img.figure-img,
+        .cell-output-display img {
+          max-width: 100% !important;
+          height: auto !important;
+        }
+      </style>
+
+jupyter: python3
+
+authors:
+  - name: Starsim Development Team
+    role: Author
+    email: info@starsim.org
+    homepage: https://starsim.org
+  - name: Cliff Kerr
+    role: Author
+  - name: Romesh Abeysuriya
+    role: Author
+  - name: Robyn Stuart
+    role: Author
+
+funding:
+  name: "Gates Foundation"
+  roles:
+    - funder
+  homepage: https://www.gatesfoundation.org
+
+# Grouped by what you are trying to do, rather than by Python type: the split between a
+# function and a dataclass matters much less here than the split between "read bundled
+# data" and "download something".
+reference:
+  - title: Loading bundled data
+    desc: >
+      Tier 0: everything inside the wheel. These never touch the network.
+    contents:
+      - load
+      - list_datasets
+      - list_locations
+      - list_revisions
+      - provenance
+
+  - title: Locations
+    desc: >
+      Turning whatever a user typed into a canonical key, and the vocabulary for
+      administrative levels.
+    contents:
+      - resolve
+      - location_info
+      - list_all_locations
+      - parse_level
+      - node_name
+
+  - title: The node table
+    desc: >
+      Bundled subnational geography: where each administrative unit is, how big it is,
+      and how far apart they are. No geospatial dependencies needed.
+    contents:
+      - load_nodes
+      - distances
+
+  - title: Fetching
+    desc: >
+      Tier 2: data too big to bundle, downloaded on demand and cached. Anything here can
+      touch the network.
+    contents:
+      - fetch
+      - list_fetchable
+      - fetch_shapes
+      - list_shape_sources
+      - fetch_nodes
+      - fetch_raster
+      - aggregate_raster
+      - rescale_to_national
+
+  - title: Plotting
+    desc: >
+      Validation figures: the cheapest way to notice the wrong country or the wrong units.
+    contents:
+      - plot
+      - choropleth
+
+  - title: Cache and settings
+    desc: >
+      Where downloads go, what is in there, and how to change it.
+    contents:
+      - options
+      - cache_dir
+      - cache_info
+      - cache_provenance
+      - cached_download
+      - clear_cache
+
+  - title: The registry
+    desc: >
+      What datasets exist, how each one is shaped, and the hooks for adding your own.
+    contents:
+      - registry.Dataset
+      - registry.Source
+      - registry.datasets
+      - registry.dataset
+      - register_dataset
+      - registry.unregister_dataset
+      - register_layout
+      - registry.get_layout
+      - registry.refresh
+      - registry.data_dir

@@ -1,6 +1,6 @@
 # Starsim Data
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://github.com/starsimhub/starsim_data/blob/main/LICENSE)
 
 National-level **demographic data** and **contact matrices** for disease modeling with [Starsim](https://starsim.org), bundled as compact HDF5 and loaded with a single function. 
 
@@ -18,6 +18,8 @@ ssd.fetch('kenya', which='deaths', years=(2000, 2025))  # annual data, downloade
 ```
 
 Locations can be named however you like: `'Kenya'`, `'kenya'`, `'KE'`, `'KEN'` and `'Republic of Kenya'` are the same country, as are `'USA'`, `'US'`, `'united states'` and `'United States of America'`. ISO-2/ISO-3 codes, official names, common abbreviations (`UK`, `DRC`) and French/Spanish/Portuguese names all resolve; accents, case and punctuation are ignored, so `"Côte d'Ivoire"` and `'cote divoire'` both work. A name that doesn't match raises, with suggestions — it is never resolved to the nearest guess. Use `ssd.list_locations(which)` for the countries in a given dataset, `ssd.list_all_locations()` for every known location, and `ssd.resolve()`/`ssd.location_info()` to inspect the mapping.
+
+**Documentation:** <https://starsimhub.github.io/starsim_data>
 
 ## Installation
 
@@ -166,11 +168,11 @@ ssd.choropleth('kenya', level=1)               # a filled map
 
 Together, `load_nodes()` and `distances()` are the inputs a gravity model needs (`P_i`, `P_j`, `D_ij`); the gravity formulation itself belongs in the model, not in a data package.
 
-[`docs/datasources.qmd`](docs/datasources.qmd) compares every source in detail — coverage, admin depth, update cadence, licensing and what each is actually good for.
+[Data sources](https://starsimhub.github.io/starsim_data/user-guide/datasources.html) compares every source in detail — coverage, admin depth, update cadence, licensing and what each is suited to.
 
 ## Citing
 
-When you use these data, cite the underlying sources: the [UN World Population Prospects 2024](https://population.un.org/wpp/) for demographics, and the relevant contact-matrix study (Prem 2017, Prem 2021, and/or Mistry 2021) for each source you use. See [NOTICE.md](NOTICE.md) for full attributions.
+When you use these data, cite the underlying sources: the [UN World Population Prospects 2024](https://population.un.org/wpp/) for demographics, and the relevant contact-matrix study (Prem 2017, Prem 2021, and/or Mistry 2021) for each source you use. See [NOTICE.md](https://github.com/starsimhub/starsim_data/blob/main/NOTICE.md) for full attributions.
 
 Each dataset also carries its attribution as data. `ssd.provenance(which)` returns the source, URL, license, citation and build details for a dataset, and every frame from `load()` has the same in `df.attrs['provenance']` — so the citation travels with the data rather than needing to be looked up:
 
@@ -179,12 +181,22 @@ ssd.provenance('mistry2021').citation   # 'Mistry D, Litvinova M, ...'
 ssd.provenance('deaths').license        # 'CC BY 3.0 IGO'
 ```
 
+## Documentation
+
+The full documentation is at <https://starsimhub.github.io/starsim_data>. The narrative pages are `.qmd` sources in [`docs/`](docs/), and the API reference is generated from the docstrings. To build it locally you need [Quarto](https://quarto.org/docs/get-started/) plus:
+
+```bash
+pip install -e ".[dev,docs]"
+great-docs build      # -> great-docs/_site/
+great-docs preview    # live reload on http://localhost:3000
+```
+
 ## Building from source
 
 The bundled `.h5` files are generated from the human-readable sources in [`raw_data/`](raw_data/) by the scripts in [`scripts/`](scripts/). See those folders' READMEs to regenerate or update the data.
 
 ## License
 
-The repository's code, packaging, and curation are licensed under the [MIT License](LICENSE).
+The repository's code, packaging, and curation are licensed under the [MIT License](https://github.com/starsimhub/starsim_data/blob/main/LICENSE).
 
-The bundled data files are third-party datasets under their own upstream licenses — the UN WPP data under its [terms of use](https://population.un.org/wpp/), and the contact matrices under **Apache-2.0** (`mistry2021`) and **GPL-3.0** (`prem2017`/`prem2021`) — not under MIT. Full upstream license texts are in [`licenses/`](licenses/), and [NOTICE.md](NOTICE.md) has the per-source details and required attributions.
+The bundled data files are third-party datasets under their own upstream licenses — the UN WPP data under its [terms of use](https://population.un.org/wpp/), and the contact matrices under **Apache-2.0** (`mistry2021`) and **GPL-3.0** (`prem2017`/`prem2021`) — not under MIT. Full upstream license texts are in [`licenses/`](https://github.com/starsimhub/starsim_data/blob/main/licenses), and [NOTICE.md](https://github.com/starsimhub/starsim_data/blob/main/NOTICE.md) has the per-source details and required attributions.

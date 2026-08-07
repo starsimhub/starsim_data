@@ -49,6 +49,12 @@ dev = [
   "pycountry",
 ]
 
+# The documentation site. `great-docs build` also needs Quarto, which is not a Python
+# package: https://quarto.org/docs/get-started/
+docs = [
+  "great-docs",
+]
+
 # Full geometry and raster aggregation. Imported lazily, so `import starsim_data` works
 # without them and only the spatial functions raise if they are missing.
 spatial = [

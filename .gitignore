@@ -96,3 +96,10 @@ raw_data/demographics/*.xlsx
 raw_data/demographics/*.csv.gz
 raw_data/demographics/*.zip
 raw_data/demographics/*.log
+
+# great-docs build directory (ephemeral; great-docs.yml is the committed source)
+great-docs/
+
+# Quarto's execution cache. Deliberately not committed: letting CI execute the code cells
+# afresh means the docs build also checks that the documented examples still run.
+_freeze/

@@ -121,7 +121,7 @@ Worth noting from `laser-init`'s own `misc/integration-plan.md`: their registry 
 
 `laser-init` has `ci.yml` and `docs.yml`, a ruff config (line length 100, `E,W,F,I,B,C4,UP`), a pytest config with markers and a 90% coverage gate, a `CHANGELOG.md`, and a mkdocs/mkdocstrings site. `starsim_data` has none of these — no `.github/`, no changelog, no lint config.
 
-**Recommendation: port the scaffolding selectively; don't inherit `laser-init`'s toolchain along with it.** The pytest markers (`network`, `slow`, and `integration` become genuinely load-bearing once tier 2 exists), the coverage gate and the changelog are cheap and should just be adopted. Two things to leave behind. The docs site should **not** be mkdocs: Starsim's docs are Quarto (`starsim/docs/_quarto.yml`). And **no lint config at all** — not `laser-init`'s ruff, and not Starsim's `.flake8`/`pylint` either. A package this size does not have a style-drift problem worth a CI gate, and a satellite repo that imposes its own lint policy just creates friction at review time. **Decided on review: dropped.** Port the *content* patterns from `laser-init` instead — `docs/datasources.md` in particular (§5.6).
+**Recommendation: port the scaffolding selectively; don't inherit `laser-init`'s toolchain along with it.** The pytest markers (`network`, `slow`, and `integration` become genuinely load-bearing once tier 2 exists), the coverage gate and the changelog are cheap and should just be adopted. Two things to leave behind. The docs site should **not** be mkdocs. *Decided on review: the site is built with [great-docs](https://posit-dev.github.io/great-docs/), which renders Quarto and additionally generates the API reference from docstrings.* And **no lint config at all** — not `laser-init`'s ruff, and not Starsim's `.flake8`/`pylint` either. A package this size does not have a style-drift problem worth a CI gate, and a satellite repo that imposes its own lint policy just creates friction at review time. **Decided on review: dropped.** Port the *content* patterns from `laser-init` instead — `docs/datasources.md` in particular (§5.6).
 
 ### 3.8 Dependencies — most of `laser-init`'s stack is already in sciris
 
@@ -193,7 +193,7 @@ The parameterisation is standard and worth adopting for consistency across IDM t
 
 ### 5.6 The data-source comparison documentation
 
-`laser-init/docs/datasources.md` is ~480 lines comparing the sources on coverage, admin depth, update frequency, file size, license and regional strengths, with per-source citations and recommendations by use case and by region. This is accumulated judgement, not code, and it is the sort of thing nobody rewrites once lost. Port it more or less verbatim (converted to Quarto) when the spatial sources land, and fold this package's existing per-source notes in `NOTICE.md` into the same structure.
+`laser-init/docs/datasources.md` is ~480 lines comparing the sources on coverage, admin depth, update frequency, file size, license and regional strengths, with per-source citations and recommendations by use case and by region. This is accumulated judgement, not code, and it is the sort of thing nobody rewrites once lost. Port it more or less verbatim when the spatial sources land, and fold this package's existing per-source notes in `NOTICE.md` into the same structure. *Built as `docs/06-datasources.qmd`, one page of a full great-docs site (§9, decision 10).*
 
 ---
 
@@ -202,7 +202,7 @@ The parameterisation is standard and worth adopting for consistency across IDM t
 - **LLM-based country resolution.** `openai_query.py` (389 lines) and `anthropic_query.py` (19 lines, and it only wraps the *local* matcher). The README concedes the feature is "not currently implemented," yet `openai` and `anthropic` are unconditional runtime dependencies, and `coverage.run` omits both files from measurement. A non-deterministic country resolver is the wrong tool regardless: the deterministic alias table of §3.2 covers the real cases, and warning with candidates is a better failure mode than a confident guess.
 - **Model-script emission.** `loaders/abm.py`, `loaders/mpm.py`, `models/{si,sir,seir,plot}.py`. This makes `starsim_data` depend on Starsim, inverting the dependency a data package should have, and Starsim already has its own model-authoring story. **Decided: no `starsim-init` equivalent, here or elsewhere.** If templated scaffolding is ever wanted, `ss.Sim(location='kenya')` reading from `starsim_data` is the natural home for it, in Starsim.
 - **Import-time configuration and logging side effects.** See §3.4.
-- **Ruff — and any other lint config.** No linter is enforced in this repo; Starsim's docs are Quarto, so mkdocs is out too (§3.7).
+- **Ruff — and any other lint config.** No linter is enforced in this repo. mkdocs is out too; the docs are built with great-docs (§9, decision 10).
 - **`requests`, `rapidfuzz`, `pyyaml`, `click`, `pycountry` as runtime dependencies.** Every one has a sciris equivalent already installed (§3.8). Reimplement against sciris rather than translating the imports across.
 - **The `error()` helper** (`utils.py:355`), which prints, logs, and raises an exception class passed as an argument. It is typed `NoReturn` but call sites still write post-`error()` fallbacks (`extractors/worldpop.py:73`), so the control flow reads as though it can return. Raise directly.
 - **A 90%-coverage gate applied to a package that vendors 13 MB of data.** Adopt coverage reporting; set the threshold against what is actually meaningful to test here rather than inheriting the number.
@@ -246,7 +246,7 @@ The parameterisation is standard and worth adopting for consistency across IDM t
 | 16 | Full-geometry accessor alongside the node table (§5.3) | `transformers/*` | M | `[spatial]` | 2 |
 | 17 | P-code / `dot_name` hierarchical keys; multi-level `locations.csv` | `transformers/unocha.py` | M | — | all |
 | 18 | `distances()` helper for gravity-model input | §5.4 | S | — | 1 |
-| 19 | `datasources.md` comparison, converted to Quarto | `docs/datasources.md` | S | — | — |
+| 19 | `datasources.md` comparison, plus a full docs site | `docs/datasources.md`; great-docs | M | — | — |
 | 20 | Choropleth plotting | `cli.py:491` | S | `[spatial]` | 2 |
 
 ---
@@ -260,11 +260,13 @@ Resolved on review:
 3. **Do not wait on Starsim's spatial API.** Build the node table and `distances()` to the design in §5.3–5.4 now; adapt if the eventual spatial `Route` wants something different. The data shape is the more stable half of that interface.
 4. **No `starsim-init` equivalent** (§6).
 5. **Regenerate tier-0 demographics per WPP revision**, keeping old vintages loadable (invariant 2).
-6. **No lint config** — not ruff, and not Starsim's `.flake8`/`pylint` either; docs are Quarto, not mkdocs (§3.7).
+6. **No lint config** — not ruff, and not Starsim's `.flake8`/`pylint` either (§3.7).
 7. **The `ss.Births` `Time`/`Year` mismatch is fixed in Starsim, not here** (§3.1). `ss.Deaths` and `ss.Pregnancy` both already use `Time`, so `ss.Births` is the inconsistent one, and fixing it upstream means this package needs no per-module special-casing. Handed off to the Starsim repo as a separate prompt and **since fixed there**; no `Year`-emitting workaround was added on this side.
 8. **No CLI.** P1 item 12 is dropped. `laser-init` is a CLI with a library underneath; this is a library, and its users reach it from Python or from Starsim, not from a shell. Everything the CLI would have exposed is a library call instead — `list_datasets(detailed=True)`, `fetch()`, `plot()`, `cache_info()`, `clear_cache()`, `options` — which is also one fewer interface to document and keep in step. A CLI can be added later over that surface if a real use case turns up; the reverse is much harder.
 
 9. **The node table bundles; it does not need a tier-1 release asset.** This was the last open question, and building one answered it: levels 0 and 1 for 184 countries is **3,254 nodes in 1.4 MB**, against a package that was already ~13 MB. So the node table joins tier 0, `load_nodes()` is offline and instant like `load()`, and tier 1 currently has no occupants at all — the tier stays in the model for subnational *demographics*, which would be far larger, but nothing needs it yet.
+
+10. **The documentation site is built with [great-docs](https://posit-dev.github.io/great-docs/)**, not with Quarto directly and not with mkdocs. great-docs renders Quarto underneath, so the `.qmd` sources and the Starsim-adjacent toolchain are unchanged, but it additionally generates the API reference from the docstrings, which removes the need to maintain a reference section by hand. Narrative pages live in `docs/`, the configuration is `great-docs.yml`, and the build directory is gitignored. Item 19 grew accordingly, from one ported page to a nine-page site.
 
 Still open:
 

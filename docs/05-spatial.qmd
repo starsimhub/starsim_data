@@ -1,0 +1,195 @@
+---
+title: "Spatial data"
+guide-section: "The data"
+tags: [Reference, Spatial]
+---
+
+Spatial data is provided at two levels of detail. The node table reduces each administrative unit to a position, an extent and an identifier, which is sufficient for most metapopulation models and is small enough to bundle. Polygon geometry and gridded population are considerably larger and are fetched on demand, behind an optional dependency group.
+
+## The node table
+
+```{python}
+import starsim_data as ssd
+
+nodes = ssd.load_nodes('kenya', level=1)
+nodes.head()
+```
+
+Level 0 returns the country itself, and omitting `level` returns every level at once:
+
+```{python}
+ssd.load_nodes('kenya')[['name', 'pcode', 'population', 'area_km2']]
+```
+
+The table covers levels 0 and 1 for 184 countries:
+
+```{python}
+len(ssd.list_locations('nodes'))
+```
+
+Hong Kong, Macao and Puerto Rico are absent, since none of the boundary sources treats them as separate entities. Their demographic series and contact matrices are unaffected.
+
+### Identifiers
+
+Two columns identify a unit, and they serve different purposes.
+
+`pcode` is the join key. For units drawn from UNOCHA it is the humanitarian p-code, which is the identifier most subnational health and humanitarian datasets are keyed on, so a node can be joined directly to case counts, campaign coverage or survey data without matching on names. For units drawn from geoBoundaries it is a geoBoundaries `shapeID`, which serves the same structural purpose within this package but will not join to p-coded external data.
+
+`dot_name` is a readable hierarchical path in this package's canonical spelling. It is intended for display, for addressing units in configuration files, and for grouping; the component before the first colon is always a location that `load()` accepts.
+
+```{python}
+nodes[['name', 'pcode', 'dot_name', 'parent', 'source']].head(3)
+```
+
+### Geometry-derived columns
+
+`lat` and `lon` are the centroid of the unit, computed in an equal-area projection (Mollweide) and converted back to WGS84. Taking a centroid in raw degrees would displace it polewards, increasingly so at high latitudes.
+
+`area_km2` is the geodesic area on the WGS84 ellipsoid, computed with `pyproj.Geod`, rather than the area of a projected polygon. Summing the subdivisions of a country recovers its total to within a small fraction of a percent:
+
+```{python}
+country = ssd.load_nodes('Kenya').area_km2.iloc[0]
+counties = ssd.load_nodes('Kenya', level=1).area_km2.sum()
+round(country), round(counties), round(100 * abs(country - counties) / country, 3)
+```
+
+### Population
+
+`population` is filled at level 0 only, from this package's own bundled WPP data, for a single reference year:
+
+```{python}
+ssd.provenance('nodes').population_year
+```
+
+It is deliberately not filled at level 1. Subnational population requires aggregating a gridded raster within each polygon, which is a download rather than a lookup, and is described under [subnational population](#subnational-population) below.
+
+### Mixed sources
+
+Boundaries are taken from UNOCHA where the source covers the country, and from geoBoundaries otherwise. The two do not always agree on how a country is subdivided, so each row records which source it came from:
+
+```{python}
+set(ssd.load_nodes('Kenya', level=1).source), set(ssd.load_nodes('France', level=1).source)
+```
+
+Mixing sources across countries within one analysis is usually acceptable. Mixing them across time for the same country generally is not, since a change of source can change the number of units. Recording `source` per row is intended to make that visible rather than to make it safe.
+
+## Distances
+
+```{python}
+d = ssd.distances('kenya', level=1)
+d.iloc[:4, :4].round(1)
+```
+
+The matrix is square, symmetric, and zero on the diagonal, and is indexed by `dot_name` by default. Distances are great-circle (haversine) separations between centroids on a spherical Earth, which differ from geodesic distances by at most about half a percent — considerably less than the error introduced by treating an administrative unit as a single point.
+
+```{python}
+round(float(d.loc['Kenya:Nairobi', 'Kenya:Mombasa']), 1)   # km
+```
+
+Alternative units and index columns are available, and a node table can be supplied directly, which is useful when the population column has been filled in or the units subsetted:
+
+```{python}
+ssd.distances('Kenya', level=1, units='mi', index='pcode').iloc[:3, :3].round(1)
+```
+
+Together with the population column, this provides the inputs a gravity model requires. For the standard formulation
+
+$$c_{ij} = k \, \frac{P_i^{a} P_j^{b}}{D_{ij}^{c}}$$
+
+the node table supplies $P_i$ and $P_j$ and `distances()` supplies $D_{ij}$. The formulation itself belongs in the model rather than in a data package, so it is not implemented here.
+
+## Optional dependencies
+
+Everything above requires only the base installation. The remainder of this page requires the `[spatial]` extra:
+
+```bash
+pip install "starsim_data[spatial]"
+```
+
+This installs `geopandas`, `pyogrio` and `rastertoolkit`. They are imported lazily, so `import starsim_data` succeeds without them and only the functions that need them raise:
+
+```python
+ssd.fetch_shapes('kenya')
+# ImportError: fetch_shapes() needs the optional geospatial dependencies;
+# install them with: pip install starsim_data[spatial]
+```
+
+## Boundaries with geometry
+
+```python
+gdf = ssd.fetch_shapes('kenya', level=1)
+```
+
+The result is a `GeoDataFrame` with the columns `nodeid`, `location`, `iso3`, `level`, `name`, `pcode`, `dot_name`, `source` and `geometry`. The `pcode` and `dot_name` values match the node table for the same country and level, so the two join directly on either.
+
+Three sources are available:
+
+```{python}
+ssd.list_shape_sources()
+```
+
+With no `source` argument, UNOCHA is tried first and geoBoundaries second. UNOCHA is preferred because of its p-codes; geoBoundaries provides the coverage UNOCHA lacks and is pinned to a tagged release so that boundaries do not change beneath an analysis.
+
+::: {.callout-warning}
+## GADM is licensed for non-commercial use only
+GADM is never reached by the automatic fallback and must be requested by name. Nothing derived from it is bundled with this package or redistributed by it, and the build scripts refuse to draw on any source whose descriptor sets `redistributable=False`. Data fetched from GADM is subject to its terms, which are the responsibility of whoever fetches it.
+
+```{python}
+ssd.shapes.SOURCES.gadm.redistributable, ssd.shapes.FALLBACK_CHAIN
+```
+:::
+
+The UNOCHA global geodatabase, which some tools use as a fallback when a country is missing, is deliberately not implemented here: it is 1–2 GB, and a download of that size triggered implicitly by a library call would be unreasonable. geoBoundaries covers the same gap for a few megabytes.
+
+## Subnational population
+
+`fetch_nodes()` returns the node table with `population` filled in, by downloading a WorldPop 1 km raster for the country and summing it within each unit:
+
+```python
+nodes = ssd.fetch_nodes('kenya', level=1)
+```
+
+The boundaries are fetched from whichever source the bundled node table used for that country, so the join is on `pcode` rather than on names.
+
+The two component steps are also available separately, for cases where a raster other than population is of interest:
+
+```python
+raster = ssd.fetch_raster('kenya', year=2020)
+shapes = ssd.fetch_shapes('kenya', level=1)
+totals = ssd.aggregate_raster(raster, shapes, by='pcode')
+```
+
+::: {.callout-note}
+## WorldPop and UN WPP totals differ
+WorldPop's constrained estimates are modelled rather than enumerated, and they do not reproduce the UN WPP national total for the same year. For Kenya in 2020 the aggregated total is approximately 1.2% below the WPP figure. Neither number is incorrect; they are estimating slightly different quantities by different methods.
+
+Where a model requires the subnational figures to sum to the national one, `rescale_to_national()` performs that adjustment explicitly:
+
+```python
+nodes = ssd.rescale_to_national(ssd.fetch_nodes('kenya', level=1))
+```
+
+The intention is to make the choice visible rather than to leave two national totals in circulation.
+:::
+
+WorldPop's server is slow, at roughly 0.3 MB/s, so the first request for a country takes some time and subsequent ones are served from the cache. Very small territories return an empty file rather than an HTTP error; this is detected and reported rather than passed on as a malformed raster.
+
+## Mapping
+
+Two levels of detail are available here as well. `plot(which='nodes')` draws centroids from the bundled table and requires no optional dependencies:
+
+```{python}
+#| fig-width: 7
+#| fig-height: 6
+#| out-width: 100%
+ssd.plot('kenya', which='nodes', level=1);
+```
+
+`choropleth()` draws filled polygons, and requires the `[spatial]` extra:
+
+```python
+ssd.choropleth('kenya', level=1)                    # coloured by fetched population
+ssd.choropleth('kenya', level=1, shapes=my_frame, value='incidence')
+```
+
+Supplying `shapes` allows any column to be mapped, which is the usual route for displaying model output rather than input data.

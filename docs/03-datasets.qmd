@@ -1,0 +1,224 @@
+---
+title: "Datasets and their shapes"
+guide-section: "The data"
+tags: [Reference, Data]
+---
+
+This page documents the columns, dtypes and units returned by each dataset. The frames shown are produced by executing the code when the page is built, so they correspond to the current contents of the package.
+
+```{python}
+import starsim_data as ssd
+
+ssd.list_datasets(detailed=True).drop(columns='license')
+```
+
+Licences are omitted here for width; they are listed in [Provenance](08-provenance.qmd), and in full in `NOTICE.md`.
+
+## Demographics
+
+Four series are taken from UN World Population Prospects 2024, Medium variant. They are grouped in a single store and versioned by WPP revision, and consist of decadal snapshots from 1950 to 2100, giving sixteen time points. All 187 countries have all four series.
+
+The column names follow the UN's own conventions. This is intended to avoid an unnecessary translation step: the frames can be passed to Starsim's demographic modules without renaming anything.
+
+### `births` and `migration`
+
+Both are national rates with one value per year and no age dimension, since the UN publishes no age breakdown for either.
+
+```{python}
+births = ssd.load('kenya', which='births')
+births.head()
+```
+
+```{python}
+#| echo: false
+import pandas as pd
+pd.DataFrame([
+    dict(column='Time', dtype='int64', units='calendar year', note='decadal, 1950-2100'),
+    dict(column='CBR', dtype='float32', units='births per 1,000 population per year', note=''),
+])
+```
+
+The `migration` series has the same shape, with `CNMR` (crude net-migration rate per 1,000) in place of `CBR`. It is signed, with negative values indicating net emigration.
+
+```{python}
+ssd.load('kenya', which='migration').head(3)
+```
+
+### `deaths`
+
+Age- and sex-specific mortality, in 5-year abridged bins (`0`, `1–4`, `5–9`, …, `100+`). Only Female and Male are retained; the UN's "Both sexes" rows are dropped, which matches Starsim's sex conventions.
+
+```{python}
+deaths = ssd.load('kenya', which='deaths')
+deaths.head()
+```
+
+```{python}
+#| echo: false
+pd.DataFrame([
+    dict(column='Time', dtype='int64', units='calendar year', note=''),
+    dict(column='Sex', dtype='string', units='Female | Male', note='no "Both sexes"'),
+    dict(column='AgeGrpStart', dtype='int64', units='years', note='start of the bin: 0, 1, 5, 10, ..., 100'),
+    dict(column='mx', dtype='float32', units='deaths per person-year', note='the central death rate m(x)'),
+])
+```
+
+::: {.callout-note}
+## `mx` is a rate, not a probability
+`mx` is the central death rate, meaning deaths per person-year of exposure, rather than the probability of dying during the interval (`qx`). The two are similar where mortality is low and diverge where it is high. The remaining life-table columns are available through `fetch()`, as described below.
+:::
+
+```{python}
+len(deaths), deaths.Time.nunique(), deaths.AgeGrpStart.nunique()
+```
+
+This is sixteen years multiplied by two sexes and twenty-two age bins.
+
+### `population`
+
+Population counts by 5-year age group and sex, expressed as absolute persons. Note that the UN's own CSV distributions express these in thousands; the conversion is applied when the store is built.
+
+```{python}
+population = ssd.load('kenya', which='population')
+population.head()
+```
+
+```{python}
+#| echo: false
+pd.DataFrame([
+    dict(column='Time', dtype='int64', units='calendar year', note=''),
+    dict(column='Sex', dtype='string', units='Female | Male', note=''),
+    dict(column='AgeGrp', dtype='int64', units='years', note='start of the bin: 0, 5, ..., 100'),
+    dict(column='Value', dtype='float32', units='persons', note='absolute count, not thousands'),
+])
+```
+
+The national total provides a check on the units:
+
+```{python}
+f"{population[population.Time == 2020].Value.sum() / 1e6:.1f}M"
+```
+
+### Revisions
+
+Demographic stores are versioned by WPP revision, so that a new UN release adds a store rather than altering data already in use:
+
+```{python}
+ssd.list_revisions()
+```
+
+```python
+ssd.load('kenya', which='deaths')                 # newest bundled revision
+ssd.load('kenya', which='deaths', revision=2024)  # pinned
+```
+
+Pinning the revision is advisable in any analysis intended to be reproduced later.
+
+## Contact matrices
+
+Contact matrices give the average number of daily contacts between people in each pair of age bins. Three sources are included, each providing five contact settings, selected with the `kind` argument.
+
+```{python}
+matrix = ssd.load('kenya', which='prem2017')
+matrix.iloc[:6, :6].round(3)
+```
+
+The frames are square and `float32`, and both axes are indexed by the start age of the bin rather than by position, which permits selection by age:
+
+```{python}
+matrix.loc[25, 30]
+```
+
+```{python}
+#| echo: false
+pd.DataFrame([
+    dict(source='prem2017', shape='16x16', bins='5-year, 0-4 ... 75+', countries=152,
+         study='Prem et al. 2017'),
+    dict(source='prem2021', shape='16x16', bins='5-year, 0-4 ... 75+', countries=177,
+         study='Prem et al. 2021'),
+    dict(source='mistry2021', shape='85x85', bins='single-year, 0 ... 84+', countries=36,
+         study='Mistry et al. 2021'),
+])
+```
+
+The `kind` argument selects the setting:
+
+```{python}
+{kind: round(float(ssd.load('kenya', which='prem2017', kind=kind).to_numpy().sum()), 1)
+ for kind in ('all', 'home', 'work', 'school', 'community')}
+```
+
+The `all` matrix is the combined one and the remaining four are its components, although they do not sum exactly to `all`, since the upstream sources construct them separately.
+
+Coverage differs between sources, and is worth checking before use:
+
+```{python}
+len(ssd.list_locations('prem2017')), len(ssd.list_locations('prem2021')), len(ssd.list_locations('mistry2021'))
+```
+
+```{python}
+#| error: true
+ssd.load('Kenya', which='mistry2021')
+```
+
+## The node table
+
+The node table contains one row per administrative unit. It is described in full in [Spatial data](05-spatial.qmd); the schema is reproduced here for completeness.
+
+```{python}
+nodes = ssd.load_nodes('kenya', level=1)
+nodes.head(3)
+```
+
+```{python}
+#| echo: false
+pd.DataFrame([
+    dict(column='nodeid', dtype='int32', note='0-based within (location, level); indexes the distance matrix'),
+    dict(column='location', dtype='str', note='canonical location key, e.g. Kenya'),
+    dict(column='iso3', dtype='str', note='ISO 3166-1 alpha-3'),
+    dict(column='level', dtype='int32', note='0 = country, 1 = first-level subdivision'),
+    dict(column='name', dtype='str', note="the unit's own name, as the source spells it"),
+    dict(column='pcode', dtype='str', note='the join key: a p-code for UNOCHA rows, a shapeID otherwise'),
+    dict(column='dot_name', dtype='str', note='hierarchical path, e.g. Kenya:Baringo'),
+    dict(column='parent', dtype='str', note="the parent's dot_name; empty at level 0"),
+    dict(column='lat', dtype='float64', note='equal-area centroid latitude, WGS84'),
+    dict(column='lon', dtype='float64', note='equal-area centroid longitude, WGS84'),
+    dict(column='area_km2', dtype='float64', note='geodesic area on the WGS84 ellipsoid'),
+    dict(column='population', dtype='float64', note='level 0 only, from bundled WPP; NaN at level 1'),
+    dict(column='source', dtype='str', note='unocha or geoboundaries'),
+])
+```
+
+## Beyond the bundle
+
+For the four bundled series, `fetch()` returns the same schema at annual resolution. It also provides two datasets with no bundled counterpart:
+
+```{python}
+ssd.list_fetchable()
+```
+
+```python
+ssd.fetch('kenya', which='deaths', years=(2000, 2025))
+```
+
+| Returns | Columns |
+|---|---|
+| `births`, `migration` | as bundled, but every year |
+| `deaths`, `population` | as bundled, but every year |
+| `life_table` | `Time, Sex, AgeGrpStart, mx, qx, px, lx, dx, Lx, Sx, Tx, ex, ax` — and all three sexes, including `Total` |
+| `indicators` | `Time` plus ~50 WPP indicators: `CDR`, `TFR`, `LEx`, `IMR`, `Q5`, `NetMigrations`, … |
+
+The `life_table` result carries a glossary of its columns, since the conventional two-letter names are easily confused:
+
+```python
+lt = ssd.fetch('kenya', which='life_table', years=2020)
+lt.attrs['columns']['Lx']
+# 'person-years lived between ages x and x+n'
+```
+
+## What is not here
+
+- **Subnational demographics.** WPP has no subnational dimension, so none can be derived from it.
+- **Age-specific fertility or migration.** WPP publishes only crude national rates for these.
+- **"Both sexes" rows** in the bundled series, which contain Female and Male only. `fetch('life_table')` does include `Total`.
+- **Hong Kong, Macao and Puerto Rico** in the node table, as no boundary source covers them as separate entities. Their demographics and contact matrices are present.
