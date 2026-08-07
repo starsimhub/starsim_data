@@ -86,15 +86,12 @@ def test_revision_is_rejected_for_contact_matrices():
         ssd.load("Kenya", which="prem2017", revision=2024)
 
 
-@pytest.mark.xfail(reason="Namibia was omitted from the WPP download by the ISO-2 'NA' "
-                          "NaN bug; the code is fixed but the data needs re-downloading "
-                          "with a WPP API token (see raw_data/demographics/README.md)",
-                   strict=True)
-def test_namibia_has_demographic_data():
-    """Namibia should be present in the demographic series like any other country.
+@pytest.mark.parametrize("which", ["births", "deaths", "migration", "population"])
+def test_namibia_has_demographic_data(which):
+    """Namibia is present in every demographic series, like any other country.
 
-    Expected to fail until `scripts/download_wpp.py` is re-run: the bug that dropped
-    it is fixed, but the raw CSVs in the repo predate the fix. Flips to passing (and
-    this marker should then be removed) once the data is refetched.
+    A regression test for the ISO-2 `NA` bug: pandas' default `na_values` read
+    Namibia's country code as NaN, which dropped it from the WPP download and from
+    every ISO-2-keyed lookup downstream.
     """
-    assert "Namibia" in ssd.list_locations("deaths")
+    assert "Namibia" in ssd.list_locations(which)

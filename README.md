@@ -31,7 +31,7 @@ There are two families of data. `ssd.load()` returns a [Sciris](https://sciris.o
 
 ## 1. Demographics (UN World Population Prospects 2024)
 
-Sourced from the [UN WPP 2024](https://population.un.org/wpp/), Medium variant, for 186 countries every 10 years from 1950 to 2100 (16 time points). Grouped in `demographics-2024.h5`, exposed as four datasets whose `load()` result is a [Starsim](https://starsim.org)-ready dataframe with UN-native column names:
+Sourced from the [UN WPP 2024](https://population.un.org/wpp/), Medium variant, for all 187 countries every 10 years from 1950 to 2100 (16 time points). Grouped in `demographics-2024.h5`, exposed as four datasets whose `load()` result is a [Starsim](https://starsim.org)-ready dataframe with UN-native column names:
 
 | `which=` | What it is | Age resolution | Columns returned |
 |---|---|---|---|
@@ -48,7 +48,6 @@ These drop straight into Starsim: `deaths` matches `ss.Deaths`'s expected column
 - ❌ Subnational demographics (states, provinces, counties).
 - ❌ Age-specific fertility (births are the crude rate only) or age-specific migration (crude rate only) — the UN provides no age breakdown for these.
 - ❌ "Both sexes"/"Total" rows (Female + Male only) and non-Median projection variants.
-- ❌ Namibia, for now — it was dropped by a bug that read its ISO-2 code `NA` as "missing". The bug is fixed but the data needs refetching; see [CHANGELOG.md](CHANGELOG.md). Namibia's contact matrices were never affected.
 
 Demographic data is versioned by UN WPP revision. `load()` reads the newest bundled revision; pass `revision=` to pin an older one, and see `ssd.list_revisions()` for what's available. A new WPP release therefore adds a store rather than changing data already in use.
 
@@ -72,7 +71,7 @@ Not every country has every source; use `ssd.list_locations('prem2021')` etc. to
 
 ## Geographies
 
-All data is level 0 (country). 187 distinct countries appear across the datasets; coverage varies by source (186 for demographics; 36–177 for contact matrices). Canonical keys use `_` for spaces (e.g. `United_States`, `Sierra_Leone`), but you can pass any recognized name, code or alias — see the resolution rules above. The bundled `locations.csv` lists each country's ISO 3166-1 alpha-2 and alpha-3 codes, official name, aliases and available contact sources; `ssd.location_info(location)` returns a row of it.
+All data is level 0 (country). 187 countries are covered: every one has all four demographic series, while contact-matrix coverage varies by source (36–177). Canonical keys use `_` for spaces (e.g. `United_States`, `Sierra_Leone`), but you can pass any recognized name, code or alias — see the resolution rules above. The bundled `locations.csv` lists each country's ISO 3166-1 alpha-2 and alpha-3 codes, official name, aliases and available contact sources; `ssd.location_info(location)` returns a row of it.
 
 `ssd.parse_level()` accepts `'admin1'`, `'ADM2'`, `'3'` or a bare integer. Nothing above level 0 has data yet; it exists so the vocabulary is settled before subnational data arrives.
 

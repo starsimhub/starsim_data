@@ -18,7 +18,7 @@ An assessment of [`laser-init`](https://github.com/laser-base/laser-init) agains
 | **Runtime deps** | 3 (`numpy`, `sciris`, `h5py`) | 15 (incl. `geopandas`, `pyogrio`, `rastertoolkit`, `matplotlib`, `click`, `openai`, `anthropic`) |
 | **Network at runtime** | Never | Always (on cache miss) |
 | **Geography** | Level 0 (country) only, no geometry | Levels 0–4, full geometry + gridded population |
-| **Demographics** | UN WPP 2024, decadal 1950–2100, 186 countries | UN WPP 2024, annual, any country/range |
+| **Demographics** | UN WPP 2024, decadal 1950–2100, 187 countries | UN WPP 2024, annual, any country/range |
 | **Contact matrices** | prem2017 / prem2021 / mistry2021 | none |
 | **Output** | `sciris.dataframe`, Starsim-native column names | CSV + GeoPackage + a runnable model script + PDF report |
 | **Data size** | ~13 MB bundled | 1–2 GB cache for the default shape source alone |
@@ -32,7 +32,7 @@ The packages are close to complements rather than competitors: `starsim_data` is
 
 ## 2. The central design question: bundle vs. fetch
 
-`starsim_data`'s defining property is that `pip install starsim_data==0.1.0` gives every user byte-identical data with no network access. That buys offline use, deterministic tests, and citable reproducibility. It works because the data is small: four HDF5 stores totalling ~13 MB cover 186 countries of demographics and 177 countries of contact matrices.
+`starsim_data`'s defining property is that `pip install starsim_data==0.1.0` gives every user byte-identical data with no network access. That buys offline use, deterministic tests, and citable reproducibility. It works because the data is small: four HDF5 stores totalling ~13 MB cover 187 countries of demographics and 177 countries of contact matrices.
 
 That property does not survive contact with spatial data. UNOCHA's global boundary geodatabase is 1–2 GB. A single WorldPop country-year raster is 10–200 MB. Admin-2 geometry for one large country is tens of MB. Bundling is not an option at that scale, so **the spatial tier has to be fetch-and-cache — which is exactly the machinery `laser-init` already has.** This is the strongest argument for porting `laser-init`'s extractor/cache/provenance layer: not to replace the bundled demographics, where bundling clearly wins, but to enable the tier where bundling is impossible.
 
@@ -52,12 +52,12 @@ Keeping tiers 1 and 2 behind a *different function name* than `load()` is delibe
 
 Both extract from UN WPP 2024 Medium variant. They differ in *when*.
 
-`starsim_data` (`scripts/download_wpp.py`, `scripts/build_demographics.py`) hits the WPP Data Portal API at build time for four indicators (CBR 55, CNMR 66, mx 79, population 46), filters to decadal years and this package's countries, and freezes the result into `demographics.h5`. `laser-init` (`extractors/unwpp.py`, `transformers/unwpp.py`) downloads the bulk gzipped CSVs at runtime and filters them per invocation.
+`starsim_data` (`scripts/download_wpp.py`, `scripts/build_demographics.py`) hits the WPP Data Portal API at build time for four indicators (CBR 55, CNMR 66, mx 79, population 46), filters to decadal years and this package's countries, and freezes the result into `demographics-<revision>.h5`. `laser-init` (`extractors/unwpp.py`, `transformers/unwpp.py`) downloads the bulk gzipped CSVs at runtime and filters them per invocation.
 
 | | `starsim_data` (pre-baked) | `laser-init` (runtime fetch) |
 |---|---|---|
 | **Pros** | Instant; offline; deterministic; 3 MB not 200 MB; version-pinned data; already emits Starsim-native columns | Any year 1950–2100 at annual resolution; complete single-age life tables (`lx`, `qx`, `ex`, …); always the current revision; trivially extended to other variants |
-| **Cons** | Decadal snapshots only; frozen at WPP2024 Medium; no life tables; 186 countries; new indicators need a rebuild + release | Slow first run; needs network; ~50–200 MB downloads; output depends on run date; no attribution/NOTICE machinery |
+| **Cons** | Decadal snapshots only; frozen at WPP2024 Medium; no life tables; 187 countries; new indicators need a rebuild + release | Slow first run; needs network; ~50–200 MB downloads; output depends on run date; no attribution/NOTICE machinery |
 
 **Recommendation: keep the bundled path as the default, port the fetch path as the gap-filler.** The gaps are real and named in the current README — annual resolution, life tables, non-Median variants — and the fetch path closes all three without disturbing tier 0. Concretely, `laser-init`'s `UnwppExtractor` is worth porting largely as-is (it is 136 straightforward lines) into a tier-2 `ssd.fetch('kenya', which='deaths', years=(2000, 2025))`, while the *transformer* is not: its output schema (`cxr.csv`, `age_dist.csv`, `life_exp.csv` with a `cumulative_deaths` column) is shaped for `laser.generic`'s `KaplanMeierEstimator` and `AliasedDistribution`, not for Starsim. Reuse the extraction and filtering logic; keep this package's tidy `[Time, Sex, AgeGrpStart, mx]` output shape.
 
@@ -121,7 +121,7 @@ Worth noting from `laser-init`'s own `misc/integration-plan.md`: their registry 
 
 `laser-init` has `ci.yml` and `docs.yml`, a ruff config (line length 100, `E,W,F,I,B,C4,UP`), a pytest config with markers and a 90% coverage gate, a `CHANGELOG.md`, and a mkdocs/mkdocstrings site. `starsim_data` has none of these — no `.github/`, no changelog, no lint config.
 
-**Recommendation: port the scaffolding, but match Starsim's toolchain, not `laser-init`'s.** The pytest markers (`network`, `slow`, and `integration` become genuinely load-bearing once tier 2 exists), the coverage gate and the changelog are cheap and should just be adopted. Two things to leave behind. The docs site should **not** be mkdocs: Starsim's docs are Quarto (`starsim/docs/_quarto.yml`). And the linter should **not** be ruff: Starsim uses `.flake8` (with `E221, E225, E226, E261, E272, E501, E701` ignored) plus `pylint` in its dev extras, and a satellite data package adopting a different linter with a different line-length policy would just create friction at every code review. Copy Starsim's `.flake8` verbatim. Port the *content* patterns from `laser-init` instead — `docs/datasources.md` in particular (§5.6).
+**Recommendation: port the scaffolding selectively; don't inherit `laser-init`'s toolchain along with it.** The pytest markers (`network`, `slow`, and `integration` become genuinely load-bearing once tier 2 exists), the coverage gate and the changelog are cheap and should just be adopted. Two things to leave behind. The docs site should **not** be mkdocs: Starsim's docs are Quarto (`starsim/docs/_quarto.yml`). And **no lint config at all** — not `laser-init`'s ruff, and not Starsim's `.flake8`/`pylint` either. A package this size does not have a style-drift problem worth a CI gate, and a satellite repo that imposes its own lint policy just creates friction at review time. **Decided on review: dropped.** Port the *content* patterns from `laser-init` instead — `docs/datasources.md` in particular (§5.6).
 
 ### 3.8 Dependencies — most of `laser-init`'s stack is already in sciris
 
@@ -202,7 +202,7 @@ The parameterisation is standard and worth adopting for consistency across IDM t
 - **LLM-based country resolution.** `openai_query.py` (389 lines) and `anthropic_query.py` (19 lines, and it only wraps the *local* matcher). The README concedes the feature is "not currently implemented," yet `openai` and `anthropic` are unconditional runtime dependencies, and `coverage.run` omits both files from measurement. A non-deterministic country resolver is the wrong tool regardless: the deterministic alias table of §3.2 covers the real cases, and warning with candidates is a better failure mode than a confident guess.
 - **Model-script emission.** `loaders/abm.py`, `loaders/mpm.py`, `models/{si,sir,seir,plot}.py`. This makes `starsim_data` depend on Starsim, inverting the dependency a data package should have, and Starsim already has its own model-authoring story. **Decided: no `starsim-init` equivalent, here or elsewhere.** If templated scaffolding is ever wanted, `ss.Sim(location='kenya')` reading from `starsim_data` is the natural home for it, in Starsim.
 - **Import-time configuration and logging side effects.** See §3.4.
-- **Ruff, and mkdocs.** Starsim uses `.flake8` + `pylint` and Quarto; a satellite package should match (§3.7).
+- **Ruff — and any other lint config.** No linter is enforced in this repo; Starsim's docs are Quarto, so mkdocs is out too (§3.7).
 - **`requests`, `rapidfuzz`, `pyyaml`, `click`, `pycountry` as runtime dependencies.** Every one has a sciris equivalent already installed (§3.8). Reimplement against sciris rather than translating the imports across.
 - **The `error()` helper** (`utils.py:355`), which prints, logs, and raises an exception class passed as an argument. It is typed `NoReturn` but call sites still write post-`error()` fallbacks (`extractors/worldpop.py:73`), so the control flow reads as though it can return. Raise directly.
 - **A 90%-coverage gate applied to a package that vendors 13 MB of data.** Adopt coverage reporting; set the threshold against what is actually meaningful to test here rather than inheriting the number.
@@ -228,7 +228,7 @@ The parameterisation is standard and worth adopting for consistency across IDM t
 | 2 | Generate `iso3`/`official_name`/`aliases` into `locations.csv` at build time | new build script, `pycountry` dev-only | S | — | 0 |
 | 3 | `level_from_string` and `country × level` addressing | `utils.py:147` | XS | — | 0 |
 | 4 | Provenance in the HDF5 `spec` + `ssd.provenance()` | concept from `utils.py:257` | S | — | 0 |
-| 5 | CI, `.flake8` copied from Starsim, pytest markers, `CHANGELOG.md` | `.github/`; Starsim's `.flake8` | S | — | — |
+| 5 | CI, pytest markers, `CHANGELOG.md` (no lint config) | `.github/` | S | — | — |
 | 6 | Resolve the `ss.Births` `Time`/`Year` column mismatch (§3.1) | — | XS | — | 0 |
 | 7 | Revision-versioned demographics (`demographics-2024.h5`, `revision=` arg) | invariant 2 | S | — | 0 |
 | **P1 — next; still no new dependencies** ||||||
@@ -258,7 +258,7 @@ Resolved on review:
 3. **Do not wait on Starsim's spatial API.** Build the node table and `distances()` to the design in §5.3–5.4 now; adapt if the eventual spatial `Route` wants something different. The data shape is the more stable half of that interface.
 4. **No `starsim-init` equivalent** (§6).
 5. **Regenerate tier-0 demographics per WPP revision**, keeping old vintages loadable (invariant 2).
-6. **Match Starsim's toolchain**: `.flake8`, `pylint`, Quarto — not ruff, not mkdocs (§3.7).
+6. **No lint config** — not ruff, and not Starsim's `.flake8`/`pylint` either; docs are Quarto, not mkdocs (§3.7).
 7. **The `ss.Births` `Time`/`Year` mismatch is fixed in Starsim, not here** (§3.1). `ss.Deaths` and `ss.Pregnancy` both already use `Time`, so `ss.Births` is the inconsistent one, and fixing it upstream means this package needs no per-module special-casing. Handed off as [`plans/births-fix.md`](births-fix.md); P0 item 6 is therefore delegated, not dropped — do not add a `Year`-emitting workaround here in the meantime.
 
 Still open:

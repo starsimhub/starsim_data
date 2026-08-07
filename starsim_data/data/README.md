@@ -1,6 +1,6 @@
 # starsim_data/data — bundled data files
 
-These files ship inside the installed package and are the data that `starsim_data.load()` reads. The `.h5` stores are **generated — do not edit by hand** (regenerate them from the sources in `raw_data/`); `locations.csv` is the one hand-maintained source file here.
+These files ship inside the installed package and are the data that `starsim_data.load()` reads. The `.h5` stores are **generated — do not edit by hand** (regenerate them from the sources in `raw_data/`); `locations.csv` is the one file here with hand-maintained content, described below.
 
 Each store carries a root `spec` attribute recording its `layout`, so `load()` returns the right shape for it.
 
