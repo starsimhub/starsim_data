@@ -109,7 +109,7 @@ What *is* worth taking is the underlying need: tiers 1–2 need a cache director
 
 **Recommendation: port the pattern, not the taxonomy, and do it before the spatial tier lands rather than after.** A `DATASETS` registry mapping name → descriptor (layout, loader callable, tier, level, license, provenance, list of available locations) replaces both the layout if-chain and the filename-glob discovery, and gives `list_datasets()` something richer to return. What should *not* be ported is the extractor/transformer/loader trichotomy wholesale: `starsim_data` has no "loader" phase (§6) and for tier 0 has no extract phase at runtime either. Two roles — *fetch* and *shape* — is the right factoring here.
 
-Worth noting from `laser-init`'s own `misc/integration-plan.md`: their registry is module-level dict literals with no public `register_*`, and their pipeline lives inside `cli.py`, both of which they identify as blockers to downstream reuse. Build the registry with a public registration hook and keep the pipeline in library functions with the CLI as a thin wrapper — the mistake is already documented, so it is free to avoid.
+Worth noting from `laser-init`'s own `misc/integration-plan.md`: their registry is module-level dict literals with no public `register_*`, and their pipeline lives inside `cli.py`, both of which they identify as blockers to downstream reuse. Build the registry with a public registration hook and keep the pipeline in library functions — the mistake is already documented, so it is free to avoid. (There is no CLI here to wrap; see §9.8.)
 
 ### 3.6 Plotting and validation — `laser-init` has it, `starsim_data` does not
 
@@ -135,13 +135,13 @@ This started as a check on the "3-dependency floor" and turned into the most con
 | `pyyaml` | config file parsing | not needed (§3.4); sciris carries it anyway | none |
 | `zstandard` | decompressing UNOCHA `.gpkg.zstd` | sciris dependency | none |
 | `matplotlib` | validation plots | sciris dependency; also a direct Starsim dependency | none |
-| `click` | CLI | `argparse` (stdlib) is sufficient for a thin CLI | none |
+| `click` | CLI | not ported -- no CLI (§9.8) | none |
 | `openai`, `anthropic` | LLM country resolution | not ported (§6) | none |
 | `geopandas`, `pyogrio` | boundary I/O | no equivalent | **yes — `[spatial]`** |
 | `rastertoolkit` | raster → admin aggregation | no equivalent | **yes — `[spatial]`** |
 | `laser-generic` | the emitted model scripts | not ported (§6) | none |
 
-So the entire P0/P1 programme — location resolution, cached downloads, on-demand WPP fetch, validation plots, a thin CLI — can be built with **no new runtime dependencies at all**, and the only genuinely new ones in the whole plan are the three spatial libraries. That is a much better position than the original framing assumed, and it removes the main argument for splitting the spatial tier into a separate package (§9).
+So the entire P0/P1 programme — location resolution, cached downloads, on-demand WPP fetch, validation plots — can be built with **no new runtime dependencies at all**, and the only genuinely new ones in the whole plan are the three spatial libraries. That is a much better position than the original framing assumed, and it removes the main argument for splitting the spatial tier into a separate package (§9).
 
 The practical implication for the port is to *reimplement against sciris rather than translate*. `laser-init`'s `download_file` is 62 lines of `requests` streaming, chunking, tqdm bookkeeping and provenance; the sciris version is `sc.download()` plus roughly fifteen lines of cache-hit check and provenance write. Copying the original would import a dependency and a hundred lines to reproduce behaviour that already exists.
 
@@ -221,6 +221,8 @@ The parameterisation is standard and worth adopting for consistency across IDM t
 
 ## 8. Prioritized plan
 
+*Status: P0 shipped in 0.2.0, P1 in 0.3.0 (item 12 dropped — see decision 8). P2 not started. See [CHANGELOG.md](../CHANGELOG.md).*
+
 | # | Item | Source | Effort | New deps | Tier |
 |---|---|---|---|---|---|
 | **P0 — now; small, no new dependencies** ||||||
@@ -236,7 +238,7 @@ The parameterisation is standard and worth adopting for consistency across IDM t
 | 9 | Dataset registry + descriptors, replacing the layout if-chain | `registry.py`, `interfaces.py` | M | — | all |
 | 10 | On-demand WPP fetch for annual data, life tables, other variants | `extractors/unwpp.py` | M | — | 2 |
 | 11 | Validation plots: age pyramid, rate series, matrix heatmap | `cli.py:522–722` | S | — | 0 |
-| 12 | Thin CLI (`argparse`) over the library API | `cli.py` structure (not its layering) | S | — | — |
+| ~~12~~ | ~~Thin CLI (`argparse`) over the library API~~ — **dropped on review**; the same surface is exposed as library calls instead (§9.8) | — | — | — | — |
 | **P2 — spatial; design now, build when Starsim spatial lands** ||||||
 | 13 | Node table (centroids, area, population) for admin 0/1 — the default | new; synthesis (§5.3) | M | — | 1 |
 | 14 | Shape extractors + transformers (UNOCHA, geoBoundaries, GADM) | `extractors/`, `transformers/` | L | `[spatial]` | 2 |
@@ -259,7 +261,8 @@ Resolved on review:
 4. **No `starsim-init` equivalent** (§6).
 5. **Regenerate tier-0 demographics per WPP revision**, keeping old vintages loadable (invariant 2).
 6. **No lint config** — not ruff, and not Starsim's `.flake8`/`pylint` either; docs are Quarto, not mkdocs (§3.7).
-7. **The `ss.Births` `Time`/`Year` mismatch is fixed in Starsim, not here** (§3.1). `ss.Deaths` and `ss.Pregnancy` both already use `Time`, so `ss.Births` is the inconsistent one, and fixing it upstream means this package needs no per-module special-casing. Handed off as [`plans/births-fix.md`](births-fix.md); P0 item 6 is therefore delegated, not dropped — do not add a `Year`-emitting workaround here in the meantime.
+7. **The `ss.Births` `Time`/`Year` mismatch is fixed in Starsim, not here** (§3.1). `ss.Deaths` and `ss.Pregnancy` both already use `Time`, so `ss.Births` is the inconsistent one, and fixing it upstream means this package needs no per-module special-casing. Handed off to the Starsim repo as a separate prompt and **since fixed there**; no `Year`-emitting workaround was added on this side.
+8. **No CLI.** P1 item 12 is dropped. `laser-init` is a CLI with a library underneath; this is a library, and its users reach it from Python or from Starsim, not from a shell. Everything the CLI would have exposed is a library call instead — `list_datasets(detailed=True)`, `fetch()`, `plot()`, `cache_info()`, `clear_cache()`, `options` — which is also one fewer interface to document and keep in step. A CLI can be added later over that surface if a real use case turns up; the reverse is much harder.
 
 Still open:
 

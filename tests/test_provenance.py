@@ -10,8 +10,8 @@ import starsim_data as ssd
 REQUIRED = ("dataset", "source", "source_url", "license", "citation", "built", "builder")
 
 
-@pytest.mark.parametrize("which", ssd.list_datasets())
-def test_every_dataset_has_provenance(which):
+@pytest.mark.parametrize("which", ssd.list_datasets(tier=0))
+def test_every_bundled_dataset_has_provenance(which):
     prov = ssd.provenance(which)
     for field in REQUIRED:
         assert prov.get(field), f"{which!r} provenance is missing {field!r}"
@@ -34,7 +34,7 @@ def test_licenses_match_notice(which, license):
 
 def test_provenance_with_no_argument_covers_all_datasets():
     allprov = ssd.provenance()
-    assert set(allprov.keys()) == set(ssd.list_datasets())
+    assert set(allprov.keys()) == set(ssd.list_datasets(tier=0))
 
 
 def test_provenance_records_the_build():

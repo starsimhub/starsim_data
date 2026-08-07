@@ -21,12 +21,31 @@ M.loc[25, 30]                                      # contacts between the 25-29 
 Locations can be given as a name, ISO-2/ISO-3 code, official name or alias -- `'USA'`,
 `'US'`, `'united states'` and `'United_States'` all resolve to the same data. Every
 dataset records where it came from; see `provenance()`.
+
+`load` never touches the network. What is not bundled -- annual series, complete life
+tables, other projection variants -- is available from `fetch()`, which downloads and
+caches; see `cache_info()` and `options`. `plot()` draws the data for a quick check
+before it goes into a model.
 """
 
-from .loaders import load, list_datasets, list_locations, list_revisions, provenance
+__version__ = "0.3.0"
+
+# This is the one module that uses `from` imports, to assemble the public namespace.
+# Everywhere else in the package, follow Starsim's convention: `import starsim_data as
+# ssd` and reach things as `ssd.load`, `ssd.registry.datasets()` and so on. The order
+# below matters, because a few modules register themselves on import: `registry` has to
+# exist before `loaders` adds its layouts, and before `fetching` adds its datasets.
+from .settings import options
+from . import registry
+from .registry import register_dataset, register_layout
 from .locations import resolve, location_info, list_all_locations, parse_level
+from .loaders import load, list_datasets, list_locations, list_revisions, provenance
+from .cache import cache_dir, cache_info, cache_provenance, cached_download, clear_cache
+from .fetching import fetch, list_fetchable
+from .plotting import plot
 
-__version__ = "0.2.0"
-
-__all__ = ["load", "list_datasets", "list_locations", "list_revisions", "provenance",
-           "resolve", "location_info", "list_all_locations", "parse_level"]
+__all__ = ["load", "fetch", "plot", "provenance", "options", "registry",
+           "list_datasets", "list_locations", "list_revisions", "list_fetchable",
+           "resolve", "location_info", "list_all_locations", "parse_level",
+           "register_dataset", "register_layout",
+           "cache_dir", "cache_info", "cache_provenance", "cached_download", "clear_cache"]

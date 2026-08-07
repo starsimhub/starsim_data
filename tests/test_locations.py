@@ -3,7 +3,6 @@
 import pytest
 
 import starsim_data as ssd
-from starsim_data.locations import normalize
 
 
 def test_canonical_names_resolve_to_themselves():
@@ -17,7 +16,7 @@ def test_location_table_covers_every_dataset_key():
     If this fails, a dataset has a location that locations.csv does not know about,
     so its metadata (ISO codes, aliases) is silently missing.
     """
-    for which in ssd.list_datasets():
+    for which in ssd.list_datasets(tier=0):
         for location in ssd.list_locations(which):
             assert ssd.resolve(location) == location, f"{location!r} in {which!r}"
 
@@ -125,9 +124,9 @@ def test_parse_level_rejects_bad_input(bad):
     ("Timor-Leste", "Timor_Leste"),
 ])
 def test_normalize_collapses_equivalent_spellings(a, b):
-    assert normalize(a) == normalize(b)
+    assert ssd.locations.normalize(a) == ssd.locations.normalize(b)
 
 
 def test_normalize_tolerates_non_strings():
-    assert normalize(None) == ""
-    assert normalize(float("nan")) == "nan"    # not a crash; simply matches nothing
+    assert ssd.locations.normalize(None) == ""
+    assert ssd.locations.normalize(float("nan")) == "nan"    # not a crash; simply matches nothing

@@ -13,6 +13,8 @@ ssd.list_datasets()                              # what's available
 ssd.load('kenya', which='deaths')                # UN WPP mortality rates (tidy DataFrame)
 ssd.load('kenya', which='prem2017', kind='home') # a contact matrix (square DataFrame)
 ssd.provenance('prem2017')                       # where it came from, and its license
+ssd.plot('kenya')                                # eyeball it before it goes into a model
+ssd.fetch('kenya', which='deaths', years=(2000, 2025))  # annual data, downloaded on demand
 ```
 
 Locations can be named however you like: `'Kenya'`, `'kenya'`, `'KE'`, `'KEN'` and `'Republic of Kenya'` are the same country, as are `'USA'`, `'US'`, `'united states'` and `'United States of America'`. ISO-2/ISO-3 codes, official names, common abbreviations (`UK`, `DRC`) and French/Spanish/Portuguese names all resolve; accents, case and punctuation are ignored, so `"Côte d'Ivoire"` and `'cote divoire'` both work. A name that doesn't match raises, with suggestions — it is never resolved to the nearest guess. Use `ssd.list_locations(which)` for the countries in a given dataset, `ssd.list_all_locations()` for every known location, and `ssd.resolve()`/`ssd.location_info()` to inspect the mapping.
@@ -42,12 +44,14 @@ Sourced from the [UN WPP 2024](https://population.un.org/wpp/), Medium variant, 
 
 These drop straight into Starsim: `deaths` matches `ss.Deaths`'s expected columns, `births` feeds `ss.Births`/`ss.Pregnancy`, and `population` gives age–sex pyramids for initialization.
 
-**Not included:**
+**Not bundled:**
 
-- ❌ Annual resolution — only every 10th year (1950, 1960, …, 2100).
+- ⬇️ Annual resolution — the bundled store has every 10th year (1950, 1960, …, 2100). Use [`fetch()`](#data-that-isnt-bundled) for annual.
+- ⬇️ Life tables (`qx`, `lx`, `ex`, …) and the other WPP indicators (CDR, TFR, LEx, IMR, …) — available via [`fetch()`](#data-that-isnt-bundled).
+- ⬇️ Non-Medium projection variants (High, Low, Constant fertility, …) — available via [`fetch()`](#data-that-isnt-bundled), except for life tables, which the UN publishes for Medium only.
 - ❌ Subnational demographics (states, provinces, counties).
 - ❌ Age-specific fertility (births are the crude rate only) or age-specific migration (crude rate only) — the UN provides no age breakdown for these.
-- ❌ "Both sexes"/"Total" rows (Female + Male only) and non-Median projection variants.
+- ❌ "Both sexes"/"Total" rows: Female + Male only.
 
 Demographic data is versioned by UN WPP revision. `load()` reads the newest bundled revision; pass `revision=` to pin an older one, and see `ssd.list_revisions()` for what's available. A new WPP release therefore adds a store rather than changing data already in use.
 
@@ -66,6 +70,57 @@ Age-structured contact rates — the average number of contacts between age grou
 Not every country has every source; use `ssd.list_locations('prem2021')` etc. to check. 
 
 *Note:* `epydemix` has additional datasets for subnational contact matrices that are not included here.
+
+---
+
+## Data that isn't bundled
+
+`load()` never touches the network: everything it reads is inside the wheel, which is what makes it instant, usable offline and reproducible from a pinned version. Data too big for that is reached through a different verb, so the cost is visible at the call site.
+
+`ssd.fetch()` downloads the UN's public bulk CSVs (no API token needed) and filters them, returning the same schema `load()` does:
+
+```python
+ssd.fetch('kenya', which='deaths', years=(2000, 2025))  # annual mx, not decadal
+ssd.fetch('kenya', which='life_table', years=2020)      # qx, lx, ex, ... with a glossary in .attrs
+ssd.fetch('kenya', which='births', variant='High')      # a different projection variant
+ssd.fetch('kenya', which='indicators', years=2020)      # CDR, TFR, LEx, IMR and ~50 more
+ssd.list_fetchable()                                    # what fetch() can get
+```
+
+`years=` takes a single year, a `(start, end)` tuple as an inclusive range, or an explicit list. The downloads are large — 17 MB for the indicators, 145 MB per half of the life table — so they are cached and reused:
+
+```python
+ssd.cache_dir()          # where downloads go (override with ssd.options.cache_dir
+                         # or the STARSIM_DATA_CACHE_DIR environment variable)
+ssd.cache_info()         # what's cached, from where, and when it was fetched
+ssd.clear_cache()        # or clear_cache('wpp/*')
+```
+
+Every cached file gets a sidecar recording its source URL, download time, size and SHA-256, and `fetch()` results carry the same in `.attrs['provenance']`.
+
+## Plotting
+
+`ssd.plot(location)` draws a four-panel check — age pyramid, crude birth rate, mortality curve and contact matrix — and `ssd.plot(location, which=...)` draws just one. The point is to notice a wrong country or a units error before it reaches a simulation, not to make publication figures:
+
+```python
+ssd.plot('kenya')                              # everything available for Kenya
+ssd.plot('kenya', which='population')          # just the age pyramid
+ssd.plot('kenya', which='deaths', year=2050)   # a projected mortality curve
+```
+
+It returns the matplotlib figure, so styling and saving are up to you.
+
+## Settings
+
+```python
+ssd.options.help()                     # what can be set, and what it currently is
+ssd.options(verbose=False)             # quieten downloads
+ssd.options.cache_dir = '/fast/scratch' # or set STARSIM_DATA_CACHE_DIR
+with ssd.options.context(verbose=False):
+    ...                                # temporarily
+```
+
+Settings are read from the environment but acted on lazily, so importing the package creates no directories and opens no files.
 
 ---
 

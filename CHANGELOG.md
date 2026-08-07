@@ -2,6 +2,29 @@
 
 All notable changes to `starsim_data` are recorded here. Versions follow [semantic versioning](https://semver.org); the *data* is versioned too, so a change to a bundled dataset is a release, not an amendment.
 
+## 0.3.0 (2026-08-07)
+
+Second tranche of the [laser-init merge plan](plans/laser-init-merge.md) (P1). No new packages are installed: everything here is built on sciris and the standard library.
+
+### Added
+
+- **`fetch()` — the data that is deliberately not bundled.** `load()` is still instant, offline and frozen; `fetch()` closes the three gaps the README has always named: annual resolution instead of decadal, complete life tables (`qx`, `lx`, `ex`, ...) instead of just `mx`, and other projection variants instead of Medium only. It reads the UN's public bulk CSVs — no API token, unlike the Data Portal — and caches them. `ssd.fetch('kenya', which='deaths', years=(2000, 2025))`, `ssd.fetch('kenya', which='life_table', years=2020)`, `ssd.fetch('kenya', which='births', variant='High')`. For the four series that are also bundled it returns exactly the schema `load()` returns, verified against the bundled data; `life_table` and `indicators` are fetch-only. See `ssd.list_fetchable()`.
+- **A download cache**, with a provenance sidecar per file recording its URL, timestamp, size and SHA-256. `ssd.cache_dir()`, `ssd.cache_info()`, `ssd.cache_provenance()`, `ssd.clear_cache()`. The location defaults to a platform-appropriate directory and is overridable via `ssd.options.cache_dir` or `STARSIM_DATA_CACHE_DIR`.
+- **`ssd.options`**, following Starsim's `ss.options` conventions, with `set()`, `reset()`, `help()` and a `context()` manager. Settings are read from the environment but acted on lazily: importing the package still creates no directories, opens no files and emits no warnings.
+- **`plot()` — validation figures.** `ssd.plot('kenya')` draws a four-panel summary (age pyramid, crude birth rate, mortality curve, contact matrix); `ssd.plot('kenya', which='population')` draws one panel. The point is to catch the wrong country or the wrong units before the data reaches a simulation.
+- **A dataset registry** (`ssd.registry`) holding a descriptor per dataset — layout, tier, admin level, license, revisions, location count — with public `register_dataset()` and `register_layout()` hooks. `ssd.list_datasets(detailed=True)` returns it as a dataframe, and `list_datasets(tier=0)` selects just the bundled data.
+- **Tiers.** Datasets now declare whether they are bundled in the wheel (0), a downloaded release asset (1) or fetched from upstream (2). `load()` refuses anything above tier 0 and points at `fetch()`, so its "never touches the network" guarantee is now enforced by the code rather than by convention.
+
+### Changed
+
+- `load()` dispatches through the registry's layout table instead of an if-chain on `spec['layout']`, and finds its stores through descriptors instead of a filename glob. A new data family is now a shaper plus a registry entry.
+- Internal imports follow Starsim's convention — `import starsim_data as ssd` — with `from` imports confined to `__init__.py`.
+- `pandas` and `matplotlib` are now declared dependencies. Both were already installed as sciris dependencies; they are listed because the package imports them directly.
+
+### Notes
+
+- No CLI. Everything a CLI would have exposed — listing, loading, fetching, plotting, cache management, settings — is a library call, which is the interface a data package should have.
+
 ## 0.2.0 (2026-08-07)
 
 First tranche of the [laser-init merge plan](plans/laser-init-merge.md) (P0).

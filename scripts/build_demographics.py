@@ -220,6 +220,9 @@ def build(wpp_dir, revision=DEFAULT_REVISION, check=False):
         import sys
         sys.path.insert(0, str(REPO))
         import starsim_data as ssd
+        # The registry caches what it discovers in the data directory, so make it look
+        # again -- otherwise this would check whatever was there before the rebuild.
+        ssd.registry.refresh()
         for which in ("births", "migration", "deaths", "population"):
             if which in ssd.list_datasets():
                 loc = ssd.list_locations(which)[0]

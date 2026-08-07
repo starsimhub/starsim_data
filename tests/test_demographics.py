@@ -12,7 +12,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from starsim_data import loaders as ssload
+import starsim_data as ssd
 
 REPO = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(REPO / "scripts"))
@@ -48,32 +48,36 @@ def built(tmp_path, monkeypatch):
     data_dir = tmp_path / "data"
     data_dir.mkdir()
     monkeypatch.setattr(bd, "OUT", data_dir)
-    monkeypatch.setattr(ssload, "_data_dir", lambda: data_dir)
+    # The registry finds the bundled stores through data_dir() and caches what it finds,
+    # so point it at the temp dir and clear the cache on both sides of the test.
+    monkeypatch.setattr(ssd.registry, "data_dir", lambda: data_dir)
 
     _write_synthetic_wpp(tmp_path / "wpp")
     bd.build(tmp_path / "wpp")
-    return data_dir
+    ssd.registry.refresh()
+    yield data_dir
+    ssd.registry.refresh()
 
 
 def test_datasets_built(built):
-    assert set(ssload.list_datasets()) == {"births", "migration", "deaths", "population"}
+    assert set(ssd.list_datasets(tier=0)) == {"births", "migration", "deaths", "population"}
 
 
 def test_births_shape_and_columns(built):
-    df = ssload.load("kenya", which="births")
+    df = ssd.load("kenya", which="births")
     assert list(df.columns) == ["Time", "CBR"]
     assert len(df) == len(YEARS)
     assert df["Time"].tolist() == YEARS
 
 
 def test_migration_columns(built):
-    df = ssload.load("United_States", which="migration")
+    df = ssd.load("United_States", which="migration")
     assert list(df.columns) == ["Time", "CNMR"]
     assert len(df) == len(YEARS)
 
 
 def test_deaths_is_starsim_ready(built):
-    df = ssload.load("Kenya", which="deaths")
+    df = ssd.load("Kenya", which="deaths")
     # Column names match ss.Deaths default metadata (data_cols year=Time, sex, age, value=mx).
     assert list(df.columns) == ["Time", "Sex", "AgeGrpStart", "mx"]
     assert set(df["Sex"]) == {"Female", "Male"}      # "Total" dropped
@@ -83,7 +87,7 @@ def test_deaths_is_starsim_ready(built):
 
 
 def test_population_single_age_and_plus_bin(built):
-    df = ssload.load("Kenya", which="population")
+    df = ssd.load("Kenya", which="population")
     assert list(df.columns) == ["Time", "Sex", "AgeGrp", "Value"]
     assert 100 in set(df["AgeGrp"])                  # "100+" parsed to 100
     assert set(df["Sex"]) == {"Female", "Male"}
@@ -91,6 +95,6 @@ def test_population_single_age_and_plus_bin(built):
 
 def test_value_roundtrip(built):
     # A known mx value: Kenya (i=0), any year, Female, age 5 -> 0.001*(5+1) + 0 = 0.006
-    df = ssload.load("Kenya", which="deaths")
+    df = ssd.load("Kenya", which="deaths")
     row = df[(df.Time == YEARS[0]) & (df.Sex == "Female") & (df.AgeGrpStart == 5)]
     assert np.isclose(row["mx"].iloc[0], 0.006)
