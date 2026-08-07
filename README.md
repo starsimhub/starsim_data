@@ -191,7 +191,7 @@ great-docs build      # -> great-docs/_site/
 great-docs preview    # live reload on http://localhost:3000
 ```
 
-`docs/assets/build_docs_theme.py` generates the parts of `great-docs.yml` that should not be written by hand — the sidebar navigation and the API reference grouping, which come from the `docs/` tree and from each module's `__all__`. Run it after adding a page or a public function; `--check` runs in the test suite, so forgetting fails a test.
+The API reference needs no configuration: great-docs discovers the public API itself. `docs/assets/build_docs_theme.py` generates the one thing that cannot be configured — the sidebar navigation, from the `docs/` tree, along with the footer and figure styling. Run it after adding or renaming a page; `--check` runs in the test suite, so forgetting fails a test.
 
 ## Building from source
 

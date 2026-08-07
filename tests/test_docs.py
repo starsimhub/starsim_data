@@ -1,9 +1,12 @@
 """Tests for the documentation sources.
 
 These do not build the site -- that needs Quarto, which is not a Python dependency. They
-check the things that go stale silently: a page added without being wired into the
-navigation, a cross-page link pointing at a file that no longer exists, and a code example
-that no longer runs.
+check the things that would otherwise go stale silently: a page added without being wired
+into the sidebar navigation, a cross-page link pointing at a file that no longer exists,
+and an executed code example that would make the build reach for the network.
+
+There is nothing here about the API reference: `great-docs.yml` has no `reference:` block,
+so great-docs discovers the public API itself and there is no list to keep in step.
 """
 
 import re
@@ -30,8 +33,8 @@ def test_every_section_has_pages():
         assert list((DOCS / section).glob("*.qmd")), f"docs/{section} is empty"
 
 
-def test_generated_config_is_up_to_date():
-    """The sidebar navigation and the API reference are generated, so they must match."""
+def test_generated_theme_is_up_to_date():
+    """The sidebar navigation is generated from the docs tree, so it has to match it."""
     result = subprocess.run([sys.executable, str(REPO / "docs" / "assets" / "build_docs_theme.py"),
                              "--check"], capture_output=True, text=True, check=False)
     assert result.returncode == 0, result.stdout + result.stderr
@@ -41,36 +44,6 @@ def test_navigation_covers_every_page():
     listed = {page["href"] for section in theme.navigation() for page in section["pages"]}
     expected = {f"docs/{p.parent.name}/{re.sub(r'^[0-9]+-', '', p.stem)}.html" for p in pages()}
     assert listed == expected
-
-
-def test_reference_covers_every_public_symbol():
-    """Every name a module exports must appear exactly once in the API reference.
-
-    This is the property that makes the generated reference maintainable: adding a
-    function to a module's `__all__` puts it in the documentation, and nothing has to
-    list symbols by hand.
-    """
-    import starsim_data as ssd
-
-    listed = [name for _, _, names in theme.reference() for name in names]
-    assert len(listed) == len(set(listed)), "a symbol appears in two reference groups"
-
-    expected = set()
-    for module_name, _, _ in theme.GROUPS:
-        module = getattr(ssd, module_name)
-        for name in module.__all__:
-            expected.add(name if name in set(ssd.__all__) else f"{module_name}.{name}")
-    assert set(listed) == expected
-
-
-def test_every_public_export_is_documented():
-    """Nothing in the package's own `__all__` may be missing from the reference."""
-    import starsim_data as ssd
-
-    listed = {name.split(".")[-1] for _, _, names in theme.reference() for name in names}
-    # `registry` is a module rather than a documentable symbol.
-    missing = set(ssd.__all__) - listed - {"registry"}
-    assert not missing, f"public exports missing from the API reference: {sorted(missing)}"
 
 
 def test_sections_match_the_great_docs_config():

@@ -5,33 +5,33 @@ Dev/CI tool -- NOT part of the installed package. Run it after adding, renaming 
 a page or a public function; `--check` is wired into the test suite and into the docs
 workflow, so forgetting fails a test rather than silently producing a wrong site.
 
-It rewrites one marked region of `great-docs.yml`, holding two things.
+It writes `docs/assets/starsim-theme.html`, the head snippet `great-docs.yml` pulls in
+through `include_in_header`. That snippet carries the three things great-docs cannot
+express in configuration:
 
-**`include_in_header`** -- a head snippet carrying three things the great-docs
-configuration cannot express: the full site navigation in the left sidebar of every page
-(great-docs otherwise gives each navbar section a sidebar containing only its own pages,
-whereas the Starsim docs put the whole page list there, and the homepage gets none at
-all); a Starsim-style footer; and a stylesheet fix so figures scale to the content column
-instead of being clipped. It is inlined rather than kept beside this script because
-great-docs copies only recognised asset files into its build directory, and a Quarto
-`file:` include is resolved relative to that directory.
+- **The full site navigation in the left sidebar of every page.** great-docs gives each
+  navbar section a sidebar containing only its own pages, and gives the homepage none at
+  all; the Starsim docs put the whole page list in the sidebar and use the navbar for the
+  top level, which is what this restores.
+- **A Starsim-style footer**: the Gates Foundation attribution, the Privacy and Terms
+  links, and the icon row.
+- **A stylesheet fix** so figures scale to the content column instead of being clipped.
 
-**`reference`** -- the API reference grouping, generated from each module's `__all__`, so
-the only thing maintained by hand is one line per module in `GROUPS` below. Adding a
-function to a module's `__all__` puts it in the documentation; removing one takes it out.
-Nothing lists symbols individually, which matters because great-docs resolves those names
-silently: a stale entry produces an empty page rather than an error.
+The navigation is generated from the section directories rather than written out, so a
+page added or renamed cannot silently vanish from it.
+
+Note that there is deliberately no API reference configuration to generate: `great-docs.yml`
+has no `reference:` block, so great-docs discovers the public API itself.
 
 Usage:
 
 ```bash
-python docs/assets/build_docs_theme.py            # rewrite great-docs.yml
+python docs/assets/build_docs_theme.py            # -> docs/assets/starsim-theme.html
 python docs/assets/build_docs_theme.py --check    # verify; write nothing
 ```
 """
 
 import argparse
-import importlib
 import json
 import re
 import sys
@@ -39,7 +39,7 @@ from pathlib import Path
 
 REPO = Path(__file__).resolve().parent.parent.parent
 DOCS = REPO / "docs"
-CONFIG = REPO / "great-docs.yml"
+THEME = DOCS / "assets" / "starsim-theme.html"
 
 sys.path.insert(0, str(REPO))
 
@@ -52,41 +52,6 @@ SECTIONS = [
     ("The data", "data"),
     ("Internals", "internals"),
 ]
-
-# --- API reference ------------------------------------------------------------------ #
-
-# Module -> (section title, description). Members come from each module's `__all__`, so
-# this table is the whole of the hand-maintained reference configuration: one line per
-# module, no symbol names. Modules are grouped by what a reader is trying to do rather
-# than by Python type, which is what the module layout already encodes.
-GROUPS = [
-    ("loaders", "Loading bundled data",
-     "Tier 0: everything inside the wheel. These never touch the network."),
-    ("locations", "Locations",
-     "Turning whatever a user typed into a canonical key, and the vocabulary for "
-     "administrative levels."),
-    ("nodes", "The node table",
-     "Bundled subnational geography: where each administrative unit is, how big it is, "
-     "and how far apart they are. No geospatial dependencies needed."),
-    ("fetching", "Fetching UN WPP data",
-     "Tier 2: annual series, complete life tables and other projection variants, "
-     "downloaded on demand and cached."),
-    ("shapes", "Boundaries",
-     "Administrative boundaries with full geometry, from UNOCHA, geoBoundaries or GADM. "
-     "Requires the [spatial] extra."),
-    ("rasters", "Gridded population",
-     "WorldPop rasters and their aggregation onto administrative units, which is what "
-     "turns a boundary file into a metapopulation. Requires the [spatial] extra."),
-    ("plotting", "Plotting",
-     "Validation figures: the cheapest way to notice the wrong country or the wrong units."),
-    ("cache", "Cache", "Where downloads go, what is in there, and how to change it."),
-    ("settings", "Settings", "Package-level options, and how to set them."),
-    ("registry", "The registry",
-     "What datasets exist, how each one is shaped, and the hooks for adding your own."),
-]
-
-BEGIN = "# --- BEGIN GENERATED ---"
-END = "# --- END GENERATED ---"
 
 # --- Footer --------------------------------------------------------------------------#
 
@@ -127,66 +92,17 @@ def navigation():
     return out
 
 
-def reference():
-    """Return `[(title, desc, [names])]`, taking the members from each module's `__all__`."""
-    package = importlib.import_module("starsim_data")
-    exported = set(package.__all__)
-    out = []
-    for module_name, title, desc in GROUPS:
-        module = importlib.import_module(f"starsim_data.{module_name}")
-        names = []
-        for name in module.__all__:
-            # Prefer the top-level spelling where the package re-exports it, since that is
-            # how a reader will write it; fall back to the qualified one otherwise.
-            names.append(name if name in exported else f"{module_name}.{name}")
-        if not names:
-            raise SystemExit(f"starsim_data.{module_name} exports nothing")
-        out.append((title, desc, names))
-    return out
-
-
-def render_reference(groups):
-    """Return the YAML for the `reference:` block."""
-    lines = ["reference:"]
-    for title, desc, names in groups:
-        lines.append(f"  - title: {title}")
-        lines.append(f"    desc: >")
-        for chunk in _wrap(desc, 84):
-            lines.append(f"      {chunk}")
-        lines.append("    contents:")
-        lines += [f"      - {name}" for name in names]
-        lines.append("")
-    return "\n".join(lines)
-
-
-def _wrap(text, width):
-    """Wrap `text` to `width`, for readability of the generated YAML only."""
-    words, line, out = text.split(), "", []
-    for word in words:
-        if line and len(line) + 1 + len(word) > width:
-            out.append(line)
-            line = word
-        else:
-            line = f"{line} {word}".strip()
-    if line:
-        out.append(line)
-    return out
-
-
-def render_header(nav):
-    """Return the `include_in_header` YAML, with the snippet as a block scalar."""
-    snippet = render_snippet(nav)
-    body = "\n".join(f"      {line}".rstrip() for line in snippet.splitlines())
-    return "include_in_header:\n  - text: |\n" + body + "\n"
-
-
-def render_snippet(nav):
+def render(nav):
     """Return the head snippet: the figure fix, the sidebar script and the footer."""
     # Joined without newlines: this is interpolated into a JavaScript string literal, and
     # a raw newline inside one is a syntax error.
     icons = "".join(f'<a href="{href}" title="{label}" aria-label="{label}">'
                     f'<i class="bi bi-{icon}"></i></a>' for icon, href, label in LINKS)
-    return f"""<style>
+    return f"""<!--
+  GENERATED by docs/assets/build_docs_theme.py -- do not edit by hand.
+  Regenerate with: python docs/assets/build_docs_theme.py
+-->
+<style>
   /* Matplotlib figures are emitted at their native pixel size, which for a multi-panel
      figure is wider than the content column. !important because the theme stylesheet
      loads after this block and sets max-width: none. */
@@ -314,57 +230,30 @@ def render_snippet(nav):
 """
 
 
-def render(nav, groups):
-    """Return the whole generated region of `great-docs.yml`."""
-    return "\n".join([
-        BEGIN,
-        "# Everything between these markers is generated by",
-        "# docs/assets/build_docs_theme.py. Edit that script, not this block.",
-        "",
-        render_header(nav),
-        render_reference(groups),
-        END,
-    ])
-
-
-def splice(config, block):
-    """Return `config` with the generated region replaced by `block`."""
-    if BEGIN not in config or END not in config:
-        raise SystemExit(f"{CONFIG.name} has no {BEGIN} / {END} markers to write between")
-    head, rest = config.split(BEGIN, 1)
-    _, tail = rest.split(END, 1)
-    return head + block + tail
-
-
 def main():
     parser = argparse.ArgumentParser(description=__doc__,
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--check", action="store_true",
-                        help="verify the generated region is up to date; write nothing")
+                        help="verify the generated file is up to date; write nothing")
     args = parser.parse_args()
 
     nav = navigation()
-    groups = reference()
-    current = CONFIG.read_text(encoding="utf-8")
-    wanted = splice(current, render(nav, groups))
-
+    wanted = render(nav)
     pages = sum(len(s["pages"]) for s in nav)
-    symbols = sum(len(names) for _, _, names in groups)
 
     if args.check:
+        current = THEME.read_text(encoding="utf-8") if THEME.is_file() else ""
         if current != wanted:
-            raise SystemExit(f"the generated region of {CONFIG.name} is out of date; "
-                             f"regenerate it with:\n  python docs/assets/build_docs_theme.py")
-        print(f"Up to date: {pages} pages in {len(nav)} sections, "
-              f"{symbols} symbols in {len(groups)} reference groups.")
+            raise SystemExit(f"{THEME.relative_to(REPO)} is out of date; regenerate it with:\n"
+                             f"  python docs/assets/build_docs_theme.py")
+        print(f"{THEME.relative_to(REPO)} is up to date "
+              f"({pages} pages in {len(nav)} sections).")
         return
 
-    CONFIG.write_text(wanted, encoding="utf-8")
-    print(f"Rewrote the generated region of {CONFIG.name}")
+    THEME.write_text(wanted, encoding="utf-8")
+    print(f"Wrote {THEME.relative_to(REPO)}: {pages} pages in {len(nav)} sections")
     for section in nav:
         print(f"  {section['title']}: " + ", ".join(p["title"] for p in section["pages"]))
-    for title, _, names in groups:
-        print(f"  {title}: {len(names)} symbol(s)")
 
 
 if __name__ == "__main__":
