@@ -1,6 +1,5 @@
 ---
 title: "Locations"
-guide-section: "The data"
 tags: [Reference, Concepts]
 ---
 
@@ -111,7 +110,7 @@ ssd.resolve('NA'), ssd.location_info('Namibia').iso3
 [ssd.parse_level(x) for x in ['admin1', 'ADM2', '3', 4, 'level0']]
 ```
 
-Level 0 denotes the country; higher levels denote progressively finer subdivisions. The upper bound is 5, which is the finest level published by any of the boundary sources described in [Data sources](06-datasources.qmd).
+Level 0 denotes the country; higher levels denote progressively finer subdivisions. The upper bound is 5, which is the finest level published by any of the boundary sources described in [Data sources](sources.qmd).
 
 ```{python}
 #| error: true
@@ -137,4 +136,4 @@ ssd.load_nodes('France', level=1).dot_name.head(4).tolist()
 [ssd.node_name(x) for x in ['New York', 'Île-de-France', 'KwaZulu-Natal']]
 ```
 
-The component before the colon is always a string that `load()` accepts, so a `dot_name` can be decomposed and its country looked up directly. For joining to external data, however, `pcode` rather than `dot_name` is the appropriate key; see [Spatial data](05-spatial.qmd).
+The component before the colon is always a string that `load()` accepts, so a `dot_name` can be decomposed and its country looked up directly. For joining to external data, however, `pcode` rather than `dot_name` is the appropriate key; see [Spatial data](spatial.qmd).

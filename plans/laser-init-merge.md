@@ -193,7 +193,7 @@ The parameterisation is standard and worth adopting for consistency across IDM t
 
 ### 5.6 The data-source comparison documentation
 
-`laser-init/docs/datasources.md` is ~480 lines comparing the sources on coverage, admin depth, update frequency, file size, license and regional strengths, with per-source citations and recommendations by use case and by region. This is accumulated judgement, not code, and it is the sort of thing nobody rewrites once lost. Port it more or less verbatim when the spatial sources land, and fold this package's existing per-source notes in `NOTICE.md` into the same structure. *Built as `docs/06-datasources.qmd`, one page of a full great-docs site (§9, decision 10).*
+`laser-init/docs/datasources.md` is ~480 lines comparing the sources on coverage, admin depth, update frequency, file size, license and regional strengths, with per-source citations and recommendations by use case and by region. This is accumulated judgement, not code, and it is the sort of thing nobody rewrites once lost. Port it more or less verbatim when the spatial sources land, and fold this package's existing per-source notes in `NOTICE.md` into the same structure. *Built as `docs/data/04-sources.qmd`, one page of a full great-docs site (§9, decision 10).*
 
 ---
 

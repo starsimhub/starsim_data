@@ -168,7 +168,7 @@ ssd.choropleth('kenya', level=1)               # a filled map
 
 Together, `load_nodes()` and `distances()` are the inputs a gravity model needs (`P_i`, `P_j`, `D_ij`); the gravity formulation itself belongs in the model, not in a data package.
 
-[Data sources](https://starsimhub.github.io/starsim_data/user-guide/datasources.html) compares every source in detail — coverage, admin depth, update cadence, licensing and what each is suited to.
+[Data sources](https://starsimhub.github.io/starsim_data/docs/data/sources.html) compares every source in detail — coverage, admin depth, update cadence, licensing and what each is suited to.
 
 ## Citing
 

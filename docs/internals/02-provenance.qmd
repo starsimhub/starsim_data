@@ -1,6 +1,5 @@
 ---
 title: "Provenance and reproducibility"
-guide-section: "Internals"
 tags: [Reference, Reproducibility]
 ---
 
@@ -102,7 +101,7 @@ python scripts/build_nodes.py --check          # node table
 
 The node-table build is excluded from the automatic check because its inputs are downloaded rather than held in `raw_data/`, and a cold rebuild requires roughly 420 MB. It runs as a separate, manually triggered workflow.
 
-[Building the data](09-building-the-data.qmd) describes what each script does.
+[Building the data](building.qmd) describes what each script does.
 
 ## Citation
 

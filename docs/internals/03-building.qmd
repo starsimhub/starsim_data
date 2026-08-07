@@ -1,6 +1,5 @@
 ---
 title: "Building the data"
-guide-section: "Internals"
 tags: [Internals, Contributing]
 ---
 
@@ -99,7 +98,7 @@ Roughly the sequence to follow:
 
 1. Put the human-readable source in `raw_data/`, if it is small enough to track. If it is not, it belongs in tier 2 and should be fetched rather than built.
 2. Write a build script that produces an `.h5` store with a `spec` attribute naming its layout, and a `provenance` attribute produced by `scripts/provenance.py`.
-3. If the shape is unlike anything already present, add a layout shaper and register it; otherwise reuse an existing layout. See [Architecture](07-architecture.qmd).
+3. If the shape is unlike anything already present, add a layout shaper and register it; otherwise reuse an existing layout. See [Architecture](architecture.qmd).
 4. Add a one-line description to `registry.DESCRIPTIONS`.
 5. Add the source, its licence and its citation to `NOTICE.md`, and the licence text to `licenses/` if the licence requires it.
 6. Add tests. At minimum: that the data loads, that its shape and units are as documented, and that its recorded licence matches `NOTICE.md`.

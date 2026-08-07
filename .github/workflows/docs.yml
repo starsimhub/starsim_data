@@ -28,6 +28,9 @@ jobs:
       - name: Set up Quarto
         uses: quarto-dev/quarto-actions/setup@v2
 
+      - name: Check the generated theme asset is up to date
+        run: python scripts/build_docs_theme.py --check
+
       - name: Build docs
         run: great-docs build
 

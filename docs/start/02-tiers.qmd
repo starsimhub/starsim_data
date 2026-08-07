@@ -1,6 +1,5 @@
 ---
 title: "Data tiers"
-guide-section: "Getting started"
 tags: [Architecture, Concepts]
 ---
 

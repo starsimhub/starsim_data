@@ -1,6 +1,5 @@
 ---
 title: "Data sources"
-guide-section: "The data"
 tags: [Reference, Data]
 ---
 

@@ -1,6 +1,5 @@
 ---
 title: "Datasets and their shapes"
-guide-section: "The data"
 tags: [Reference, Data]
 ---
 
@@ -12,7 +11,7 @@ import starsim_data as ssd
 ssd.list_datasets(detailed=True).drop(columns='license')
 ```
 
-Licences are omitted here for width; they are listed in [Provenance](08-provenance.qmd), and in full in `NOTICE.md`.
+Licences are omitted here for width; they are listed in [Provenance](../internals/provenance.qmd), and in full in `NOTICE.md`.
 
 ## Demographics
 
@@ -163,7 +162,7 @@ ssd.load('Kenya', which='mistry2021')
 
 ## The node table
 
-The node table contains one row per administrative unit. It is described in full in [Spatial data](05-spatial.qmd); the schema is reproduced here for completeness.
+The node table contains one row per administrative unit. It is described in full in [Spatial data](spatial.qmd); the schema is reproduced here for completeness.
 
 ```{python}
 nodes = ssd.load_nodes('kenya', level=1)
