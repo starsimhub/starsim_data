@@ -1,0 +1,178 @@
+---
+title: "Architecture"
+guide-section: "Internals"
+tags: [Architecture, Internals]
+---
+
+This page describes how the package is organised internally: what the modules do, how a call to `load()` is dispatched, how data is stored on disk, and where the extension points are. It is intended for people modifying the package or adding data to it, rather than for people using it.
+
+## Modules
+
+```{python}
+#| echo: false
+import pandas as pd
+pd.DataFrame([
+    dict(module='settings.py', role='The `options` object: cache location and verbosity'),
+    dict(module='registry.py', role='What datasets exist, how each is shaped, and the registration hooks'),
+    dict(module='locations.py', role='Resolving location strings; administrative-level vocabulary'),
+    dict(module='loaders.py', role='Reading bundled stores: `load`, `list_datasets`, `provenance`'),
+    dict(module='cache.py', role='The download cache and its provenance sidecars'),
+    dict(module='fetching.py', role='UN WPP bulk files: `fetch`'),
+    dict(module='nodes.py', role='The node table and `distances`'),
+    dict(module='shapes.py', role='Boundary sources and `fetch_shapes` (needs [spatial])'),
+    dict(module='rasters.py', role='WorldPop rasters and `fetch_nodes` (needs [spatial])'),
+    dict(module='plotting.py', role='Validation figures and the choropleth'),
+])
+```
+
+Import order matters, because two modules register themselves when they are imported: `loaders` adds its layout shapers and `fetching` adds its tier-2 datasets, both of which require `registry` to exist first. The order is fixed in `__init__.py`.
+
+## Import conventions
+
+Modules follow Starsim's convention: each imports the package under its own alias and reaches everything through it.
+
+```python
+import starsim_data as ssd
+
+def load_nodes(location, level=0):
+    return ssd.load(location, which='nodes', level=level)
+```
+
+`from` imports are confined to `__init__.py`, where the public namespace is assembled. Within a module, `ssd.load` and `ssd.registry.datasets()` resolve at call time, so modules can refer to each other freely.
+
+## The registry
+
+The registry holds two tables.
+
+`DATASETS` maps a dataset name to a descriptor recording its layout, tier, administrative levels, licence, available revisions, location count and where its store lives.
+
+```{python}
+import starsim_data as ssd
+
+ssd.registry.dataset('deaths')
+```
+
+Descriptors for bundled data are discovered once, by opening each `.h5` file in the data directory and reading its root attributes. The result is cached; `registry.refresh()` discards the cache, which is needed only if the files change within a running process, such as after a rebuild in a test.
+
+`LAYOUTS` maps a layout name to the function that turns a stored array into a dataframe.
+
+```{python}
+sorted(ssd.registry.LAYOUTS)
+```
+
+Adding a new family of data is a shaper plus a registry entry.
+
+## How `load()` is dispatched
+
+```
+load(location, which, kind, revision, level)
+  │
+  ├─ registry.dataset(which)          → the descriptor, or an error with suggestions
+  ├─ descriptor.loader?               → delegate, if this is a registered dataset
+  ├─ descriptor.tier > 0?             → refuse, and point at fetch()
+  ├─ descriptor.source(revision)      → which file, and which group inside it
+  ├─ h5py.File(...)                   → open the store
+  ├─ resolve(location, valid=...)     → the canonical key, scoped to this dataset
+  ├─ registry.get_layout(spec.layout) → the shaper for this layout
+  └─ shaper(group, key, spec, opts)   → the dataframe, plus provenance in .attrs
+```
+
+The `opts` dictionary carries the arguments that apply to some layouts and not others — `kind` for contact matrices, `level` for the node table — so a new layout can introduce its own without changing any existing shaper's signature. An argument applied to a layout that has no use for it is rejected rather than ignored:
+
+```{python}
+#| error: true
+ssd.load('Kenya', which='deaths', level=1)
+```
+
+## Storage
+
+Bundled data is stored as HDF5, one store per family, with a `spec` attribute describing the layout and a `provenance` attribute describing the source. The stores are self-describing: the loader reads how to interpret a file from the file itself.
+
+```{python}
+#| echo: false
+pd.DataFrame([
+    dict(file='prem2017.h5, prem2021.h5, mistry2021.h5', layout='matrix',
+         structure='/<Location>/<setting> → a square float32 array'),
+    dict(file='demographics-<revision>.h5', layout='crude, mortality, population',
+         structure='/<series>/<Location> → a (year[, sex, age]) array'),
+    dict(file='nodes.h5', layout='nodes',
+         structure='/<Location> → a compound array, one row per unit'),
+    dict(file='locations.csv', layout='—',
+         structure='the canonical location table, read with the csv module'),
+])
+```
+
+Demographic stores are named by revision, so a new UN release adds a file rather than replacing one. The registry gathers the revisions of a series into a single descriptor, and `Dataset.source(revision)` selects among them, defaulting to the most recent.
+
+## Tiers, in code
+
+The tier described in [Data tiers](tiers.qmd) is a field on the descriptor, and `load()` enforces it:
+
+```{python}
+#| error: true
+ssd.load('kenya', which='life_table')
+```
+
+Tier-1 datasets appear in the registry despite having no bundled store, which is what lets `load()` redirect to `fetch()` by name rather than fail to find a file.
+
+## Extension points
+
+Three public hooks are provided, all of which are used internally by the package itself.
+
+**A new layout.** Register a function that turns a stored array into a dataframe:
+
+```python
+def shape_my_layout(group, key, spec, opts):
+    return sc.dataframe(group[key][:])
+
+ssd.register_layout('my_layout', shape_my_layout)
+```
+
+**A new dataset.** Register a descriptor. Giving it a `loader` causes `load()` to delegate to it, which is the route for data this package does not ship:
+
+```{python}
+ds = ssd.registry.Dataset(name='my_dataset', layout='crude', tier=1,
+                          description='Something from elsewhere',
+                          loader=lambda location, **kw: f'data for {location}')
+ssd.register_dataset(ds)
+ssd.load('Kenya', which='my_dataset')
+```
+
+```{python}
+#| echo: false
+ssd.registry.unregister_dataset('my_dataset')
+```
+
+**A new plotter.** `plotting.PLOTTERS` maps a layout to a drawing function, and can be assigned into.
+
+All three hooks are functions rather than dictionaries you mutate, so a downstream package can extend the registry without reaching into it.
+
+## Configuration and side effects
+
+Importing the package creates no directories, opens no files and emits no warnings. Settings are read from the environment at import, but acted on only when a function needs them: the cache directory is resolved at call time and created when something is first written to it.
+
+```{python}
+ssd.options.help()
+```
+
+There is no logging configuration; handler setup is left to the application.
+
+## Testing
+
+The test suite is divided by what it requires.
+
+```{python}
+#| echo: false
+pd.DataFrame([
+    dict(marker='(none)', requires='Nothing but the bundled data',
+         note='The majority; hermetic and fast'),
+    dict(marker='network', requires='Internet access',
+         note='Deselected by default in CI; set STARSIM_DATA_CACHE_DIR to reuse downloads'),
+    dict(marker='slow', requires='More than a second or so',
+         note='Chiefly the 145 MB life-table fetches'),
+    dict(marker='spatial', requires='The [spatial] extra',
+         note='Skipped automatically when it is absent'),
+])
+```
+
+Continuous integration also rebuilds every store from `raw_data/` and re-runs the suite against the result, so the committed artefacts cannot drift from their sources. The node table has a separate, manually triggered workflow, since rebuilding it downloads roughly 420 MB.

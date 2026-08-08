@@ -1,0 +1,71 @@
+<!--
+  Small style overrides so the site matches the rest of the Starsim documentation
+  (https://docs.starsim.org). Pulled in by great-docs.yml via include_in_header.
+
+  Everything else about the site -- the sidebar, the navbar entries, the API reference --
+  is produced by great-docs itself and is deliberately not touched here.
+-->
+<style>
+  /* Matplotlib figures are emitted at their native pixel size, which for a multi-panel
+     figure is wider than the content column. !important throughout this file because the
+     theme stylesheet loads after it. */
+  img.figure-img,
+  .cell-output-display img {
+    max-width: 100% !important;
+    height: auto !important;
+  }
+
+  /* Quarto centres the page grid (a 250px sidebar, an 800px body and a 250px margin
+     column, 1300px in total), but leaves the navbar container fluid, which puts it
+     visibly left of the content. Match the grid, as the other Starsim sites do. */
+  .navbar-container {
+    max-width: 1300px;
+    margin-left: auto !important;
+    margin-right: auto !important;
+  }
+
+  /* Footer: centred text with the icon row on the right. */
+  footer.footer .nav-footer { display: flex; align-items: center; gap: 1rem; }
+  footer.footer .nav-footer-center { flex: 1 1 auto; }
+  footer.footer .nav-footer-center p { text-align: center !important; margin: 0; }
+  footer.footer .nav-footer-right {
+    flex: 0 0 auto;
+    display: flex;
+    gap: 0.75rem;
+    font-size: 1.1rem;
+  }
+  @media (max-width: 700px) {
+    footer.footer .nav-footer { flex-direction: column; }
+  }
+</style>
+<script>
+// Replace great-docs' credits footer with the one the other Starsim sites use.
+(function () {
+  var LINKS = [
+    ['github', 'https://github.com/starsimhub/starsim_data', 'GitHub'],
+    ['envelope-at-fill', 'mailto:info@starsim.org', 'Email'],
+    ['slack', 'https://starsim-idm.slack.com', 'Slack'],
+    ['globe', 'https://starsim.org', 'Starsim']
+  ];
+  function build() {
+    var footer = document.querySelector('footer.footer .nav-footer');
+    if (!footer) return;
+    var icons = LINKS.map(function (l) {
+      return '<a href="' + l[1] + '" title="' + l[2] + '" aria-label="' + l[2] + '">' +
+             '<i class="bi bi-' + l[0] + '"></i></a>';
+    }).join('');
+    footer.innerHTML =
+      '<div class="nav-footer-center"><p>&copy; 2023&ndash;2026, Gates Foundation. ' +
+      'All rights reserved. ' +
+      '<a href="https://www.gatesfoundation.org/Privacy-and-Cookies-Notice">' +
+      'Privacy and Cookies Notice</a> | ' +
+      '<a href="https://www.gatesfoundation.org/Terms-of-Use">Terms of Use</a></p></div>' +
+      '<div class="nav-footer-right">' + icons + '</div>';
+  }
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', build);
+  } else {
+    build();
+  }
+})();
+</script>

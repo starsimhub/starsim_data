@@ -74,7 +74,10 @@ def get(url, token=None, retries=3):
 def location_ids():
     """Map this package's ISO2 codes to WPP location IDs."""
     import json
-    ours = set(pd.read_csv(LOCATIONS_CSV)["iso_code"].str.upper())
+    # keep_default_na=False: Namibia's ISO-2 code is the string "NA", which pandas
+    # would otherwise read as NaN, silently excluding Namibia from the download.
+    locations = pd.read_csv(LOCATIONS_CSV, keep_default_na=False, na_values=[])
+    ours = set(locations["iso_code"].str.upper())
     data = json.loads(get(f"{API}/locations/?pageSize=1000"))["data"]
     # Some region aggregates ("Americas", ...) share a country's ISO2 code but have
     # no coordinates; require lat/long so we keep only real countries (one id per ISO2).

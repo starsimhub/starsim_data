@@ -59,6 +59,19 @@ def test_spaces_map_to_underscores():
     assert np.array_equal(a.to_numpy(), b.to_numpy())
 
 
+@pytest.mark.parametrize("alias", ["KE", "KEN", "Republic of Kenya"])
+def test_load_accepts_iso_codes_and_official_names(alias):
+    a = ssd.load(location=alias, which="prem2017")
+    b = ssd.load(location="Kenya", which="prem2017")
+    assert np.array_equal(a.to_numpy(), b.to_numpy())
+
+
+def test_load_accepts_abbreviations():
+    a = ssd.load(location="USA", which="prem2021")
+    b = ssd.load(location="United_States", which="prem2021")
+    assert np.array_equal(a.to_numpy(), b.to_numpy())
+
+
 def test_kinds_differ_and_all_are_loadable():
     mats = {k: ssd.load("Kenya", which="prem2017", kind=k).to_numpy()
             for k in ("all", "home", "work", "school", "community")}

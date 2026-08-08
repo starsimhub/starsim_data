@@ -36,6 +36,23 @@ The Apache-2.0 license requires that its copyright notice, this attribution, and
 - **Paper:** Prem K, Cook AR, Jit M. *Projecting social contact matrices in 152 countries using contact surveys and demographic data.* PLoS Computational Biology 13(9): e1005697 (2017). https://journals.plos.org/ploscompbiol/article?id=10.1371/journal.pcbi.1005697
 - **Format:** 16×16 matrices; 5-year age groups (0–4, 5–9, …, 75+).
 
+### Node table — UNOCHA COD-AB (CC BY 3.0 IGO) and geoBoundaries (CC BY 4.0)
+
+The bundled `nodes.h5` (centroids, areas, p-codes and hierarchy for administrative levels 0 and 1) is **derived data**: it is computed from the boundary sources below, which are themselves not redistributed. Every row records which source it came from, in its `source` column.
+
+- **UNOCHA COD-AB** — Common Operational Datasets, Administrative Boundaries, via the [laser-base/unocha](https://github.com/laser-base/unocha) mirror of the [UNOCHA Humanitarian Data Exchange](https://data.humdata.org/). License: Creative Commons Attribution 3.0 IGO. **Citation:** United Nations Office for the Coordination of Humanitarian Affairs (UNOCHA), *Common Operational Datasets — Administrative Boundaries (COD-AB).*
+- **geoBoundaries CGAZ v6.0.0** (gbOpen) — [geoboundaries.org](https://www.geoboundaries.org). License: Creative Commons Attribution 4.0. **Citation:** Runfola D, Anderson A, Baier H, et al. *geoBoundaries: A global database of political administrative boundaries.* PLoS ONE 15(4): e0231866 (2020). https://doi.org/10.1371/journal.pone.0231866
+
+Both licenses permit redistribution of derived works with attribution, which is what this section provides.
+
+## Fetched, never redistributed
+
+These are **not** bundled with the package. They are downloaded to a local cache when you call `fetch_shapes()`, `fetch_raster()` or `fetch_nodes()`, and the terms below are yours to comply with as the person who fetched them.
+
+- **GADM v4.1** — [gadm.org](https://gadm.org). **Free for non-commercial use only; redistribution is not permitted.** This package therefore never bundles GADM data, never derives bundled data from it, and never reaches it through the automatic source fallback — `source='gadm'` must be asked for explicitly. The constraint is enforced in code, via `ShapeSource.redistributable`. **Citation:** GADM database of Global Administrative Areas, version 4.1.
+- **WorldPop** — 1 km gridded population, [worldpop.org](https://www.worldpop.org). License: Creative Commons Attribution 4.0. **Citation:** WorldPop (www.worldpop.org), School of Geography and Environmental Science, University of Southampton. https://dx.doi.org/10.5258/SOTON/WP00645
+- **UN WPP bulk CSVs** — the same UN WPP 2024 release and terms as the bundled demographics above, at annual resolution.
+
 ## Provenance
 
 The **contact matrices** were derived from [epistorm/epydemix-data](https://github.com/epistorm/epydemix-data) (GPL-3.0 — full text in [licenses/LICENSE_EPYDEMIX](licenses/LICENSE_EPYDEMIX)), trimmed to national-level (level 0) matrices only and reorganized into a flattened file layout. Subnational data, the `litvinova_2025` source, and epydemix-data's own demographic/age-distribution files are not included; the **demographic data** in this package comes from the UN World Population Prospects (above) instead.

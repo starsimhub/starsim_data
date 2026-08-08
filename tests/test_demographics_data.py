@@ -4,7 +4,6 @@ The pipeline itself is tested with synthetic inputs in test_demographics.py; the
 tests assert the actual UN WPP data that ships in the package is present and sane.
 """
 
-import numpy as np
 import pytest
 
 import starsim_data as ssd
@@ -26,10 +25,12 @@ def test_births_and_migration_are_crude_series():
 
 def test_births_ordering_high_vs_low_fertility():
     # Niger has among the highest fertility in the world; Japan among the lowest.
+    def cbr_2020(df):
+        return float(df.loc[df.Time == 2020, "CBR"].iloc[0])
+
     ne = ssd.load("Niger", which="births")
     jp = ssd.load("Japan", which="births")
-    at = lambda df: float(df.loc[df.Time == 2020, "CBR"].iloc[0])
-    assert at(ne) > 30 > at(jp)
+    assert cbr_2020(ne) > 30 > cbr_2020(jp)
 
 
 def test_deaths_is_starsim_ready_and_j_shaped():

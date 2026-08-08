@@ -1,0 +1,136 @@
+---
+title: "Locations"
+guide-section: "The data"
+tags: [Reference, Concepts]
+---
+
+Datasets are keyed by a canonical name — `Kenya`, `United_States`, `Cote_dIvoire` — but users write country names in many other ways. This page describes how an arbitrary string is mapped onto a canonical key, and why the mapping is arranged as it is.
+
+```{python}
+import starsim_data as ssd
+
+[ssd.resolve(name) for name in ['Kenya', 'kenya', 'KE', 'KEN', 'Republic of Kenya']]
+```
+
+## What is recognised
+
+The resolver matches, in the following order of generality, against a table generated into `data/locations.csv`:
+
+| Form | Example | Resolves to |
+|---|---|---|
+| Canonical name | `United_States` | `United_States` |
+| Free-text name | `united states` | `United_States` |
+| ISO 3166-1 alpha-2 | `US` | `United_States` |
+| ISO 3166-1 alpha-3 | `USA` | `United_States` |
+| Official name | `United States of America` | `United_States` |
+| Common abbreviation | `DRC`, `UK`, `UAE` | the corresponding country |
+| Former name | `Zaire`, `Burma` | the current country |
+| French, Spanish or Portuguese name | `Allemagne`, `Alemania` | `Germany` |
+
+Accents, case, punctuation and separator style are normalised away before matching, so the following are all the same string as far as the resolver is concerned:
+
+```{python}
+{name: ssd.locations.normalize(name) for name in
+ ["Côte d'Ivoire", "cote divoire", "Cote_dIvoire", "  COTE D'IVOIRE  "]}
+```
+
+```{python}
+len(set(ssd.resolve(n) for n in ["Côte d'Ivoire", 'cote divoire', 'Ivory Coast', 'CIV']))
+```
+
+## Resolution is exact; approximate matching only advises
+
+Matching against the table is exact. Approximate matching only ever shapes the error message when an exact match fails; it never decides what is returned.
+
+```{python}
+#| error: true
+ssd.load('Keyna', which='deaths')
+```
+
+The two mechanisms suit different problems. Approximate matching cannot reach abbreviations at all — the edit distance from `USA` to `United_States` is far too large — so abbreviations live in the table. It will, on the other hand, readily offer candidates for a string that corresponds to no country:
+
+```{python}
+import sciris as sc
+sc.suggest('Atlantis', ssd.list_all_locations(), n=3, die=False)
+```
+
+Which is useful in an error message, and would be wrong as a lookup.
+
+## Scoping to a dataset
+
+Coverage varies between datasets, so `load()` resolves against the locations that are actually present in the dataset being read. A country that exists but is absent from a particular source produces a different error from one that does not exist at all:
+
+```{python}
+#| error: true
+ssd.load('Kenya', which='mistry2021')
+```
+
+```{python}
+len(ssd.list_locations('prem2017')), len(ssd.list_locations('mistry2021'))
+```
+
+`list_locations(which)` gives the locations in one dataset, and `list_all_locations()` gives every location the package knows about.
+
+```{python}
+len(ssd.list_all_locations())
+```
+
+## Inspecting the table
+
+```{python}
+info = ssd.location_info('DRC')
+{k: info[k] for k in ['location', 'iso_code', 'iso3', 'official_name']}
+```
+
+```{python}
+ssd.location_info('Germany').aliases[:8]
+```
+
+The underlying file, `starsim_data/data/locations.csv`, is partly hand-maintained and partly generated. The `location`, `level`, `iso_code`, `primary_contact_source`, `contact_sources` and `population_source` columns are maintained by hand; `iso3`, `official_name` and `aliases` are generated from `pycountry` by `scripts/build_locations.py`, which is why `pycountry` is a build-time dependency and not a runtime one.
+
+The generator discards any alias that would be ambiguous across two locations, so a successful match is always unambiguous.
+
+::: {.callout-warning}
+## Namibia and the string `NA`
+Namibia's ISO 3166-1 alpha-2 code is the two-letter string `NA`, which `pandas.read_csv` interprets as a missing value under its default settings. Every reader of `locations.csv` in this package either passes `keep_default_na=False` or uses the standard library's `csv` module instead, and there is a regression test covering it. Anyone parsing country tables independently is likely to encounter the same problem.
+
+```{python}
+ssd.resolve('NA'), ssd.location_info('Namibia').iso3
+```
+:::
+
+## Administrative levels
+
+`parse_level()` accepts the several spellings in circulation and returns an integer:
+
+```{python}
+[ssd.parse_level(x) for x in ['admin1', 'ADM2', '3', 4, 'level0']]
+```
+
+Level 0 denotes the country; higher levels denote progressively finer subdivisions. The upper bound is 5, which is the finest level published by any of the boundary sources described in [Data sources](datasources.qmd).
+
+```{python}
+#| error: true
+ssd.parse_level('admin9')
+```
+
+Booleans are rejected explicitly, since `bool` is a subclass of `int` in Python and `parse_level(True)` would otherwise silently mean level 1:
+
+```{python}
+#| error: true
+ssd.parse_level(True)
+```
+
+## Naming below the country level
+
+Subnational units in the node table follow the same normalisation, with case preserved, and are addressed by a hierarchical `dot_name`:
+
+```{python}
+ssd.load_nodes('France', level=1).dot_name.head(4).tolist()
+```
+
+```{python}
+[ssd.node_name(x) for x in ['New York', 'Île-de-France', 'KwaZulu-Natal']]
+```
+
+The component before the colon is always a string that `load()` accepts, so a `dot_name` can be decomposed and its country looked up directly. For joining to external data, however, `pcode` rather than `dot_name` is the appropriate key; see [Spatial data](spatial.qmd).

@@ -1,0 +1,123 @@
+---
+title: "Building the data"
+guide-section: "Internals"
+tags: [Internals, Contributing]
+---
+
+The `.h5` files inside the package are build artefacts, generated from human-readable sources by the scripts in `scripts/`. This page describes what each script does and how to regenerate or update the data. It is relevant when a new upstream release appears, when a source needs correcting, or when adding a dataset.
+
+## Layout of the repository
+
+```
+starsim_data/
+├── raw_data/                   # human-readable sources, tracked in git
+│   ├── contact_matrices/       # per-country CSVs, one folder per source
+│   └── demographics/           # three normalised UN WPP CSVs
+├── scripts/                    # build tools; not part of the installed package
+│   ├── download_wpp.py         # raw_data/demographics/  ← UN WPP Data Portal API
+│   ├── build_hdf5.py           # prem2017.h5, prem2021.h5, mistry2021.h5
+│   ├── build_demographics.py   # demographics-<revision>.h5
+│   ├── build_locations.py      # the derived columns of locations.csv
+│   ├── build_nodes.py          # nodes.h5
+│   └── provenance.py           # shared: stamps each store with its source and build
+└── starsim_data/data/          # the build artefacts, committed and shipped
+```
+
+Everything in `scripts/` requires `pip install -e ".[dev]"`, and `build_nodes.py` additionally requires `".[spatial]"`.
+
+Each script takes a `--check` flag, which rebuilds and then reads the result back through the loader to confirm that it is well formed. Using `--check` routinely is advisable, since a store that writes without error can still be unreadable.
+
+## Contact matrices
+
+```bash
+python scripts/build_hdf5.py --check
+```
+
+Reads the per-country CSVs in `raw_data/contact_matrices/` and writes one store per source, keyed by location, with one `float32` matrix per contact setting. The source CSVs were derived from [epydemix-data](https://github.com/epistorm/epydemix-data), trimmed to national level and reorganised into a flat layout.
+
+Attribution for each source is held in a `SOURCES` table in the script, and the script warns if a source has no attribution recorded, so that adding a dataset without a licence is noticed at build time rather than at review.
+
+## Demographics
+
+Two steps. The first retrieves the data:
+
+```bash
+python scripts/download_wpp.py
+```
+
+This queries the UN WPP Data Portal API for the four indicators the package uses, filters to decadal years and to the package's countries, and writes three normalised CSVs into `raw_data/demographics/`. It requires a free Bearer token in `scripts/.env`, which is git-ignored; the API's metadata endpoints are open but its data endpoints are not.
+
+The CSVs are tracked in git, so the second step needs no token and no network:
+
+```bash
+python scripts/build_demographics.py --check
+```
+
+This classifies each CSV by its columns rather than by its filename, so bulk files downloaded manually from the WPP website work equally well. It writes `demographics-<revision>.h5` with one group per series.
+
+The script warns about any location present in `locations.csv` that ends up with no data, which catches silent coverage loss.
+
+### Adding a new WPP revision
+
+```bash
+python scripts/download_wpp.py
+python scripts/build_demographics.py --revision 2026 --check
+```
+
+This writes a new store alongside the existing one rather than replacing it. `load()` then uses the new revision by default, and `load(..., revision=2024)` continues to read the old one. Existing analyses that pinned a revision are unaffected.
+
+## Locations
+
+```bash
+python scripts/build_locations.py --check
+```
+
+`locations.csv` is partly hand-maintained and partly generated. The `location`, `level`, `iso_code`, `primary_contact_source`, `contact_sources` and `population_source` columns are edited by hand; `iso3`, `official_name` and `aliases` are filled in from `pycountry`, joining on the hand-maintained ISO-2 code.
+
+Because the generated columns are baked into the CSV at build time, `pycountry` is a build-time dependency only, and the resolver at runtime reads the file and needs nothing else.
+
+Aliases are drawn from `pycountry`'s official and common names, its French, Spanish and Portuguese translations, and a hand-curated table of abbreviations and former names that no automatic source provides — `USA`, `DRC`, `UK`, `Zaire` and similar. Any alias that would be ambiguous between two locations is discarded, with a warning.
+
+## The node table
+
+```bash
+python scripts/build_nodes.py --check     # roughly 420 MB on a cold cache
+python scripts/build_nodes.py --limit 5   # a subset, for development
+```
+
+For each country, the script prefers UNOCHA boundaries where the mirror covers it and falls back to the two global geoBoundaries CGAZ files otherwise. It computes an equal-area centroid and a geodesic area for every unit, assigns identifiers, and reads national population from the package's own bundled WPP data.
+
+Downloads pass through the package cache, so a rebuild after the first is quick. `--limit` is useful while developing, since a full build reads several hundred megabytes of geometry.
+
+The script refuses to draw on any source whose descriptor sets `redistributable=False`, which is how GADM's non-commercial licence is kept out of bundled data. The check is performed against the same descriptors `fetch_shapes()` uses, so the two cannot disagree.
+
+Subnational population is not written into the node table: it would need a WorldPop raster for every country, roughly a gigabyte from a slow server with gaps for small territories. `fetch_nodes()` retrieves it per country instead.
+
+## Adding a dataset
+
+Roughly the sequence to follow:
+
+1. Put the human-readable source in `raw_data/`, if it is small enough to track. If it is not, it belongs in tier 1 and should be fetched rather than built.
+2. Write a build script that produces an `.h5` store with a `spec` attribute naming its layout, and a `provenance` attribute produced by `scripts/provenance.py`.
+3. If the shape is unlike anything already present, add a layout shaper and register it; otherwise reuse an existing layout. See [Architecture](architecture.qmd).
+4. Add a one-line description to `registry.DESCRIPTIONS`.
+5. Add the source, its licence and its citation to `NOTICE.md`, and the licence text to `licenses/` if the licence requires it.
+6. Add tests. At minimum: that the data loads, that its shape and units are as documented, and that its recorded licence matches `NOTICE.md`.
+7. Add the build step to the reproducibility job in `.github/workflows/tests.yml`, unless the inputs are too large to download on every run.
+
+## Verifying a build
+
+```bash
+pytest tests -m "not network"     # the offline suite
+pytest tests                      # including downloads
+```
+
+The tests that concern build correctness are `test_demographics.py`, which exercises the whole demographic pipeline end to end using small synthetic WPP-format CSVs, and `test_provenance.py`, which asserts that every bundled dataset is attributable and that its recorded licence matches `NOTICE.md`.
+
+Beyond the tests, plotting the result is a quick check on whether the numbers are plausible:
+
+```python
+ssd.plot('kenya')
+```
+
+A units error, a wrong country or a misaligned age axis is usually obvious in a figure and easy to miss in a table.

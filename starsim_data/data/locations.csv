@@ -1,188 +1,188 @@
-location,level,iso_code,primary_contact_source,contact_sources,population_source
-Afghanistan,0,AF,prem2021,prem2021,https://population.un.org/wpp/
-Albania,0,AL,prem2021,prem2021|prem2017,https://population.un.org/wpp/
-Algeria,0,DZ,prem2021,prem2021|prem2017,https://population.un.org/wpp/
-Andorra,0,AD,prem2017,prem2017,https://population.un.org/wpp/
-Angola,0,AO,prem2021,prem2021,https://population.un.org/wpp/
-Antigua_and_Barbuda,0,AG,prem2017,prem2017,https://population.un.org/wpp/
-Argentina,0,AR,prem2021,prem2021|prem2017,https://population.un.org/wpp/
-Armenia,0,AM,prem2021,prem2021|prem2017,https://population.un.org/wpp/
-Australia,0,AU,mistry2021,mistry2021|prem2017,https://github.com/mobs-lab/mixing-patterns/tree/main/data/population_rescaled_age_distributions
-Austria,0,AT,mistry2021,mistry2021|prem2021|prem2017,https://population.un.org/wpp/
-Azerbaijan,0,AZ,prem2021,prem2021|prem2017,https://population.un.org/wpp/
-Bahamas,0,BS,prem2021,prem2021|prem2017,https://population.un.org/wpp/
-Bahrain,0,BH,prem2021,prem2021|prem2017,https://population.un.org/wpp/
-Bangladesh,0,BD,prem2021,prem2021|prem2017,https://population.un.org/wpp/
-Barbados,0,BB,prem2021,prem2021,https://population.un.org/wpp/
-Belarus,0,BY,prem2021,prem2021|prem2017,https://population.un.org/wpp/
-Belgium,0,BE,prem2021,prem2021|prem2017,https://population.un.org/wpp/
-Belize,0,BZ,prem2021,prem2021|prem2017,https://population.un.org/wpp/
-Benin,0,BJ,prem2021,prem2021|prem2017,https://population.un.org/wpp/
-Bhutan,0,BT,prem2021,prem2021|prem2017,https://population.un.org/wpp/
-Bolivia,0,BO,prem2021,prem2021|prem2017,https://population.un.org/wpp/
-Bosnia_and_Herzegovina,0,BA,prem2021,prem2021|prem2017,https://population.un.org/wpp/
-Botswana,0,BW,prem2021,prem2021|prem2017,https://population.un.org/wpp/
-Brazil,0,BR,prem2021,prem2021|prem2017,https://population.un.org/wpp/
-Brunei,0,BN,prem2021,prem2021|prem2017,https://population.un.org/wpp/
-Bulgaria,0,BG,mistry2021,mistry2021|prem2021|prem2017,https://population.un.org/wpp/
-Burkina_Faso,0,BF,prem2021,prem2021|prem2017,https://population.un.org/wpp/
-Burundi,0,BI,prem2021,prem2021,https://population.un.org/wpp/
-Cabo_Verde,0,CV,prem2021,prem2021|prem2017,https://population.un.org/wpp/
-Cambodia,0,KH,prem2021,prem2021|prem2017,https://population.un.org/wpp/
-Cameroon,0,CM,prem2021,prem2021|prem2017,https://population.un.org/wpp/
-Canada,0,CA,mistry2021,mistry2021|prem2021|prem2017,https://github.com/mobs-lab/mixing-patterns/tree/main/data/population_rescaled_age_distributions
-Central_African_Republic,0,CF,prem2021,prem2021,https://population.un.org/wpp/
-Chad,0,TD,prem2021,prem2021,https://population.un.org/wpp/
-Chile,0,CL,prem2021,prem2021|prem2017,https://population.un.org/wpp/
-China,0,CN,mistry2021,mistry2021|prem2021|prem2017,https://github.com/mobs-lab/mixing-patterns/tree/main/data/population_rescaled_age_distributions
-Colombia,0,CO,prem2021,prem2021|prem2017,https://population.un.org/wpp/
-Comoros,0,KM,prem2021,prem2021,https://population.un.org/wpp/
-Congo,0,CG,prem2021,prem2021|prem2017,https://population.un.org/wpp/
-Costa_Rica,0,CR,prem2021,prem2021|prem2017,https://population.un.org/wpp/
-Cote_dIvoire,0,CI,prem2021,prem2021,https://population.un.org/wpp/
-Croatia,0,HR,prem2021,prem2021|prem2017,https://population.un.org/wpp/
-Cuba,0,CU,prem2021,prem2021,https://population.un.org/wpp/
-Cyprus,0,CY,mistry2021,mistry2021|prem2021|prem2017,https://population.un.org/wpp/
-Czech_Republic,0,CZ,mistry2021,mistry2021|prem2021|prem2017,https://population.un.org/wpp/
-Democratic_Republic_of_the_Congo,0,CD,prem2021,prem2021,https://population.un.org/wpp/
-Denmark,0,DK,mistry2021,mistry2021|prem2021|prem2017,https://population.un.org/wpp/
-Djibouti,0,DJ,prem2021,prem2021,https://population.un.org/wpp/
-Dominican_Republic,0,DO,prem2021,prem2021|prem2017,https://population.un.org/wpp/
-Ecuador,0,EC,prem2021,prem2021|prem2017,https://population.un.org/wpp/
-Egypt,0,EG,prem2021,prem2021|prem2017,https://population.un.org/wpp/
-El_Salvador,0,SV,prem2021,prem2021|prem2017,https://population.un.org/wpp/
-Equatorial_Guinea,0,GQ,prem2021,prem2021,https://population.un.org/wpp/
-Eritrea,0,ER,prem2021,prem2021,https://population.un.org/wpp/
-Estonia,0,EE,mistry2021,mistry2021|prem2021|prem2017,https://population.un.org/wpp/
-Eswatini,0,SZ,prem2021,prem2021,https://population.un.org/wpp/
-Ethiopia,0,ET,prem2021,prem2021|prem2017,https://population.un.org/wpp/
-Fiji,0,FJ,prem2021,prem2021|prem2017,https://population.un.org/wpp/
-Finland,0,FI,mistry2021,mistry2021|prem2021|prem2017,https://population.un.org/wpp/
-France,0,FR,mistry2021,mistry2021|prem2021|prem2017,https://population.un.org/wpp/
-Gabon,0,GA,prem2021,prem2021,https://population.un.org/wpp/
-Gambia,0,GM,prem2021,prem2021,https://population.un.org/wpp/
-Georgia,0,GE,prem2021,prem2021|prem2017,https://population.un.org/wpp/
-Germany,0,DE,mistry2021,mistry2021|prem2021|prem2017,https://population.un.org/wpp/
-Ghana,0,GH,prem2021,prem2021|prem2017,https://population.un.org/wpp/
-Greece,0,GR,mistry2021,mistry2021|prem2021|prem2017,https://population.un.org/wpp/
-Guatemala,0,GT,prem2021,prem2021|prem2017,https://population.un.org/wpp/
-Guinea,0,GN,prem2021,prem2021|prem2017,https://population.un.org/wpp/
-Guinea-Bissau,0,GW,prem2021,prem2021,https://population.un.org/wpp/
-Guyana,0,GY,prem2021,prem2021|prem2017,https://population.un.org/wpp/
-Haiti,0,HT,prem2017,prem2017,https://population.un.org/wpp/
-Honduras,0,HN,prem2021,prem2021|prem2017,https://population.un.org/wpp/
-Hong_Kong,0,HK,prem2021,prem2021|prem2017,https://population.un.org/wpp/
-Hungary,0,HU,mistry2021,mistry2021|prem2021|prem2017,https://population.un.org/wpp/
-Iceland,0,IS,prem2021,prem2021|prem2017,https://population.un.org/wpp/
-India,0,IN,mistry2021,mistry2021|prem2021|prem2017,https://github.com/mobs-lab/mixing-patterns/tree/main/data/population_rescaled_age_distributions
-Indonesia,0,ID,prem2021,prem2021|prem2017,https://population.un.org/wpp/
-Iran,0,IR,prem2021,prem2021|prem2017,https://population.un.org/wpp/
-Iraq,0,IQ,prem2021,prem2021|prem2017,https://population.un.org/wpp/
-Ireland,0,IE,mistry2021,mistry2021|prem2021|prem2017,https://population.un.org/wpp/
-Israel,0,IL,mistry2021,mistry2021|prem2021|prem2017,https://population.un.org/wpp/
-Italy,0,IT,mistry2021,mistry2021|prem2021|prem2017,https://population.un.org/wpp/
-Jamaica,0,JM,prem2021,prem2021|prem2017,https://population.un.org/wpp/
-Japan,0,JP,mistry2021,mistry2021|prem2017,https://github.com/mobs-lab/mixing-patterns/tree/main/data/population_rescaled_age_distributions
-Jordan,0,JO,prem2021,prem2021|prem2017,https://population.un.org/wpp/
-Kazakhstan,0,KZ,prem2021,prem2021|prem2017,https://population.un.org/wpp/
-Kenya,0,KE,prem2021,prem2021|prem2017,https://population.un.org/wpp/
-Kiribati,0,KI,prem2017,prem2017,https://population.un.org/wpp/
-Kuwait,0,KW,prem2021,prem2021|prem2017,https://population.un.org/wpp/
-Kyrgyzstan,0,KG,prem2021,prem2021|prem2017,https://population.un.org/wpp/
-Laos,0,LA,prem2021,prem2021|prem2017,https://population.un.org/wpp/
-Latvia,0,LV,mistry2021,mistry2021|prem2021|prem2017,https://population.un.org/wpp/
-Lebanon,0,LB,prem2017,prem2017,https://population.un.org/wpp/
-Lesotho,0,LS,prem2021,prem2021|prem2017,https://population.un.org/wpp/
-Liberia,0,LR,prem2021,prem2021|prem2017,https://population.un.org/wpp/
-Libya,0,LY,prem2021,prem2021,https://population.un.org/wpp/
-Lithuania,0,LT,mistry2021,mistry2021|prem2021|prem2017,https://population.un.org/wpp/
-Luxembourg,0,LU,mistry2021,mistry2021|prem2021|prem2017,https://population.un.org/wpp/
-Macao,0,MO,prem2021,prem2021,https://population.un.org/wpp/
-Madagascar,0,MG,prem2021,prem2021,https://population.un.org/wpp/
-Malawi,0,MW,prem2021,prem2021,https://population.un.org/wpp/
-Malaysia,0,MY,prem2021,prem2021|prem2017,https://population.un.org/wpp/
-Maldives,0,MV,prem2021,prem2021|prem2017,https://population.un.org/wpp/
-Mali,0,ML,prem2021,prem2021,https://population.un.org/wpp/
-Malta,0,MT,prem2021,prem2021|prem2017,https://population.un.org/wpp/
-Mauritania,0,MR,prem2021,prem2021|prem2017,https://population.un.org/wpp/
-Mauritius,0,MU,prem2021,prem2021|prem2017,https://population.un.org/wpp/
-Mexico,0,MX,prem2021,prem2021|prem2017,https://population.un.org/wpp/
-Moldova,0,MD,prem2021,prem2021,https://population.un.org/wpp/
-Monaco,0,MC,prem2017,prem2017,https://population.un.org/wpp/
-Mongolia,0,MN,prem2021,prem2021|prem2017,https://population.un.org/wpp/
-Montenegro,0,ME,prem2021,prem2021|prem2017,https://population.un.org/wpp/
-Morocco,0,MA,prem2021,prem2021|prem2017,https://population.un.org/wpp/
-Mozambique,0,MZ,prem2021,prem2021|prem2017,https://population.un.org/wpp/
-Myanmar,0,MM,prem2021,prem2021,https://population.un.org/wpp/
-Namibia,0,NA,prem2021,prem2021|prem2017,https://population.un.org/wpp/
-Nepal,0,NP,prem2021,prem2021|prem2017,https://population.un.org/wpp/
-Netherlands,0,NL,mistry2021,mistry2021|prem2021|prem2017,https://population.un.org/wpp/
-New_Zealand,0,NZ,prem2021,prem2021|prem2017,https://population.un.org/wpp/
-Nicaragua,0,NI,prem2021,prem2021|prem2017,https://population.un.org/wpp/
-Niger,0,NE,prem2021,prem2021|prem2017,https://population.un.org/wpp/
-Nigeria,0,NG,prem2021,prem2021|prem2017,https://population.un.org/wpp/
-North_Korea,0,KP,prem2021,prem2021,https://population.un.org/wpp/
-North_Macedonia,0,MK,prem2021,prem2021|prem2017,https://population.un.org/wpp/
-Norway,0,NO,mistry2021,mistry2021|prem2021,https://population.un.org/wpp/
-Oman,0,OM,prem2021,prem2021|prem2017,https://population.un.org/wpp/
-Pakistan,0,PK,prem2021,prem2021|prem2017,https://population.un.org/wpp/
-Palestine,0,PS,prem2021,prem2021,https://population.un.org/wpp/
-Panama,0,PA,prem2021,prem2021|prem2017,https://population.un.org/wpp/
-Papua_New_Guinea,0,PG,prem2021,prem2021,https://population.un.org/wpp/
-Paraguay,0,PY,prem2021,prem2021|prem2017,https://population.un.org/wpp/
-Peru,0,PE,prem2021,prem2021|prem2017,https://population.un.org/wpp/
-Philippines,0,PH,prem2021,prem2021|prem2017,https://population.un.org/wpp/
-Poland,0,PL,prem2021,prem2021|prem2017,https://population.un.org/wpp/
-Portugal,0,PT,mistry2021,mistry2021|prem2021|prem2017,https://population.un.org/wpp/
-Puerto_Rico,0,PR,mistry2021,mistry2021|prem2021,https://population.un.org/wpp/
-Qatar,0,QA,prem2021,prem2021|prem2017,https://population.un.org/wpp/
-Romania,0,RO,mistry2021,mistry2021|prem2021|prem2017,https://population.un.org/wpp/
-Russia,0,RU,mistry2021,mistry2021|prem2021|prem2017,https://github.com/mobs-lab/mixing-patterns/tree/main/data/population_rescaled_age_distributions
-Rwanda,0,RW,prem2021,prem2021|prem2017,https://population.un.org/wpp/
-Saint_Lucia,0,LC,prem2021,prem2021|prem2017,https://population.un.org/wpp/
-Saint_Vincent_and_the_Grenadines,0,VC,prem2021,prem2021,https://population.un.org/wpp/
-Samoa,0,WS,prem2021,prem2021|prem2017,https://population.un.org/wpp/
-Sao_Tome_and_Principe,0,ST,prem2021,prem2021|prem2017,https://population.un.org/wpp/
-Saudi_Arabia,0,SA,prem2021,prem2021|prem2017,https://population.un.org/wpp/
-Senegal,0,SN,prem2021,prem2021|prem2017,https://population.un.org/wpp/
-Serbia,0,RS,prem2021,prem2021|prem2017,https://population.un.org/wpp/
-Seychelles,0,SC,prem2017,prem2017,https://population.un.org/wpp/
-Sierra_Leone,0,SL,prem2021,prem2021|prem2017,https://population.un.org/wpp/
-Singapore,0,SG,prem2021,prem2021|prem2017,https://population.un.org/wpp/
-Slovakia,0,SK,mistry2021,mistry2021|prem2021|prem2017,https://population.un.org/wpp/
-Slovenia,0,SI,mistry2021,mistry2021|prem2021|prem2017,https://population.un.org/wpp/
-Solomon_Islands,0,SB,prem2021,prem2021|prem2017,https://population.un.org/wpp/
-South_Africa,0,ZA,mistry2021,mistry2021|prem2021|prem2017,https://github.com/mobs-lab/mixing-patterns/tree/main/data/population_rescaled_age_distributions
-South_Korea,0,KR,prem2021,prem2021|prem2017,https://population.un.org/wpp/
-South_Sudan,0,SS,prem2021,prem2021,https://population.un.org/wpp/
-Spain,0,ES,mistry2021,mistry2021|prem2021|prem2017,https://population.un.org/wpp/
-Sri_Lanka,0,LK,prem2021,prem2021|prem2017,https://population.un.org/wpp/
-Sudan,0,SD,prem2021,prem2021,https://population.un.org/wpp/
-Suriname,0,SR,prem2021,prem2021|prem2017,https://population.un.org/wpp/
-Sweden,0,SE,mistry2021,mistry2021|prem2021|prem2017,https://population.un.org/wpp/
-Switzerland,0,CH,mistry2021,mistry2021|prem2021|prem2017,https://population.un.org/wpp/
-Syrian_Arab_Republic,0,SY,prem2021,prem2021|prem2017,https://population.un.org/wpp/
-Taiwan,0,TW,prem2017,prem2017,https://population.un.org/wpp/
-Tajikistan,0,TJ,prem2021,prem2021|prem2017,https://population.un.org/wpp/
-Tanzania,0,TZ,prem2021,prem2021|prem2017,https://population.un.org/wpp/
-Thailand,0,TH,prem2021,prem2021|prem2017,https://population.un.org/wpp/
-Timor-Leste,0,TL,prem2021,prem2021|prem2017,https://population.un.org/wpp/
-Togo,0,TG,prem2021,prem2021,https://population.un.org/wpp/
-Tonga,0,TO,prem2021,prem2021|prem2017,https://population.un.org/wpp/
-Trinidad_and_Tobago,0,TT,prem2021,prem2021,https://population.un.org/wpp/
-Tunisia,0,TN,prem2021,prem2021|prem2017,https://population.un.org/wpp/
-Turkey,0,TR,prem2021,prem2021|prem2017,https://population.un.org/wpp/
-Turkmenistan,0,TM,prem2021,prem2021,https://population.un.org/wpp/
-Uganda,0,UG,prem2021,prem2021|prem2017,https://population.un.org/wpp/
-Ukraine,0,UA,prem2021,prem2021|prem2017,https://population.un.org/wpp/
-United_Arab_Emirates,0,AE,prem2021,prem2021|prem2017,https://population.un.org/wpp/
-United_Kingdom,0,GB,mistry2021,mistry2021|prem2021|prem2017,https://population.un.org/wpp/
-United_States,0,US,mistry2021,mistry2021|prem2021|prem2017,https://api.census.gov/data/2023/pep/charv
-Uruguay,0,UY,prem2021,prem2021|prem2017,https://population.un.org/wpp/
-Uzbekistan,0,UZ,prem2021,prem2021|prem2017,https://population.un.org/wpp/
-Vanuatu,0,VU,prem2021,prem2021|prem2017,https://population.un.org/wpp/
-Venezuela,0,VE,prem2021,prem2021|prem2017,https://population.un.org/wpp/
-Vietnam,0,VN,prem2021,prem2021|prem2017,https://population.un.org/wpp/
-Yemen,0,YE,prem2021,prem2021|prem2017,https://population.un.org/wpp/
-Zambia,0,ZM,prem2021,prem2021|prem2017,https://population.un.org/wpp/
-Zimbabwe,0,ZW,prem2021,prem2021|prem2017,https://population.un.org/wpp/
+location,level,iso_code,iso3,official_name,aliases,primary_contact_source,contact_sources,population_source
+Afghanistan,0,AF,AFG,Islamic Republic of Afghanistan,Afganistán|Afeganistão,prem2021,prem2021,https://population.un.org/wpp/
+Albania,0,AL,ALB,Republic of Albania,Albanie,prem2021,prem2021|prem2017,https://population.un.org/wpp/
+Algeria,0,DZ,DZA,People's Democratic Republic of Algeria,Algérie|Argélia,prem2021,prem2021|prem2017,https://population.un.org/wpp/
+Andorra,0,AD,AND,Principality of Andorra,Andorre,prem2017,prem2017,https://population.un.org/wpp/
+Angola,0,AO,AGO,Republic of Angola,,prem2021,prem2021,https://population.un.org/wpp/
+Antigua_and_Barbuda,0,AG,ATG,Antigua and Barbuda,Antigua-et-Barbuda|Antigua y Barbuda|Antígua e Barbuda,prem2017,prem2017,https://population.un.org/wpp/
+Argentina,0,AR,ARG,Argentine Republic,Argentine,prem2021,prem2021|prem2017,https://population.un.org/wpp/
+Armenia,0,AM,ARM,Republic of Armenia,Arménie,prem2021,prem2021|prem2017,https://population.un.org/wpp/
+Australia,0,AU,AUS,Australia,Australie,mistry2021,mistry2021|prem2017,https://github.com/mobs-lab/mixing-patterns/tree/main/data/population_rescaled_age_distributions
+Austria,0,AT,AUT,Republic of Austria,Autriche,mistry2021,mistry2021|prem2021|prem2017,https://population.un.org/wpp/
+Azerbaijan,0,AZ,AZE,Republic of Azerbaijan,Azerbaïdjan|Azerbaiyán|Azerbaijão,prem2021,prem2021|prem2017,https://population.un.org/wpp/
+Bahamas,0,BS,BHS,Commonwealth of the Bahamas,,prem2021,prem2021|prem2017,https://population.un.org/wpp/
+Bahrain,0,BH,BHR,Kingdom of Bahrain,Bahreïn|Baréin|Barém,prem2021,prem2021|prem2017,https://population.un.org/wpp/
+Bangladesh,0,BD,BGD,People's Republic of Bangladesh,Bangladés|Bangladeche,prem2021,prem2021|prem2017,https://population.un.org/wpp/
+Barbados,0,BB,BRB,Barbados,Barbade,prem2021,prem2021,https://population.un.org/wpp/
+Belarus,0,BY,BLR,Republic of Belarus,Bielorrusia|Bielorússia,prem2021,prem2021|prem2017,https://population.un.org/wpp/
+Belgium,0,BE,BEL,Kingdom of Belgium,Belgique|Bélgica,prem2021,prem2021|prem2017,https://population.un.org/wpp/
+Belize,0,BZ,BLZ,Belize,Belice,prem2021,prem2021|prem2017,https://population.un.org/wpp/
+Benin,0,BJ,BEN,Republic of Benin,Benim,prem2021,prem2021|prem2017,https://population.un.org/wpp/
+Bhutan,0,BT,BTN,Kingdom of Bhutan,Bhoutan|Bután|Butão,prem2021,prem2021|prem2017,https://population.un.org/wpp/
+Bolivia,0,BO,BOL,Plurinational State of Bolivia,"Bolivia, Plurinational State of|Bolivie, état plurinational de|Bolivia, Estado plurinacional de|Bolívia, Estado Plurinacional da",prem2021,prem2021|prem2017,https://population.un.org/wpp/
+Bosnia_and_Herzegovina,0,BA,BIH,Republic of Bosnia and Herzegovina,Bosnie-Herzégovine|Bosnia y Herzegovina|Bósnia e Herzegovina,prem2021,prem2021|prem2017,https://population.un.org/wpp/
+Botswana,0,BW,BWA,Republic of Botswana,Botsuana,prem2021,prem2021|prem2017,https://population.un.org/wpp/
+Brazil,0,BR,BRA,Federative Republic of Brazil,Brésil|Brasil,prem2021,prem2021|prem2017,https://population.un.org/wpp/
+Brunei,0,BN,BRN,Brunei Darussalam,,prem2021,prem2021|prem2017,https://population.un.org/wpp/
+Bulgaria,0,BG,BGR,Republic of Bulgaria,Bulgarie,mistry2021,mistry2021|prem2021|prem2017,https://population.un.org/wpp/
+Burkina_Faso,0,BF,BFA,Burkina Faso,Burquina Faso,prem2021,prem2021|prem2017,https://population.un.org/wpp/
+Burundi,0,BI,BDI,Republic of Burundi,,prem2021,prem2021,https://population.un.org/wpp/
+Cabo_Verde,0,CV,CPV,Republic of Cabo Verde,Cap-Vert,prem2021,prem2021|prem2017,https://population.un.org/wpp/
+Cambodia,0,KH,KHM,Kingdom of Cambodia,Cambodge|Camboya|Camboja,prem2021,prem2021|prem2017,https://population.un.org/wpp/
+Cameroon,0,CM,CMR,Republic of Cameroon,Cameroun|Camerún|Camarões,prem2021,prem2021|prem2017,https://population.un.org/wpp/
+Canada,0,CA,CAN,Canada,,mistry2021,mistry2021|prem2021|prem2017,https://github.com/mobs-lab/mixing-patterns/tree/main/data/population_rescaled_age_distributions
+Central_African_Republic,0,CF,CAF,Central African Republic,République centrafricaine|República Centroafricana|República Centro-Africana,prem2021,prem2021,https://population.un.org/wpp/
+Chad,0,TD,TCD,Republic of Chad,Tchad|Chade,prem2021,prem2021,https://population.un.org/wpp/
+Chile,0,CL,CHL,Republic of Chile,Chili,prem2021,prem2021|prem2017,https://population.un.org/wpp/
+China,0,CN,CHN,People's Republic of China,Chine,mistry2021,mistry2021|prem2021|prem2017,https://github.com/mobs-lab/mixing-patterns/tree/main/data/population_rescaled_age_distributions
+Colombia,0,CO,COL,Republic of Colombia,Colombie,prem2021,prem2021|prem2017,https://population.un.org/wpp/
+Comoros,0,KM,COM,Union of the Comoros,"Comores|Comores, Islas",prem2021,prem2021,https://population.un.org/wpp/
+Congo,0,CG,COG,Republic of the Congo,Congo-Brazzaville|République du Congo,prem2021,prem2021|prem2017,https://population.un.org/wpp/
+Costa_Rica,0,CR,CRI,Republic of Costa Rica,,prem2021,prem2021|prem2017,https://population.un.org/wpp/
+Cote_dIvoire,0,CI,CIV,Republic of Côte d'Ivoire,Ivory Coast|Costa de Marfíl|Costa do Marfim,prem2021,prem2021,https://population.un.org/wpp/
+Croatia,0,HR,HRV,Republic of Croatia,Croatie|Croacia,prem2021,prem2021|prem2017,https://population.un.org/wpp/
+Cuba,0,CU,CUB,Republic of Cuba,,prem2021,prem2021,https://population.un.org/wpp/
+Cyprus,0,CY,CYP,Republic of Cyprus,Chypre|Chipre,mistry2021,mistry2021|prem2021|prem2017,https://population.un.org/wpp/
+Czech_Republic,0,CZ,CZE,Czech Republic,Czechia|Tchéquie|Chequia,mistry2021,mistry2021|prem2021|prem2017,https://population.un.org/wpp/
+Democratic_Republic_of_the_Congo,0,CD,COD,"Congo, The Democratic Republic of the","DRC|DR Congo|Congo-Kinshasa|Congo DR|Zaire|République démocratique du Congo|Congo, República Democrática del|Congo, República Democrática do",prem2021,prem2021,https://population.un.org/wpp/
+Denmark,0,DK,DNK,Kingdom of Denmark,Danemark|Dinamarca,mistry2021,mistry2021|prem2021|prem2017,https://population.un.org/wpp/
+Djibouti,0,DJ,DJI,Republic of Djibouti,Yibuti,prem2021,prem2021,https://population.un.org/wpp/
+Dominican_Republic,0,DO,DOM,Dominican Republic,République dominicaine|República Dominicana,prem2021,prem2021|prem2017,https://population.un.org/wpp/
+Ecuador,0,EC,ECU,Republic of Ecuador,Équateur|Equador,prem2021,prem2021|prem2017,https://population.un.org/wpp/
+Egypt,0,EG,EGY,Arab Republic of Egypt,Égypte|Egipto|Egito,prem2021,prem2021|prem2017,https://population.un.org/wpp/
+El_Salvador,0,SV,SLV,Republic of El Salvador,Salvador,prem2021,prem2021|prem2017,https://population.un.org/wpp/
+Equatorial_Guinea,0,GQ,GNQ,Republic of Equatorial Guinea,Guinée Équatoriale|Guinea Ecuatorial|Guiné Equatorial,prem2021,prem2021,https://population.un.org/wpp/
+Eritrea,0,ER,ERI,the State of Eritrea,Érythrée|Eritreia,prem2021,prem2021,https://population.un.org/wpp/
+Estonia,0,EE,EST,Republic of Estonia,Estonie,mistry2021,mistry2021|prem2021|prem2017,https://population.un.org/wpp/
+Eswatini,0,SZ,SWZ,Kingdom of Eswatini,Esuatini|Suazilândia,prem2021,prem2021,https://population.un.org/wpp/
+Ethiopia,0,ET,ETH,Federal Democratic Republic of Ethiopia,Éthiopie|Etiopía,prem2021,prem2021|prem2017,https://population.un.org/wpp/
+Fiji,0,FJ,FJI,Republic of Fiji,Fidji|Fiyi,prem2021,prem2021|prem2017,https://population.un.org/wpp/
+Finland,0,FI,FIN,Republic of Finland,Finlande|Finlandia,mistry2021,mistry2021|prem2021|prem2017,https://population.un.org/wpp/
+France,0,FR,FRA,French Republic,Francia|França,mistry2021,mistry2021|prem2021|prem2017,https://population.un.org/wpp/
+Gabon,0,GA,GAB,Gabonese Republic,Gabão,prem2021,prem2021,https://population.un.org/wpp/
+Gambia,0,GM,GMB,Republic of the Gambia,Gambie,prem2021,prem2021,https://population.un.org/wpp/
+Georgia,0,GE,GEO,Georgia,Géorgie,prem2021,prem2021|prem2017,https://population.un.org/wpp/
+Germany,0,DE,DEU,Federal Republic of Germany,Allemagne|Alemania|Alemanha,mistry2021,mistry2021|prem2021|prem2017,https://population.un.org/wpp/
+Ghana,0,GH,GHA,Republic of Ghana,Gana,prem2021,prem2021|prem2017,https://population.un.org/wpp/
+Greece,0,GR,GRC,Hellenic Republic,Grèce|Grecia,mistry2021,mistry2021|prem2021|prem2017,https://population.un.org/wpp/
+Guatemala,0,GT,GTM,Republic of Guatemala,,prem2021,prem2021|prem2017,https://population.un.org/wpp/
+Guinea,0,GN,GIN,Republic of Guinea,Guinée|Guiné,prem2021,prem2021|prem2017,https://population.un.org/wpp/
+Guinea-Bissau,0,GW,GNB,Republic of Guinea-Bissau,Guinée-Bissau|Guinea-Bisáu|Guiné-Bissáu,prem2021,prem2021,https://population.un.org/wpp/
+Guyana,0,GY,GUY,Republic of Guyana,Guiana,prem2021,prem2021|prem2017,https://population.un.org/wpp/
+Haiti,0,HT,HTI,Republic of Haiti,,prem2017,prem2017,https://population.un.org/wpp/
+Honduras,0,HN,HND,Republic of Honduras,,prem2021,prem2021|prem2017,https://population.un.org/wpp/
+Hong_Kong,0,HK,HKG,Hong Kong Special Administrative Region of China,,prem2021,prem2021|prem2017,https://population.un.org/wpp/
+Hungary,0,HU,HUN,Hungary,Hongrie|Hungría,mistry2021,mistry2021|prem2021|prem2017,https://population.un.org/wpp/
+Iceland,0,IS,ISL,Republic of Iceland,Islande|Islandia,prem2021,prem2021|prem2017,https://population.un.org/wpp/
+India,0,IN,IND,Republic of India,Inde,mistry2021,mistry2021|prem2021|prem2017,https://github.com/mobs-lab/mixing-patterns/tree/main/data/population_rescaled_age_distributions
+Indonesia,0,ID,IDN,Republic of Indonesia,Indonésie,prem2021,prem2021|prem2017,https://population.un.org/wpp/
+Iran,0,IR,IRN,Islamic Republic of Iran,"Iran, Islamic Republic of|Iran, République islamique d'|Irán, República islámica de|Irão, República Islâmica do",prem2021,prem2021|prem2017,https://population.un.org/wpp/
+Iraq,0,IQ,IRQ,Republic of Iraq,Irak|Iraque,prem2021,prem2021|prem2017,https://population.un.org/wpp/
+Ireland,0,IE,IRL,Ireland,Irlande|Irlanda,mistry2021,mistry2021|prem2021|prem2017,https://population.un.org/wpp/
+Israel,0,IL,ISR,State of Israel,,mistry2021,mistry2021|prem2021|prem2017,https://population.un.org/wpp/
+Italy,0,IT,ITA,Italian Republic,Italie|Italia,mistry2021,mistry2021|prem2021|prem2017,https://population.un.org/wpp/
+Jamaica,0,JM,JAM,Jamaica,Jamaïque,prem2021,prem2021|prem2017,https://population.un.org/wpp/
+Japan,0,JP,JPN,Japan,Japon|Japão,mistry2021,mistry2021|prem2017,https://github.com/mobs-lab/mixing-patterns/tree/main/data/population_rescaled_age_distributions
+Jordan,0,JO,JOR,Hashemite Kingdom of Jordan,Jordanie|Jordania,prem2021,prem2021|prem2017,https://population.un.org/wpp/
+Kazakhstan,0,KZ,KAZ,Republic of Kazakhstan,Kazajistán|Cazaquistão,prem2021,prem2021|prem2017,https://population.un.org/wpp/
+Kenya,0,KE,KEN,Republic of Kenya,Kenia|Quénia,prem2021,prem2021|prem2017,https://population.un.org/wpp/
+Kiribati,0,KI,KIR,Republic of Kiribati,,prem2017,prem2017,https://population.un.org/wpp/
+Kuwait,0,KW,KWT,State of Kuwait,Koweït,prem2021,prem2021|prem2017,https://population.un.org/wpp/
+Kyrgyzstan,0,KG,KGZ,Kyrgyz Republic,Kirghizistan|Kirguistán|Quirguistão,prem2021,prem2021|prem2017,https://population.un.org/wpp/
+Laos,0,LA,LAO,Lao People's Democratic Republic,"Lao, République démocratique populaire|República Democrática Popular de Lao|República Democrática Popular do Laos",prem2021,prem2021|prem2017,https://population.un.org/wpp/
+Latvia,0,LV,LVA,Republic of Latvia,Lettonie|Letonia,mistry2021,mistry2021|prem2021|prem2017,https://population.un.org/wpp/
+Lebanon,0,LB,LBN,Lebanese Republic,Liban|Líbano,prem2017,prem2017,https://population.un.org/wpp/
+Lesotho,0,LS,LSO,Kingdom of Lesotho,Lesoto,prem2021,prem2021|prem2017,https://population.un.org/wpp/
+Liberia,0,LR,LBR,Republic of Liberia,,prem2021,prem2021|prem2017,https://population.un.org/wpp/
+Libya,0,LY,LBY,Libya,Libye|Libia,prem2021,prem2021,https://population.un.org/wpp/
+Lithuania,0,LT,LTU,Republic of Lithuania,Lituanie|Lituania,mistry2021,mistry2021|prem2021|prem2017,https://population.un.org/wpp/
+Luxembourg,0,LU,LUX,Grand Duchy of Luxembourg,Luxemburgo,mistry2021,mistry2021|prem2021|prem2017,https://population.un.org/wpp/
+Macao,0,MO,MAC,Macao Special Administrative Region of China,Macau,prem2021,prem2021,https://population.un.org/wpp/
+Madagascar,0,MG,MDG,Republic of Madagascar,,prem2021,prem2021,https://population.un.org/wpp/
+Malawi,0,MW,MWI,Republic of Malawi,Malaui,prem2021,prem2021,https://population.un.org/wpp/
+Malaysia,0,MY,MYS,Malaysia,Malaisie|Malasia,prem2021,prem2021|prem2017,https://population.un.org/wpp/
+Maldives,0,MV,MDV,Republic of Maldives,Islas Maldivas|Maldivas,prem2021,prem2021|prem2017,https://population.un.org/wpp/
+Mali,0,ML,MLI,Republic of Mali,,prem2021,prem2021,https://population.un.org/wpp/
+Malta,0,MT,MLT,Republic of Malta,Malte,prem2021,prem2021|prem2017,https://population.un.org/wpp/
+Mauritania,0,MR,MRT,Islamic Republic of Mauritania,Mauritanie,prem2021,prem2021|prem2017,https://population.un.org/wpp/
+Mauritius,0,MU,MUS,Republic of Mauritius,Maurice|Mauricio|Maurícia,prem2021,prem2021|prem2017,https://population.un.org/wpp/
+Mexico,0,MX,MEX,United Mexican States,Mexique,prem2021,prem2021|prem2017,https://population.un.org/wpp/
+Moldova,0,MD,MDA,Republic of Moldova,"Moldova, Republic of|Moldova, République de|Moldavia, República de|Moldávia, República da",prem2021,prem2021,https://population.un.org/wpp/
+Monaco,0,MC,MCO,Principality of Monaco,,prem2017,prem2017,https://population.un.org/wpp/
+Mongolia,0,MN,MNG,Mongolia,Mongolie,prem2021,prem2021|prem2017,https://population.un.org/wpp/
+Montenegro,0,ME,MNE,Montenegro,,prem2021,prem2021|prem2017,https://population.un.org/wpp/
+Morocco,0,MA,MAR,Kingdom of Morocco,Maroc|Marruecos|Marrocos,prem2021,prem2021|prem2017,https://population.un.org/wpp/
+Mozambique,0,MZ,MOZ,Republic of Mozambique,Moçambique,prem2021,prem2021|prem2017,https://population.un.org/wpp/
+Myanmar,0,MM,MMR,Republic of Myanmar,Burma|Birmanie|Birmania,prem2021,prem2021,https://population.un.org/wpp/
+Namibia,0,NA,NAM,Republic of Namibia,Namibie,prem2021,prem2021|prem2017,https://population.un.org/wpp/
+Nepal,0,NP,NPL,Federal Democratic Republic of Nepal,,prem2021,prem2021|prem2017,https://population.un.org/wpp/
+Netherlands,0,NL,NLD,Kingdom of the Netherlands,Holland|Pays-Bas|Países Bajos|Países Baixos,mistry2021,mistry2021|prem2021|prem2017,https://population.un.org/wpp/
+New_Zealand,0,NZ,NZL,New Zealand,Nouvelle-Zélande|Nueva Zelanda|Nova Zelândia,prem2021,prem2021|prem2017,https://population.un.org/wpp/
+Nicaragua,0,NI,NIC,Republic of Nicaragua,,prem2021,prem2021|prem2017,https://population.un.org/wpp/
+Niger,0,NE,NER,Republic of the Niger,,prem2021,prem2021|prem2017,https://population.un.org/wpp/
+Nigeria,0,NG,NGA,Federal Republic of Nigeria,,prem2021,prem2021|prem2017,https://population.un.org/wpp/
+North_Korea,0,KP,PRK,Democratic People's Republic of Korea,"Korea, Democratic People's Republic of|DPRK|Corée, République populaire démocratique de|Corea, República Democrática Popular de|Coreia, República Popular Democrática da",prem2021,prem2021,https://population.un.org/wpp/
+North_Macedonia,0,MK,MKD,Republic of North Macedonia,Macédoine du Nord|Macedonia del Norte|Macedónia do Norte,prem2021,prem2021|prem2017,https://population.un.org/wpp/
+Norway,0,NO,NOR,Kingdom of Norway,Norvège|Noruega,mistry2021,mistry2021|prem2021,https://population.un.org/wpp/
+Oman,0,OM,OMN,Sultanate of Oman,Omã,prem2021,prem2021|prem2017,https://population.un.org/wpp/
+Pakistan,0,PK,PAK,Islamic Republic of Pakistan,Paquistão,prem2021,prem2021|prem2017,https://population.un.org/wpp/
+Palestine,0,PS,PSE,the State of Palestine,"Palestine, State of|Palestine, État de|Palestina, Estado de|Palestina, Estado da",prem2021,prem2021,https://population.un.org/wpp/
+Panama,0,PA,PAN,Republic of Panama,,prem2021,prem2021|prem2017,https://population.un.org/wpp/
+Papua_New_Guinea,0,PG,PNG,Independent State of Papua New Guinea,Papouasie-Nouvelle-Guinée|Papúa Nueva Guinea|Papua Nova Guiné,prem2021,prem2021,https://population.un.org/wpp/
+Paraguay,0,PY,PRY,Republic of Paraguay,Paraguai,prem2021,prem2021|prem2017,https://population.un.org/wpp/
+Peru,0,PE,PER,Republic of Peru,Pérou,prem2021,prem2021|prem2017,https://population.un.org/wpp/
+Philippines,0,PH,PHL,Republic of the Philippines,Filipinas,prem2021,prem2021|prem2017,https://population.un.org/wpp/
+Poland,0,PL,POL,Republic of Poland,Pologne|Polonia,prem2021,prem2021|prem2017,https://population.un.org/wpp/
+Portugal,0,PT,PRT,Portuguese Republic,,mistry2021,mistry2021|prem2021|prem2017,https://population.un.org/wpp/
+Puerto_Rico,0,PR,PRI,Puerto Rico,Porto Rico,mistry2021,mistry2021|prem2021,https://population.un.org/wpp/
+Qatar,0,QA,QAT,State of Qatar,Catar,prem2021,prem2021|prem2017,https://population.un.org/wpp/
+Romania,0,RO,ROU,Romania,Roumanie|Rumanía|Roménia,mistry2021,mistry2021|prem2021|prem2017,https://population.un.org/wpp/
+Russia,0,RU,RUS,Russian Federation,"Russie, Fédération de|Federación Rusa|Federação Russa",mistry2021,mistry2021|prem2021|prem2017,https://github.com/mobs-lab/mixing-patterns/tree/main/data/population_rescaled_age_distributions
+Rwanda,0,RW,RWA,Rwandese Republic,Ruanda,prem2021,prem2021|prem2017,https://population.un.org/wpp/
+Saint_Lucia,0,LC,LCA,Saint Lucia,Sainte-Lucie|Santa Lucía,prem2021,prem2021|prem2017,https://population.un.org/wpp/
+Saint_Vincent_and_the_Grenadines,0,VC,VCT,Saint Vincent and the Grenadines,Saint-Vincent-et-les-Grenadines|San Vicente y las Granadinas|São Vicente e Granadinas,prem2021,prem2021,https://population.un.org/wpp/
+Samoa,0,WS,WSM,Independent State of Samoa,,prem2021,prem2021|prem2017,https://population.un.org/wpp/
+Sao_Tome_and_Principe,0,ST,STP,Democratic Republic of Sao Tome and Principe,Sao Tomé-et-Principe|Santo Tomé y Príncipe|São Tomé e Príncipe,prem2021,prem2021|prem2017,https://population.un.org/wpp/
+Saudi_Arabia,0,SA,SAU,Kingdom of Saudi Arabia,Arabie saoudite|Arabia Saudí|Arábia Saudita,prem2021,prem2021|prem2017,https://population.un.org/wpp/
+Senegal,0,SN,SEN,Republic of Senegal,,prem2021,prem2021|prem2017,https://population.un.org/wpp/
+Serbia,0,RS,SRB,Republic of Serbia,Serbie|Sérvia,prem2021,prem2021|prem2017,https://population.un.org/wpp/
+Seychelles,0,SC,SYC,Republic of Seychelles,,prem2017,prem2017,https://population.un.org/wpp/
+Sierra_Leone,0,SL,SLE,Republic of Sierra Leone,Sierra Leona|Serra Leoa,prem2021,prem2021|prem2017,https://population.un.org/wpp/
+Singapore,0,SG,SGP,Republic of Singapore,Singapour|Singapur|Singapura,prem2021,prem2021|prem2017,https://population.un.org/wpp/
+Slovakia,0,SK,SVK,Slovak Republic,Slovaquie|Eslovaquia,mistry2021,mistry2021|prem2021|prem2017,https://population.un.org/wpp/
+Slovenia,0,SI,SVN,Republic of Slovenia,Slovénie|Eslovenia,mistry2021,mistry2021|prem2021|prem2017,https://population.un.org/wpp/
+Solomon_Islands,0,SB,SLB,Solomon Islands,"Salomon, Îles|Islas Salomón|Ilhas Salomão",prem2021,prem2021|prem2017,https://population.un.org/wpp/
+South_Africa,0,ZA,ZAF,Republic of South Africa,Afrique du Sud|Sudáfrica|África do Sul,mistry2021,mistry2021|prem2021|prem2017,https://github.com/mobs-lab/mixing-patterns/tree/main/data/population_rescaled_age_distributions
+South_Korea,0,KR,KOR,"Korea, Republic of","ROK|Corée, République de|Corea, República de|Coreia, República da",prem2021,prem2021|prem2017,https://population.un.org/wpp/
+South_Sudan,0,SS,SSD,Republic of South Sudan,Soudan du Sud|Sudán del Sur|Sudão do Sul,prem2021,prem2021,https://population.un.org/wpp/
+Spain,0,ES,ESP,Kingdom of Spain,Espagne|España|Espanha,mistry2021,mistry2021|prem2021|prem2017,https://population.un.org/wpp/
+Sri_Lanka,0,LK,LKA,Democratic Socialist Republic of Sri Lanka,,prem2021,prem2021|prem2017,https://population.un.org/wpp/
+Sudan,0,SD,SDN,Republic of the Sudan,Soudan|Sudão,prem2021,prem2021,https://population.un.org/wpp/
+Suriname,0,SR,SUR,Republic of Suriname,Surinam,prem2021,prem2021|prem2017,https://population.un.org/wpp/
+Sweden,0,SE,SWE,Kingdom of Sweden,Suède|Suecia,mistry2021,mistry2021|prem2021|prem2017,https://population.un.org/wpp/
+Switzerland,0,CH,CHE,Swiss Confederation,Suisse|Suiza|Suíça,mistry2021,mistry2021|prem2021|prem2017,https://population.un.org/wpp/
+Syrian_Arab_Republic,0,SY,SYR,Syrian Arab Republic,"Syria|Syrienne, République arabe|República árabe de Siria|República Árabe Síria",prem2021,prem2021|prem2017,https://population.un.org/wpp/
+Taiwan,0,TW,TWN,"Taiwan, Province of China","Taïwan, province de Chine|Taiwán, Provincia de China|Taiwan, Província da China",prem2017,prem2017,https://population.un.org/wpp/
+Tajikistan,0,TJ,TJK,Republic of Tajikistan,Tadjikistan|Tayikistán|Tajiquistão,prem2021,prem2021|prem2017,https://population.un.org/wpp/
+Tanzania,0,TZ,TZA,United Republic of Tanzania,"Tanzania, United Republic of|Tanzanie, République unie de|Tanzania, República unida de|Tanzânia, República Unida da",prem2021,prem2021|prem2017,https://population.un.org/wpp/
+Thailand,0,TH,THA,Kingdom of Thailand,Thaïlande|Tailandia,prem2021,prem2021|prem2017,https://population.un.org/wpp/
+Timor-Leste,0,TL,TLS,Democratic Republic of Timor-Leste,Timor oriental,prem2021,prem2021|prem2017,https://population.un.org/wpp/
+Togo,0,TG,TGO,Togolese Republic,,prem2021,prem2021,https://population.un.org/wpp/
+Tonga,0,TO,TON,Kingdom of Tonga,,prem2021,prem2021|prem2017,https://population.un.org/wpp/
+Trinidad_and_Tobago,0,TT,TTO,Republic of Trinidad and Tobago,Trinité-et-Tobago|Trinidad y Tobago|Trindade e Tobago,prem2021,prem2021,https://population.un.org/wpp/
+Tunisia,0,TN,TUN,Republic of Tunisia,Tunisie|Tunez,prem2021,prem2021|prem2017,https://population.un.org/wpp/
+Turkey,0,TR,TUR,Republic of Türkiye,Türkiye|Turquie|Turquía,prem2021,prem2021|prem2017,https://population.un.org/wpp/
+Turkmenistan,0,TM,TKM,Turkmenistan,Turquemenistão,prem2021,prem2021,https://population.un.org/wpp/
+Uganda,0,UG,UGA,Republic of Uganda,Ouganda,prem2021,prem2021|prem2017,https://population.un.org/wpp/
+Ukraine,0,UA,UKR,Ukraine,Ucrania,prem2021,prem2021|prem2017,https://population.un.org/wpp/
+United_Arab_Emirates,0,AE,ARE,United Arab Emirates,UAE|Émirats arabes unis|Emiratos Árabes Unidos|Emirados Árabes Unidos,prem2021,prem2021|prem2017,https://population.un.org/wpp/
+United_Kingdom,0,GB,GBR,United Kingdom of Great Britain and Northern Ireland,UK|Britain|Great Britain|Royaume-Uni|Reino Unido,mistry2021,mistry2021|prem2021|prem2017,https://population.un.org/wpp/
+United_States,0,US,USA,United States of America,America|États-Unis|Estados Unidos,mistry2021,mistry2021|prem2021|prem2017,https://api.census.gov/data/2023/pep/charv
+Uruguay,0,UY,URY,Eastern Republic of Uruguay,Uruguai,prem2021,prem2021|prem2017,https://population.un.org/wpp/
+Uzbekistan,0,UZ,UZB,Republic of Uzbekistan,Ouzbékistan|Uzbequistão,prem2021,prem2021|prem2017,https://population.un.org/wpp/
+Vanuatu,0,VU,VUT,Republic of Vanuatu,,prem2021,prem2021|prem2017,https://population.un.org/wpp/
+Venezuela,0,VE,VEN,Bolivarian Republic of Venezuela,"Venezuela, Bolivarian Republic of|Vénézuela, république bolivarienne du|Venezuela, República Bolivariana de|Venezuela, República Bolivariana da",prem2021,prem2021|prem2017,https://population.un.org/wpp/
+Vietnam,0,VN,VNM,Socialist Republic of Viet Nam,Viet Nam|Vietname,prem2021,prem2021|prem2017,https://population.un.org/wpp/
+Yemen,0,YE,YEM,Republic of Yemen,Iémen,prem2021,prem2021|prem2017,https://population.un.org/wpp/
+Zambia,0,ZM,ZMB,Republic of Zambia,Zambie,prem2021,prem2021|prem2017,https://population.un.org/wpp/
+Zimbabwe,0,ZW,ZWE,Republic of Zimbabwe,Zimbabue,prem2021,prem2021|prem2017,https://population.un.org/wpp/

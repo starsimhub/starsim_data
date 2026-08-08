@@ -1,13 +1,13 @@
 [build-system]
-requires = ["setuptools>=64"]
+requires = ["setuptools", "setuptools-scm"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "starsim_data"
-version = "0.1.0"
+dynamic = ["version"]
 description = "Demographic data and contact matrices for disease modeling with Starsim"
 readme = "README.md"
-requires-python = ">=3.10"
+requires-python = ">=3.11"
 license = "MIT"
 license-files = ["LICENSE", "licenses/*", "NOTICE.md"]
 keywords = ["contact matrices", "demography", "epidemiology", "starsim", "disease modeling"]
@@ -17,6 +17,7 @@ authors = [
   { name = "Cliff Kerr" },
   { name = "Romesh Abeysuriya" },
   { name = "Robyn Stuart" },
+  { name = "Christopher Lorton" },
 ]
 
 classifiers = [
@@ -29,15 +30,42 @@ classifiers = [
 
 # NOTE: The contact-matrix data files under `data/` are third-party datasets
 # under their own upstream licenses (Apache-2.0, GPL-3.0), NOT MIT. See NOTICE.md.
+# pandas and matplotlib are already installed as sciris dependencies; they are listed
+# because this package imports them directly (fetching.py, plotting.py), not because
+# they add anything to an install.
 dependencies = [
   "numpy>=1.24",
   "sciris>=3.0",
   "h5py>=3.0",
+  "pandas>=2.0",
+  "matplotlib>=3.5",
 ]
 
 [project.optional-dependencies]
+# `pycountry` is a *build-time* dependency only: scripts/build_locations.py bakes the
+# ISO codes and aliases it provides into data/locations.csv, so the resolver at runtime
+# reads the CSV and needs nothing extra.
 dev = [
   "pytest>=7.4",
+  "pycountry",
+  "great-docs",
+]
+
+# Full geometry and raster aggregation. Imported lazily, so `import starsim_data` works
+# without them and only the spatial functions raise if they are missing.
+spatial = [
+  "geopandas>=1.0",
+  "pyogrio>=0.8",
+  "rastertoolkit>=0.5",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+markers = [
+  "network: requires network access (deselected by default in CI)",
+  "slow: takes more than a second or so",
+  "integration: exercises several components together",
+  "spatial: needs the [spatial] extra (these skip automatically without it)",
 ]
 
 [project.urls]
@@ -50,3 +78,6 @@ include = ["starsim_data*"]
 [tool.setuptools.package-data]
 # Bundle the national-level HDF5 stores and location metadata inside the wheel.
 starsim_data = ["data/*.h5", "data/locations.csv"]
+
+[tool.setuptools.dynamic]
+version = {attr = "starsim_data.version.__version__"}

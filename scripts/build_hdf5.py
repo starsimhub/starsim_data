@@ -36,9 +36,46 @@ import h5py
 import numpy as np
 import pandas as pd
 
+from provenance import stamp
+
 REPO = Path(__file__).resolve().parent.parent
 CONTACT = REPO / "raw_data" / "contact_matrices"
 OUT = REPO / "starsim_data" / "data"
+
+# Machine-readable counterpart to NOTICE.md, written into each store so that the
+# attribution travels with the data rather than only with the repository.
+SOURCES = {
+    "prem2017": dict(
+        source="Prem et al. 2017",
+        source_url="https://github.com/kieshaprem/synthetic-contact-matrices",
+        via="https://github.com/epistorm/epydemix-data",
+        license="GPL-3.0",
+        citation=("Prem K, Cook AR, Jit M. Projecting social contact matrices in 152 "
+                  "countries using contact surveys and demographic data. PLoS Comput Biol "
+                  "13(9): e1005697 (2017)."),
+        note="16x16 matrices; 5-year age groups (0-4, 5-9, ..., 75+).",
+    ),
+    "prem2021": dict(
+        source="Prem et al. 2021",
+        source_url="https://github.com/kieshaprem/synthetic-contact-matrices",
+        via="https://github.com/epistorm/epydemix-data",
+        license="GPL-3.0",
+        citation=("Prem K, Zandvoort K van, Klepac P, et al. Projecting contact matrices "
+                  "in 177 geographical regions: An update and comparison with empirical "
+                  "data for the COVID-19 era. PLoS Comput Biol 17(7): e1009098 (2021)."),
+        note="16x16 matrices; 5-year age groups (0-4, 5-9, ..., 75+).",
+    ),
+    "mistry2021": dict(
+        source="Mistry et al. 2021",
+        source_url="https://github.com/mobs-lab/mixing-patterns",
+        via="https://github.com/epistorm/epydemix-data",
+        license="Apache-2.0",
+        citation=("Mistry D, Litvinova M, Pastore y Piontti A, et al. Inferring "
+                  "high-resolution human mixing patterns for disease modeling. Nature "
+                  "Communications 12, 323 (2021)."),
+        note="85x85 matrices; single-year age groups (0-84, last group is 84+).",
+    ),
+}
 
 # Contact layers, in a stable order. Each is a `{source}_contacts_{kind}.csv` file.
 KINDS = ["all", "home", "work", "school", "community"]
@@ -100,6 +137,12 @@ def build_source(source, check=False):
         if ages is not None:
             spec["ages"] = ages
         f.attrs["spec"] = json.dumps(spec)
+        if source not in SOURCES:
+            print(f"  WARNING: no attribution recorded for {source!r}; add it to SOURCES "
+                  f"in this script and to NOTICE.md")
+        f.attrs["provenance"] = json.dumps(
+            stamp(source, "scripts/build_hdf5.py", n_locations=n_locations,
+                  **SOURCES.get(source, {})))
     size_mb = out_path.stat().st_size / 1e6
     print(f"  {out_path.name}: {n_locations} locations, {size_mb:.1f} MB")
 
