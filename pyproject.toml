@@ -1,10 +1,10 @@
 [build-system]
-requires = ["setuptools>=64"]
+requires = ["setuptools", "setuptools-scm"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "starsim_data"
-version = "0.4.0"
+dynamic = ["version"]
 description = "Demographic data and contact matrices for disease modeling with Starsim"
 readme = "README.md"
 requires-python = ">=3.10"
@@ -17,6 +17,7 @@ authors = [
   { name = "Cliff Kerr" },
   { name = "Romesh Abeysuriya" },
   { name = "Robyn Stuart" },
+  { name = "Christopher Lorton" },
 ]
 
 classifiers = [
@@ -47,11 +48,6 @@ dependencies = [
 dev = [
   "pytest>=7.4",
   "pycountry",
-]
-
-# The documentation site. `great-docs build` also needs Quarto, which is not a Python
-# package: https://quarto.org/docs/get-started/
-docs = [
   "great-docs",
 ]
 
@@ -82,3 +78,6 @@ include = ["starsim_data*"]
 [tool.setuptools.package-data]
 # Bundle the national-level HDF5 stores and location metadata inside the wheel.
 starsim_data = ["data/*.h5", "data/locations.csv"]
+
+[tool.setuptools.dynamic]
+version = {attr = "starsim_data.version.__version__"}
