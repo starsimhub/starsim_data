@@ -66,7 +66,8 @@ class Dataset:
     Attributes:
         name (str): the dataset name, as passed to `load(which=...)`.
         layout (str): how the values are stored; see `LAYOUTS`.
-        tier (int): 0 bundled in the wheel, 1 downloaded release asset, 2 fetched upstream.
+        tier (int): 0 if the dataset is bundled in the wheel, 1 if it is fetched from
+            upstream and cached.
         levels (tuple): the administrative levels covered; `(0,)` for national data.
         sources (tuple): `Source` records, oldest revision first.
         license (str): the upstream data license, e.g. `'CC BY 3.0 IGO'`.
@@ -224,8 +225,7 @@ def datasets(tier=None):
     """Return every known dataset as `{name: Dataset}`.
 
     Args:
-        tier (int): if given, only datasets in this tier (0 bundled, 1 release asset,
-            2 fetched upstream).
+        tier (int): if given, only datasets in this tier (0 bundled, 1 fetched).
 
     Returns:
         sciris.objdict: name -> `Dataset`, sorted by name.
@@ -263,7 +263,7 @@ def register_dataset(dataset, overwrite=False):  # pylint: disable=redefined-out
 
     Example:
         >>> import starsim_data as ssd
-        >>> ds = ssd.registry.Dataset(name='mydata', layout='crude', tier=2,
+        >>> ds = ssd.registry.Dataset(name='mydata', layout='crude', tier=1,
         ...                           loader=lambda location, **kw: location)
         >>> ssd.registry.register_dataset(ds)
         >>> ssd.load('Kenya', which='mydata')

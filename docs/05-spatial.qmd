@@ -61,7 +61,7 @@ round(country), round(counties), round(100 * abs(country - counties) / country, 
 ssd.provenance('nodes').population_year
 ```
 
-It is deliberately not filled at level 1. Subnational population requires aggregating a gridded raster within each polygon, which is a download rather than a lookup, and is described under [subnational population](#subnational-population) below.
+Level 1 is left empty: subnational population comes from aggregating a gridded raster within each polygon, which is a download rather than a lookup. See [subnational population](#subnational-population) below.
 
 ### Mixed sources
 
@@ -71,7 +71,7 @@ Boundaries are taken from UNOCHA where the source covers the country, and from g
 set(ssd.load_nodes('Kenya', level=1).source), set(ssd.load_nodes('France', level=1).source)
 ```
 
-Mixing sources across countries within one analysis is usually acceptable. Mixing them across time for the same country generally is not, since a change of source can change the number of units. Recording `source` per row is intended to make that visible rather than to make it safe.
+Mixing sources across countries within one analysis is usually fine. Mixing them across time for the same country is not, since a change of source can change the number of units — check the `source` column before comparing.
 
 ## Distances
 
@@ -139,7 +139,7 @@ ssd.shapes.SOURCES.gadm.redistributable, ssd.shapes.FALLBACK_CHAIN
 ```
 :::
 
-The UNOCHA global geodatabase, which some tools use as a fallback when a country is missing, is deliberately not implemented here: it is 1–2 GB, and a download of that size triggered implicitly by a library call would be unreasonable. geoBoundaries covers the same gap for a few megabytes.
+UNOCHA's 1–2 GB global geodatabase is not used as a fallback here; geoBoundaries covers the same countries for a few megabytes. If you need the geodatabase itself, download it separately and read it with geopandas.
 
 ## Subnational population
 

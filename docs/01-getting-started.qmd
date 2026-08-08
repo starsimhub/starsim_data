@@ -41,7 +41,7 @@ import starsim_data as ssd
 ssd.list_datasets(detailed=True)[['dataset', 'description', 'tier', 'locations']]
 ```
 
-The `tier` column indicates where each dataset lives. Tier 0 is bundled inside the wheel and can be read without network access; tier 2 is downloaded on demand. The distinction is described in [Data tiers](user-guide/tiers.qmd).
+The `tier` column says where each dataset lives: tier 0 is bundled inside the wheel and reads without network access, tier 1 is downloaded on demand. See [Data tiers](user-guide/tiers.qmd).
 
 ## Loading a dataset
 
@@ -149,7 +149,7 @@ ssd.fetch('kenya', which='life_table', years=2020)      # qx, lx, ex, and the re
 ssd.fetch('kenya', which='births', variant='High')      # a different projection variant
 ```
 
-These are the only calls on this page that access the network, which is the distinction the tier model is intended to make visible.
+These are the only calls on this page that access the network. [Data tiers](user-guide/tiers.qmd) covers the distinction.
 
 ## Further reading
 

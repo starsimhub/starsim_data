@@ -57,7 +57,7 @@ def test_detailed_listing_is_a_frame():
 
 
 def test_tier_filter():
-    assert "life_table" in ssd.list_datasets(tier=2)
+    assert "life_table" in ssd.list_datasets(tier=1)
     assert "life_table" not in ssd.list_datasets(tier=0)
     assert "prem2017" in ssd.list_datasets(tier=0)
 
@@ -71,7 +71,7 @@ def test_load_refuses_a_tier_2_dataset_and_points_at_fetch():
 # --- Registration hooks ------------------------------------------------------------ #
 
 def test_register_and_use_a_custom_dataset():
-    ds = ssd.registry.Dataset(name="_test_custom", layout="crude", tier=2,
+    ds = ssd.registry.Dataset(name="_test_custom", layout="crude", tier=1,
                               loader=lambda location, **kw: f"loaded {location}")
     ssd.registry.register_dataset(ds)
     try:

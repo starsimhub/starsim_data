@@ -77,7 +77,7 @@ funding:
 include_in_header:
   - file: ../docs/assets/starsim-theme.html
 
-# No `reference:` block on purpose. Without one, great-docs discovers the public API and
-# groups it by type, which needs no configuration and cannot fall out of step with the
-# code. Adding an explicit grouping would mean listing every symbol by name, and a stale
-# entry there produces a silently empty page rather than an error.
+# `title` only: with no `contents` or `sections`, great-docs discovers the public API
+# itself and groups it by type, so there is no symbol list to keep in step with the code.
+reference:
+  title: API

@@ -335,7 +335,7 @@ def fetch(location, which="deaths", years=None, variant=DEFAULT_VARIANT, revisio
                   f"Division ({revision}). World Population Prospects {revision}."),
         variant=variant,
         revision=revision,
-        tier=2,
+        tier=1,
         files=[dict(ssd.cache_provenance(path) or {}) for path in paths],
     )
     if which == "life_table":
@@ -351,7 +351,7 @@ for _name in ("life_table", "indicators"):
     ssd.registry.register_dataset(ssd.registry.Dataset(
         name=_name,
         layout="long" if _s.shape == "long" else _s.shape,
-        tier=2,
+        tier=1,
         license=WPP_LICENSE,
         description=_s.description,
     ))

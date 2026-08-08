@@ -80,7 +80,7 @@ def test_unknown_revision_split_is_reported():
 
 def test_fetch_only_datasets_are_in_the_registry_as_tier_2():
     for name in ("life_table", "indicators"):
-        assert ssd.registry.dataset(name).tier == 2
+        assert ssd.registry.dataset(name).tier == 1
 
 
 # --- Network ------------------------------------------------------------------------ #
@@ -103,7 +103,7 @@ def test_fetch_carries_provenance():
     prov = df.attrs["provenance"]
     assert prov.license == "CC BY 3.0 IGO"
     assert prov.variant == "Medium"
-    assert prov.tier == 2
+    assert prov.tier == 1
     assert prov.files[0]["sha256"]              # the cached file is fingerprinted
     assert df.attrs["location"] == "Kenya"
 

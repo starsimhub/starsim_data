@@ -123,7 +123,7 @@ def test_fetch_shapes_carries_provenance():
     prov = gdf.attrs["provenance"]
     assert prov.license == "CC BY 3.0 IGO"
     assert prov.redistributable is True
-    assert prov.tier == 2
+    assert prov.tier == 1
 
 
 @pytest.mark.network

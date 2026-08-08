@@ -270,7 +270,7 @@ def fetch_shapes(location, level=1, source=None, refresh=False, verbose=None):
             problems.append(f"{name}: {e}")
             continue
         out = _normalize(gdf, key, iso3, level, name)
-        out.attrs["provenance"] = sc.objdict(dataset="shapes", source=name, tier=2,
+        out.attrs["provenance"] = sc.objdict(dataset="shapes", source=name, tier=1,
                                              source_url=spec.source_url,
                                              license=spec.license, citation=spec.citation,
                                              redistributable=spec.redistributable,

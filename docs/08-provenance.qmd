@@ -27,7 +27,7 @@ deaths.attrs['provenance'].citation
 deaths.attrs['location'], deaths.attrs['dataset']
 ```
 
-Recording attribution inside the file rather than in an adjacent sidecar is a deliberate choice. A sidecar can be separated from the data it describes — by copying one file and not the other, by extracting an archive selectively, by a script that writes only the array — whereas an attribute cannot. The cost is that provenance must be written at build time rather than added afterwards, which is a reasonable constraint for data that is built by a script in the first place.
+The attribution lives inside the file rather than in an adjacent sidecar, so copying the data carries it along. The consequence for anyone adding a dataset is that provenance has to be written when the store is built; see [Building the data](building-the-data.qmd).
 
 Provenance for every bundled dataset is available at once:
 
@@ -45,7 +45,7 @@ ssd.list_datasets(detailed=True)[['dataset', 'tier', 'license']]
 
 `NOTICE.md` in the repository holds the full attribution text, and `licenses/` holds the upstream licence texts in full. The tests assert that the licence recorded in each store matches the one asserted in `NOTICE.md`, so the machine-readable and human-readable attributions cannot drift apart without a test failing.
 
-One licence constrains the package's own behaviour rather than only its users'. GADM is licensed for non-commercial use only, so nothing derived from it may be redistributed. That constraint is recorded on the source descriptor and enforced by the build scripts, rather than being left to be remembered:
+One licence constrains the package as well as its users. GADM is non-commercial only, so nothing derived from it may be redistributed; the constraint is recorded on the source descriptor and checked by the build scripts:
 
 ```{python}
 ssd.shapes.SOURCES.gadm.redistributable

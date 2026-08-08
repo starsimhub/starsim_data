@@ -55,7 +55,7 @@ python scripts/build_demographics.py --check
 
 This classifies each CSV by its columns rather than by its filename, so bulk files downloaded manually from the WPP website work equally well. It writes `demographics-<revision>.h5` with one group per series.
 
-The script warns about any location present in `locations.csv` that ends up with no data, which is intended to catch silent coverage loss.
+The script warns about any location present in `locations.csv` that ends up with no data, which catches silent coverage loss.
 
 ### Adding a new WPP revision
 
@@ -91,13 +91,13 @@ Downloads pass through the package cache, so a rebuild after the first is quick.
 
 The script refuses to draw on any source whose descriptor sets `redistributable=False`, which is how GADM's non-commercial licence is kept out of bundled data. The check is performed against the same descriptors `fetch_shapes()` uses, so the two cannot disagree.
 
-Subnational population is deliberately not written into the node table. Filling it would require a WorldPop raster for every country, which is roughly a gigabyte retrieved from a slow server, and coverage is incomplete for small territories, so the bundled table would contain silent gaps. It is left to `fetch_nodes()` instead.
+Subnational population is not written into the node table: it would need a WorldPop raster for every country, roughly a gigabyte from a slow server with gaps for small territories. `fetch_nodes()` retrieves it per country instead.
 
 ## Adding a dataset
 
 Roughly the sequence to follow:
 
-1. Put the human-readable source in `raw_data/`, if it is small enough to track. If it is not, it belongs in tier 2 and should be fetched rather than built.
+1. Put the human-readable source in `raw_data/`, if it is small enough to track. If it is not, it belongs in tier 1 and should be fetched rather than built.
 2. Write a build script that produces an `.h5` store with a `spec` attribute naming its layout, and a `provenance` attribute produced by `scripts/provenance.py`.
 3. If the shape is unlike anything already present, add a layout shaper and register it; otherwise reuse an existing layout. See [Architecture](architecture.qmd).
 4. Add a one-line description to `registry.DESCRIPTIONS`.

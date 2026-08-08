@@ -40,25 +40,21 @@ len(set(ssd.resolve(n) for n in ["Côte d'Ivoire", 'cote divoire', 'Ivory Coast'
 
 ## Resolution is exact; approximate matching only advises
 
-Matching against the table is exact. Approximate matching is used solely to construct the error message when an exact match fails, and never to decide what is returned.
+Matching against the table is exact. Approximate matching only ever shapes the error message when an exact match fails; it never decides what is returned.
 
 ```{python}
 #| error: true
 ssd.load('Keyna', which='deaths')
 ```
 
-This division is not merely conservative style; the two mechanisms are suited to different problems, and neither substitutes for the other.
-
-Approximate matching cannot reach abbreviations. `sc.suggest('USA', ...)` returns nothing, because the edit distance from `USA` to `United_States` is far too large, and no threshold that would capture it would remain safe for anything else. Abbreviations therefore have to be listed in the table.
-
-Conversely, approximate matching will readily offer candidates for a string that corresponds to no country whatsoever:
+The two mechanisms suit different problems. Approximate matching cannot reach abbreviations at all — the edit distance from `USA` to `United_States` is far too large — so abbreviations live in the table. It will, on the other hand, readily offer candidates for a string that corresponds to no country:
 
 ```{python}
 import sciris as sc
 sc.suggest('Atlantis', ssd.list_all_locations(), n=3, die=False)
 ```
 
-Those three suggestions are useful in an error message and would be actively harmful if they influenced what a function returned. Silently substituting Albania for Atlantis is a worse outcome than an exception.
+Which is useful in an error message, and would be wrong as a lookup.
 
 ## Scoping to a dataset
 

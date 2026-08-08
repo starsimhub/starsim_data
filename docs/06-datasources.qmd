@@ -21,7 +21,7 @@ The operative attribution and licence text is in [NOTICE.md](https://github.com/
 | Administrative boundaries with geometry | UNOCHA, geoBoundaries, GADM | 2 — fetched | `fetch_shapes()` |
 | Gridded population | WorldPop | 2 — fetched | `fetch_raster()`, `fetch_nodes()` |
 
-Tier 0 is contained in the wheel, requires no network access, and is byte-identical for everyone using the same version. Tier 2 is downloaded on demand and cached, being too large to bundle. The boundary between them is determined by size rather than by subject matter, which is why the same UN WPP release appears in both rows.
+Tier 0 is in the wheel: no network access, byte-identical for everyone on the same version. Tier 1 is downloaded on demand and cached. The split is by size rather than subject, which is why the same UN WPP release appears in both.
 
 ---
 
@@ -87,7 +87,7 @@ The three boundary sources are complementary rather than interchangeable, which 
 
 **Limitations.** Coverage extends to approximately 110 countries and is weighted towards those with humanitarian operations; stable middle- and high-income countries are frequently absent.
 
-**On the global fallback.** UNOCHA also publishes a single global geodatabase on HDX, of 1–2 GB, which some tools fall back to when a country is missing. This package does not, on the grounds that a download of that size triggered implicitly by a library call would be unreasonable, and that geoBoundaries covers the same gap in a few megabytes. The geodatabase can of course be downloaded separately and read with geopandas.
+**On the global fallback.** UNOCHA also publishes a single global geodatabase on HDX, of 1–2 GB. This package does not use it — geoBoundaries covers the same countries in a few megabytes — but it can be downloaded separately and read with geopandas.
 
 ### geoBoundaries
 
@@ -172,7 +172,7 @@ Upstream sources change over time. Four measures keep an analysis reproducible i
 
 ## Not included
 
-The following are omitted deliberately, and are noted here so that their absence is not mistaken for an oversight:
+These are not included, and are listed here so you know where else to look:
 
 - **Subnational demographics.** WPP provides none. National statistical offices, DHS and IPUMS are the usual alternatives.
 - **Age-specific fertility and migration.** WPP publishes crude national rates only for these.

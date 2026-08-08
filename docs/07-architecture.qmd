@@ -38,7 +38,7 @@ def load_nodes(location, level=0):
     return ssd.load(location, which='nodes', level=level)
 ```
 
-`from` imports are confined to `__init__.py`, which is where the public namespace is assembled. Within a module, `ssd.load` and `ssd.registry.datasets()` are resolved at call time rather than at import time, which is what allows the modules to refer to each other without an ordering problem.
+`from` imports are confined to `__init__.py`, where the public namespace is assembled. Within a module, `ssd.load` and `ssd.registry.datasets()` resolve at call time, so modules can refer to each other freely.
 
 ## The registry
 
@@ -60,7 +60,7 @@ Descriptors for bundled data are discovered once, by opening each `.h5` file in 
 sorted(ssd.registry.LAYOUTS)
 ```
 
-This replaces what would otherwise be a chain of `if` statements inside `load()`. Adding a new family of data is a shaper plus a registry entry, rather than another branch in a function that already has several.
+Adding a new family of data is a shaper plus a registry entry.
 
 ## How `load()` is dispatched
 
@@ -77,7 +77,7 @@ load(location, which, kind, revision, level)
   └─ shaper(group, key, spec, opts)   → the dataframe, plus provenance in .attrs
 ```
 
-The `opts` dictionary carries the per-call arguments that apply to some layouts and not others: `kind` for contact matrices, `level` for the node table. Passing arguments this way, rather than as positional parameters on every shaper, is what allows a new layout to introduce an argument of its own without changing the signature of the existing ones. `load()` rejects an argument applied to a layout that has no use for it, rather than ignoring it:
+The `opts` dictionary carries the arguments that apply to some layouts and not others — `kind` for contact matrices, `level` for the node table — so a new layout can introduce its own without changing any existing shaper's signature. An argument applied to a layout that has no use for it is rejected rather than ignored:
 
 ```{python}
 #| error: true
@@ -86,7 +86,7 @@ ssd.load('Kenya', which='deaths', level=1)
 
 ## Storage
 
-Bundled data is stored as HDF5, one store per family, with a `spec` attribute describing the layout and a `provenance` attribute describing the source. The stores are therefore self-describing: the loader reads how to interpret a file from the file itself rather than from a table of assumptions in the code.
+Bundled data is stored as HDF5, one store per family, with a `spec` attribute describing the layout and a `provenance` attribute describing the source. The stores are self-describing: the loader reads how to interpret a file from the file itself.
 
 ```{python}
 #| echo: false
@@ -113,7 +113,7 @@ The tier described in [Data tiers](tiers.qmd) is a field on the descriptor, and 
 ssd.load('kenya', which='life_table')
 ```
 
-This is why the tier-2 datasets appear in the registry at all despite having no bundled store. Listing them keeps the registry a complete account of what the package knows about, and gives `load()` enough information to redirect rather than simply fail to find a file.
+Tier-1 datasets appear in the registry despite having no bundled store, which is what lets `load()` redirect to `fetch()` by name rather than fail to find a file.
 
 ## Extension points
 
@@ -131,7 +131,7 @@ ssd.register_layout('my_layout', shape_my_layout)
 **A new dataset.** Register a descriptor. Giving it a `loader` causes `load()` to delegate to it, which is the route for data this package does not ship:
 
 ```{python}
-ds = ssd.registry.Dataset(name='my_dataset', layout='crude', tier=2,
+ds = ssd.registry.Dataset(name='my_dataset', layout='crude', tier=1,
                           description='Something from elsewhere',
                           loader=lambda location, **kw: f'data for {location}')
 ssd.register_dataset(ds)
@@ -145,17 +145,17 @@ ssd.registry.unregister_dataset('my_dataset')
 
 **A new plotter.** `plotting.PLOTTERS` maps a layout to a drawing function, and can be assigned into.
 
-The registry deliberately provides public registration functions rather than module-level dictionary literals. `laser-init`, from which several ideas in this package are drawn, identifies the absence of such hooks in its own registry as an obstacle to reuse by downstream packages; since the difficulty was already documented, it seemed worth avoiding.
+All three hooks are functions rather than dictionaries you mutate, so a downstream package can extend the registry without reaching into it.
 
 ## Configuration and side effects
 
-Importing the package creates no directories, opens no files and emits no warnings. Settings are read from the environment at import time, which is inexpensive and has no external effect, but they are acted upon only when a function that needs them is called. The cache directory, in particular, is resolved at call time and created only when something is written to it.
+Importing the package creates no directories, opens no files and emits no warnings. Settings are read from the environment at import, but acted on only when a function needs them: the cache directory is resolved at call time and created when something is first written to it.
 
 ```{python}
 ssd.options.help()
 ```
 
-There is no logging configuration. A library should obtain a logger and leave handler configuration to the application that uses it.
+There is no logging configuration; handler setup is left to the application.
 
 ## Testing
 
@@ -175,4 +175,4 @@ pd.DataFrame([
 ])
 ```
 
-Continuous integration additionally rebuilds every store from `raw_data/` and re-runs the suite against the result, so that the committed build artefacts cannot drift from the sources they claim to be derived from. The node table is excluded from that job because rebuilding it requires roughly 420 MB of downloads; it has a separate, manually triggered workflow.
+Continuous integration also rebuilds every store from `raw_data/` and re-runs the suite against the result, so the committed artefacts cannot drift from their sources. The node table has a separate, manually triggered workflow, since rebuilding it downloads roughly 420 MB.

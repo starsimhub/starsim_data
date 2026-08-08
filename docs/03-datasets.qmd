@@ -18,7 +18,7 @@ Licences are omitted here for width; they are listed in [Provenance](provenance.
 
 Four series are taken from UN World Population Prospects 2024, Medium variant. They are grouped in a single store and versioned by WPP revision, and consist of decadal snapshots from 1950 to 2100, giving sixteen time points. All 187 countries have all four series.
 
-The column names follow the UN's own conventions. This is intended to avoid an unnecessary translation step: the frames can be passed to Starsim's demographic modules without renaming anything.
+The column names follow the UN's own conventions, so the frames can be passed to Starsim's demographic modules without renaming anything.
 
 ### `births` and `migration`
 
@@ -76,7 +76,7 @@ This is sixteen years multiplied by two sexes and twenty-two age bins.
 
 ### `population`
 
-Population counts by 5-year age group and sex, expressed as absolute persons. Note that the UN's own CSV distributions express these in thousands; the conversion is applied when the store is built.
+Population counts by 5-year age group and sex, expressed as absolute persons. The UN's own CSV distributions express these in thousands; the conversion is applied when the store is built.
 
 ```{python}
 population = ssd.load('kenya', which='population')

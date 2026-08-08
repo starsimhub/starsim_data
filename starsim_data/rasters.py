@@ -205,7 +205,7 @@ def fetch_nodes(location, level=1, year=None, source=None, refresh=False, verbos
               f"and the {source} boundaries may have drifted apart")
 
     out.attrs["provenance"] = sc.objdict(
-        dataset="nodes", tier=2, location=nodes.location.iloc[0], level=level,
+        dataset="nodes", tier=1, location=nodes.location.iloc[0], level=level,
         boundary_source=source,
         population_source=f"WorldPop {_product(year)['name']}",
         population_year=year, population_url=WORLDPOP_URL,

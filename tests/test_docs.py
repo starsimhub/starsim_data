@@ -100,5 +100,8 @@ def test_config_uses_native_navigation():
     config = yaml.safe_load((REPO / "great-docs.yml").read_text())
     assert config["user_guide"] == "docs"
     assert config["homepage"] == "user_guide"
-    assert "reference" not in config, "the API reference should be discovered, not listed"
     assert "sections" not in config, "sections would give each group its own sidebar"
+    # `title` is fine; `contents` or `sections` would mean listing symbols by hand.
+    reference = config.get("reference", {})
+    assert set(reference) <= {"title", "desc"}, \
+        "the API reference should be discovered, not listed"
