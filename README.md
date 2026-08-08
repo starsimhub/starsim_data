@@ -183,7 +183,7 @@ ssd.provenance('deaths').license        # 'CC BY 3.0 IGO'
 
 ## Documentation
 
-The full documentation is at <https://starsimhub.github.io/starsim_data>. The narrative pages are `.qmd` sources under [`docs/`](docs/), grouped into the three sections the navbar shows, and the API reference is generated from the docstrings. To build it locally you need [Quarto](https://quarto.org/docs/get-started/) plus:
+The full documentation is at <https://starsimhub.github.io/starsim_data>. The narrative pages are `.qmd` sources in [`docs/`](docs/), ordered by their filename prefix and grouped in the sidebar by their `guide-section` frontmatter; the API reference is discovered from the public API. To build it locally you need [Quarto](https://quarto.org/docs/get-started/) plus:
 
 ```bash
 pip install -e ".[dev,docs]"
@@ -191,7 +191,7 @@ great-docs build      # -> great-docs/_site/
 great-docs preview    # live reload on http://localhost:3000
 ```
 
-The API reference needs no configuration: great-docs discovers the public API itself. `docs/assets/build_docs_theme.py` generates the one thing that cannot be configured — the sidebar navigation, from the `docs/` tree, along with the footer and figure styling. Run it after adding or renaming a page; `--check` runs in the test suite, so forgetting fails a test.
+Adding a page means dropping a `.qmd` file in `docs/` with a `title` and a `guide-section` — there is no navigation or reference configuration to update. [`docs/assets/starsim-theme.html`](docs/assets/starsim-theme.html) holds three small style overrides (figure scaling, navbar centring, and the Starsim footer) for which great-docs has no setting.
 
 ## Building from source
 

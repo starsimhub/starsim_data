@@ -1,76 +1,82 @@
 """Tests for the documentation sources.
 
 These do not build the site -- that needs Quarto, which is not a Python dependency. They
-check the things that would otherwise go stale silently: a page added without being wired
-into the sidebar navigation, a cross-page link pointing at a file that no longer exists,
+check the things that would otherwise go stale silently: a page missing the frontmatter
+that puts it in the sidebar, a cross-page link pointing at a file that no longer exists,
 and an executed code example that would make the build reach for the network.
 
-There is nothing here about the API reference: `great-docs.yml` has no `reference:` block,
-so great-docs discovers the public API itself and there is no list to keep in step.
+There is nothing here about the sidebar or the API reference. great-docs builds both
+itself, from the `guide-section` frontmatter and from the public API, so there is no
+generated configuration to keep in step with the code.
 """
 
 import re
-import subprocess
-import sys
 from pathlib import Path
 
 import pytest
+import yaml
 
 REPO = Path(__file__).resolve().parent.parent
 DOCS = REPO / "docs"
-SECTIONS = ("start", "data", "internals")
 
-sys.path.insert(0, str(REPO / "docs" / "assets"))
-import build_docs_theme as theme  # noqa: E402
+# The sidebar groups, in the order the pages' filename prefixes put them in.
+SECTIONS = ["Getting started", "The data", "Internals"]
 
 
 def pages():
-    return sorted(p for section in SECTIONS for p in (DOCS / section).glob("*.qmd"))
+    return sorted(DOCS.glob("*.qmd"))
 
 
-def test_every_section_has_pages():
-    for section in SECTIONS:
-        assert list((DOCS / section).glob("*.qmd")), f"docs/{section} is empty"
+def frontmatter(path):
+    match = re.match(r"^---\n(.*?)\n---\n", path.read_text(encoding="utf-8"), flags=re.S)
+    assert match, f"{path.name} has no YAML frontmatter"
+    return yaml.safe_load(match.group(1))
 
 
-def test_generated_theme_is_up_to_date():
-    """The sidebar navigation is generated from the docs tree, so it has to match it."""
-    result = subprocess.run([sys.executable, str(REPO / "docs" / "assets" / "build_docs_theme.py"),
-                             "--check"], capture_output=True, text=True, check=False)
-    assert result.returncode == 0, result.stdout + result.stderr
+def test_pages_exist():
+    assert len(pages()) >= 9
 
 
-def test_navigation_covers_every_page():
-    listed = {page["href"] for section in theme.navigation() for page in section["pages"]}
-    expected = {f"docs/{p.parent.name}/{re.sub(r'^[0-9]+-', '', p.stem)}.html" for p in pages()}
-    assert listed == expected
+@pytest.mark.parametrize("page", pages(), ids=lambda p: p.name)
+def test_page_has_title_and_section(page):
+    """`title` is the sidebar label and `guide-section` is the group it appears under."""
+    meta = frontmatter(page)
+    assert meta.get("title")
+    assert meta.get("guide-section") in SECTIONS, \
+        f"{page.name}: guide-section must be one of {SECTIONS}"
 
 
-def test_sections_match_the_great_docs_config():
-    """The generated sidebar and the navbar must describe the same set of sections."""
-    config = (REPO / "great-docs.yml").read_text()
-    configured = re.findall(r"^\s*- title: (.+)\n\s*dir: docs/(\S+)", config, flags=re.M)
-    assert [(t.strip(), d.strip()) for t, d in configured] == theme.SECTIONS
+def test_sections_are_contiguous():
+    """Pages are ordered by filename, so a section must not be split by another one."""
+    seen = [frontmatter(p)["guide-section"] for p in pages()]
+    ordered = [s for i, s in enumerate(seen) if i == 0 or s != seen[i - 1]]
+    assert ordered == SECTIONS, f"section order is {ordered}, expected {SECTIONS}"
 
 
-@pytest.mark.parametrize("page", pages(), ids=lambda p: f"{p.parent.name}/{p.name}")
-def test_page_has_a_title(page):
-    assert theme.page_title(page)
-
-
-@pytest.mark.parametrize("page", pages(), ids=lambda p: f"{p.parent.name}/{p.name}")
+@pytest.mark.parametrize("page", pages(), ids=lambda p: p.name)
 def test_cross_page_links_resolve(page):
-    """A link to a .qmd must point at a file that exists, allowing for the `NN-` prefix."""
+    """Links point at real pages, allowing for the numeric prefix and the landing page.
+
+    The first page is the site landing page: it renders at the site root while its
+    siblings render under `user-guide/`, so its links carry that prefix. Every other page
+    links to plain siblings.
+    """
     for target in re.findall(r"\]\((?!http)([^)#]+\.qmd)(?:#[^)]*)?\)", page.read_text()):
-        resolved = (page.parent / target).resolve()
-        if resolved.exists():
-            continue
-        # The URL drops the ordering prefix, so `tiers.qmd` means `NN-tiers.qmd`.
-        matches = list(resolved.parent.glob(f"[0-9][0-9]-{resolved.name}"))
-        assert matches, f"{page.name} links to {target}, which does not exist"
+        name = target.removeprefix("user-guide/")
+        assert "/" not in name, f"{page.name} links to {target}, which is not a guide page"
+        assert list(DOCS.glob(f"[0-9][0-9]-{name}")), \
+            f"{page.name} links to {target}, which does not exist"
 
 
-@pytest.mark.parametrize("page", pages(), ids=lambda p: f"{p.parent.name}/{p.name}")
+def test_only_the_landing_page_uses_the_user_guide_prefix():
+    """A `user-guide/` prefix on any other page would be a broken link."""
+    for page in pages()[1:]:
+        assert "](user-guide/" not in page.read_text(), \
+            f"{page.name} should link to plain siblings, not via user-guide/"
+    assert "](user-guide/" in pages()[0].read_text()
+
+
+@pytest.mark.parametrize("page", pages(), ids=lambda p: p.name)
 def test_executable_cells_stay_offline(page):
     """Executed cells must not fetch anything, or building the docs would need a network.
 
@@ -83,3 +89,16 @@ def test_executable_cells_stay_offline(page):
         for call in ("ssd.fetch", "fetch_shapes(", "fetch_nodes(", "fetch_raster(",
                      "choropleth(", "cached_download("):
             assert call not in code, f"{page.name} executes {call!r} at build time"
+
+
+def test_config_uses_native_navigation():
+    """The sidebar and the reference must stay great-docs' job rather than ours.
+
+    If either needed configuring by hand it would need keeping in step with the code,
+    which is exactly what this arrangement exists to avoid.
+    """
+    config = yaml.safe_load((REPO / "great-docs.yml").read_text())
+    assert config["user_guide"] == "docs"
+    assert config["homepage"] == "user_guide"
+    assert "reference" not in config, "the API reference should be discovered, not listed"
+    assert "sections" not in config, "sections would give each group its own sidebar"

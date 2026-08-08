@@ -1,5 +1,6 @@
 ---
 title: "Locations"
+guide-section: "The data"
 tags: [Reference, Concepts]
 ---
 
@@ -110,7 +111,7 @@ ssd.resolve('NA'), ssd.location_info('Namibia').iso3
 [ssd.parse_level(x) for x in ['admin1', 'ADM2', '3', 4, 'level0']]
 ```
 
-Level 0 denotes the country; higher levels denote progressively finer subdivisions. The upper bound is 5, which is the finest level published by any of the boundary sources described in [Data sources](sources.qmd).
+Level 0 denotes the country; higher levels denote progressively finer subdivisions. The upper bound is 5, which is the finest level published by any of the boundary sources described in [Data sources](datasources.qmd).
 
 ```{python}
 #| error: true

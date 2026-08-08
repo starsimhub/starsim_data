@@ -1,5 +1,6 @@
 ---
 title: "Building the data"
+guide-section: "Internals"
 tags: [Internals, Contributing]
 ---
 

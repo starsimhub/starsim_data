@@ -1,5 +1,6 @@
 ---
 title: "Getting started"
+guide-section: "Getting started"
 tags: [Tutorial, Setup]
 ---
 
@@ -30,7 +31,7 @@ pip install -e starsim_data
 
 :::
 
-The base installation requires `numpy`, `sciris`, `h5py`, `pandas` and `matplotlib`, and includes approximately 14 MB of data inside the wheel. The `[spatial]` extra additionally installs `geopandas`, `pyogrio` and `rastertoolkit`, which are needed only for the full geometry and population rasters described in [Spatial data](../data/spatial.qmd).
+The base installation requires `numpy`, `sciris`, `h5py`, `pandas` and `matplotlib`, and includes approximately 14 MB of data inside the wheel. The `[spatial]` extra additionally installs `geopandas`, `pyogrio` and `rastertoolkit`, which are needed only for the full geometry and population rasters described in [Spatial data](user-guide/spatial.qmd).
 
 ## Listing what is available
 
@@ -40,7 +41,7 @@ import starsim_data as ssd
 ssd.list_datasets(detailed=True)[['dataset', 'description', 'tier', 'locations']]
 ```
 
-The `tier` column indicates where each dataset lives. Tier 0 is bundled inside the wheel and can be read without network access; tier 2 is downloaded on demand. The distinction is described in [Data tiers](tiers.qmd).
+The `tier` column indicates where each dataset lives. Tier 0 is bundled inside the wheel and can be read without network access; tier 2 is downloaded on demand. The distinction is described in [Data tiers](user-guide/tiers.qmd).
 
 ## Loading a dataset
 
@@ -84,7 +85,7 @@ A name that does not match raises an error rather than resolving to the nearest 
 ssd.load('Keyna', which='deaths')
 ```
 
-The reasoning behind this division of labour — an exact table performs the resolution, and approximate matching only contributes to the error message — is discussed in [Locations](../data/locations.qmd).
+The reasoning behind this division of labour — an exact table performs the resolution, and approximate matching only contributes to the error message — is discussed in [Locations](user-guide/locations.qmd).
 
 ## Inspecting the data visually
 
@@ -121,7 +122,7 @@ The same information is attached to every frame returned by `load()`:
 deaths.attrs['provenance'].license
 ```
 
-[Provenance and reproducibility](../internals/provenance.qmd) describes this in more detail.
+[Provenance and reproducibility](user-guide/provenance.qmd) describes this in more detail.
 
 ## Subnational geography
 
@@ -136,7 +137,7 @@ nodes.head()
 ssd.distances('kenya', level=1).iloc[:4, :4].round(1)
 ```
 
-Centroids, areas and a distance matrix are available without any geospatial dependency and without downloading anything. Polygon geometry is a separate, optional step, described in [Spatial data](../data/spatial.qmd).
+Centroids, areas and a distance matrix are available without any geospatial dependency and without downloading anything. Polygon geometry is a separate, optional step, described in [Spatial data](user-guide/spatial.qmd).
 
 ## Data that is not bundled
 
@@ -152,13 +153,6 @@ These are the only calls on this page that access the network, which is the dist
 
 ## Further reading
 
-| Topic | Page |
-|---|---|
-| Why some data is downloaded and some is not | [Data tiers](tiers.qmd) |
-| The columns, units and dtypes of each dataset | [Datasets and their shapes](../data/datasets.qmd) |
-| How location names are resolved | [Locations](../data/locations.qmd) |
-| Node tables, boundaries, rasters and maps | [Spatial data](../data/spatial.qmd) |
-| The characteristics of each upstream source | [Data sources](../data/sources.qmd) |
-| How the package is organised, and how to extend it | [Architecture](../internals/architecture.qmd) |
-| Citation and reproducibility | [Provenance](../internals/provenance.qmd) |
-| How the bundled files are generated | [Building the data](../internals/building.qmd) |
+The sidebar lists every page in the guide. [Data tiers](user-guide/tiers.qmd) is the natural next one:
+it explains the distinction between the bundled data and the downloads, which the rest of
+the documentation assumes.

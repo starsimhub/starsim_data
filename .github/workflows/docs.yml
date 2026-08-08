@@ -28,9 +28,6 @@ jobs:
       - name: Set up Quarto
         uses: quarto-dev/quarto-actions/setup@v2
 
-      - name: Check the generated parts of great-docs.yml are up to date
-        run: python docs/assets/build_docs_theme.py --check
-
       - name: Build docs
         run: great-docs build
 

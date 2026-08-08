@@ -1,5 +1,6 @@
 ---
 title: "Architecture"
+guide-section: "Internals"
 tags: [Architecture, Internals]
 ---
 
@@ -105,7 +106,7 @@ Demographic stores are named by revision, so a new UN release adds a file rather
 
 ## Tiers, in code
 
-The tier described in [Data tiers](../start/tiers.qmd) is a field on the descriptor, and `load()` enforces it:
+The tier described in [Data tiers](tiers.qmd) is a field on the descriptor, and `load()` enforces it:
 
 ```{python}
 #| error: true

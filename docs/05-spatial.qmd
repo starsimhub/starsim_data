@@ -1,5 +1,6 @@
 ---
 title: "Spatial data"
+guide-section: "The data"
 tags: [Reference, Spatial]
 ---
 
