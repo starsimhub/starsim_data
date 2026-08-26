@@ -168,7 +168,13 @@ ssd.choropleth('kenya', level=1)               # a filled map
 
 Together, `load_nodes()` and `distances()` are the inputs a gravity model needs (`P_i`, `P_j`, `D_ij`); the gravity formulation itself belongs in the model, not in a data package.
 
-[Data sources](https://starsimhub.github.io/starsim_data/docs/data/sources.html) compares every source in detail — coverage, admin depth, update cadence, licensing and what each is suited to.
+[Data sources](https://starsimhub.github.io/starsim_data/user-guide/datasources.html) compares every source in detail — coverage, admin depth, update cadence, licensing and what each is suited to.
+
+## Related projects
+
+Two projects shaped this one. [epydemix-data](https://github.com/epistorm/epydemix-data) — the data repository behind [epydemix](https://github.com/epistorm/epydemix) — is where the bundled contact matrices come from, along with the idea of a single manifest listing every location and the sources available for it. [laser-init](https://github.com/laser-base/laser-init), which bootstraps spatial models for [LASER](https://github.com/laser-base/laser-generic), is where the treatment of spatial data comes from: the three boundary sources and the reasons for preferring one over another, WorldPop as the population raster, and aggregating that raster inside administrative polygons to get a population per node.
+
+The differences are mostly about delivery. epydemix-data resolves over the network from GitHub and covers 3,500+ regions including subnational contact matrices; this bundles national matrices in the wheel and adds the full UN WPP demographic series and a node table. laser-init is a CLI that downloads everything and writes out a runnable model; this is a library that returns dataframes and generates no model code — `load_nodes()` and `distances()` give a gravity model its inputs, but the gravity formulation belongs in the model. [Related projects](https://starsimhub.github.io/starsim_data/user-guide/related-projects.html) covers this in full, and compares both with the other ways of getting the same data.
 
 ## Citing
 
