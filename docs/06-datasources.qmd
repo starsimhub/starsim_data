@@ -6,7 +6,7 @@ tags: [Reference, Data]
 
 The sources drawn on by this package disagree with one another in places, cover different sets of countries, are revised on different schedules, and are distributed under different terms. This page compares them: what each is suited to, where its limitations lie, and how to choose between them.
 
-Much of the material on boundaries and rasters is adapted from the corresponding page in [`laser-init`](https://github.com/laser-base/laser-init).
+Much of the material on boundaries and rasters is adapted from the corresponding page in [`laser-init`](https://github.com/laser-base/laser-init). [Related projects](related-projects.qmd) covers that debt, and the equivalent one to [epydemix-data](https://github.com/epistorm/epydemix-data), at greater length, and compares this package with the other ways of obtaining the same data.
 
 The operative attribution and licence text is in [NOTICE.md](https://github.com/starsimhub/starsim_data/blob/main/NOTICE.md). Each dataset also carries its attribution as data, retrievable with `ssd.provenance(which)` or from `df.attrs['provenance']` on any frame returned by `load()` or `fetch()`.
 
@@ -64,7 +64,7 @@ Three sources are included. None supersedes the others: they differ in age resol
 
 **Mistry et al. 2021** offers a different trade-off: considerably finer age resolution (single years to 84) for considerably fewer countries (36). It is appropriate where the age structure of transmission matters at a finer grain than five-year bins, such as school-entry effects or single-year cohorts, and where the restricted coverage is acceptable.
 
-Not every country appears in every source, so `list_locations('prem2021')` is worth consulting first. The matrices were adapted from [epydemix-data](https://github.com/epistorm/epydemix-data) and trimmed to national level; epydemix additionally provides subnational matrices, which are not included here.
+Not every country appears in every source, so `list_locations('prem2021')` is worth consulting first. The matrices were adapted from [epydemix-data](https://github.com/epistorm/epydemix-data) and trimmed to national level; epydemix additionally provides subnational matrices, a fourth source, and US matrices stratified by sex and race/ethnicity, none of which are included here — see [Related projects](related-projects.qmd).
 
 ---
 
