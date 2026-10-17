@@ -91,8 +91,10 @@ Bundled data is stored as HDF5, one store per family, with a `spec` attribute de
 ```{python}
 #| echo: false
 pd.DataFrame([
-    dict(file='prem2017.h5, prem2021.h5, mistry2021.h5', layout='matrix',
+    dict(file='prem2021.h5 (and, fetched, prem2017.h5, mistry2021.h5)', layout='matrix',
          structure='/<Location>/<setting> → a square float32 array'),
+    dict(file='fetched.json', layout='—',
+         structure='the stores that are fetched: URL, SHA-256, locations and provenance'),
     dict(file='demographics-<revision>.h5', layout='crude, mortality, population',
          structure='/<series>/<Location> → a (year[, sex, age]) array'),
     dict(file='nodes.h5', layout='nodes',

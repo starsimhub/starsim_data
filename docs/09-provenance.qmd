@@ -8,12 +8,12 @@ The datasets distributed here are third-party data under a variety of licences, 
 
 ## Attribution travels with the data
 
-Every bundled store records its source, URL, licence, citation, build timestamp, package version and git commit, written into the HDF5 file at build time.
+Every store records its source, URL, licence, citation, build timestamp, package version and git commit, written into the HDF5 file at build time. For a store that is fetched rather than bundled, the manifest in the wheel carries a copy of the same record, so `provenance()` answers without downloading it; the frame `fetch()` returns adds where and when the file was downloaded.
 
 ```{python}
 import starsim_data as ssd
 
-ssd.provenance('prem2017')
+ssd.provenance('prem2021')
 ```
 
 The same record is attached to every frame returned by `load()`:

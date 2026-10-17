@@ -52,13 +52,13 @@ The standard national demographic series, covering all countries from 1950 to 21
 
 ## Contact matrices
 
-Three sources are included. None supersedes the others: they differ in age resolution and country coverage, and to a lesser extent in method.
+Three sources are available. `prem2021` is bundled and is the default; the other two are fetched on first use. They differ in age resolution and country coverage, and to a lesser extent in method; see [Datasets](datasets.qmd#which-source) for why `prem2021` is the default.
 
-| Source | Matrix | Age bins | Countries | License |
-|---|---|---|---|---|
-| `prem2017` | 16×16 | 5-year, 0–75+ | 152 | GPL-3.0 |
-| `prem2021` | 16×16 | 5-year, 0–75+ | 177 | GPL-3.0 |
-| `mistry2021` | 85×85 | single-year, 0–84+ | 36 | Apache-2.0 |
+| Source | Tier | Matrix | Age bins | Countries | License |
+|---|---|---|---|---|---|
+| `prem2021` | 0 (bundled) | 16×16 | 5-year, 0–75+ | 177 | GPL-3.0 |
+| `prem2017` | 1 (fetched) | 16×16 | 5-year, 0–75+ | 152 | GPL-3.0 |
+| `mistry2021` | 1 (fetched) | 85×85 | single-year, 0–84+ | 36 | Apache-2.0 |
 
 **Prem et al. 2017 and 2021** project contact patterns onto countries lacking their own survey, using household composition and demographic structure. The 2021 paper is an update covering more countries, with a revised method and a comparison against empirical data, and is generally preferable except when reproducing earlier work. Both provide the same five settings: `all`, `home`, `work`, `school` and `community`.
 

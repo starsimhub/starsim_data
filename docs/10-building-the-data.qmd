@@ -15,11 +15,12 @@ starsim_data/
 │   └── demographics/           # three normalised UN WPP CSVs
 ├── scripts/                    # build tools; not part of the installed package
 │   ├── download_wpp.py         # raw_data/demographics/  ← UN WPP Data Portal API
-│   ├── build_hdf5.py           # prem2017.h5, prem2021.h5, mistry2021.h5
+│   ├── build_hdf5.py           # prem2021.h5, fetched.json (and fetched/*.h5 with --fetched)
 │   ├── build_demographics.py   # demographics-<revision>.h5
 │   ├── build_locations.py      # the derived columns of locations.csv
 │   ├── build_nodes.py          # nodes.h5
 │   └── provenance.py           # shared: stamps each store with its source and build
+├── fetched/                    # stores fetched on demand: committed, not shipped
 └── starsim_data/data/          # the build artefacts, committed and shipped
 ```
 
@@ -36,6 +37,16 @@ python scripts/build_hdf5.py --check
 Reads the per-country CSVs in `raw_data/contact_matrices/` and writes one store per source, keyed by location, with one `float32` matrix per contact setting. The source CSVs were derived from [epydemix-data](https://github.com/epistorm/epydemix-data), trimmed to national level and reorganised into a flat layout.
 
 Attribution for each source is held in a `SOURCES` table in the script, and the script warns if a source has no attribution recorded, so that adding a dataset without a licence is noticed at build time rather than at review.
+
+Only the sources in `BUNDLED` (`prem2021`) are written into `starsim_data/data/`. The others are fetched on demand: their stores are committed in `fetched/`, outside the package, and `fetch()` downloads each from GitHub at the commit given for it in `PINNED`. Every run rewrites the manifest `starsim_data/data/fetched.json` from the stores in `fetched/`, recording each one's URL, SHA-256, locations and provenance; `fetch()` refuses a download whose digest differs, and a test checks the manifest against the committed stores. [CK: please remove geekspeak like this and focus on an audience of scientists/modelers.]
+
+A store is stamped with its build time, so rebuilding one changes its bytes. The fetched stores are therefore rebuilt only when asked:
+
+```bash
+python scripts/build_hdf5.py --fetched
+```
+
+after which the new stores must be committed and pushed, their commit set in `PINNED`, and the script run once more, so that each URL serves the bytes its digest describes. [CK: this should be in a skill rather than something the user has to remember to do. but also, it should be clear whether the user ever has to do it or just the package maintainers.]
 
 ## Demographics
 
