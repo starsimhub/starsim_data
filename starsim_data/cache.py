@@ -20,6 +20,7 @@ ssd.clear_cache()    # delete it all
 """
 
 import hashlib
+import socket
 import json
 import os
 import platform
@@ -99,6 +100,9 @@ def _write_sidecar(path, url):
     return facts
 
 
+DOWNLOAD_TIMEOUT = 120 # seconds with no data before a download gives up
+
+
 def cached_download(url, filename=None, subdir=None, refresh=False, verbose=None):
     """Download `url` into the cache, or return the existing path if already cached.
 
@@ -124,8 +128,16 @@ def cached_download(url, filename=None, subdir=None, refresh=False, verbose=None
     if verbose:
         print(f"Downloading {url}\n  -> {path}")
     # convert=False keeps the response as bytes; the WPP files are gzipped CSVs and
-    # sciris would otherwise try to decode them as text.
-    sc.download(url, filename=str(path), convert=False, verbose=verbose)
+    # sciris would otherwise try to decode them as text. sciris sets no timeout, so a
+    # connection that stalls would wait forever; this makes it fail after a while with
+    # no data, so the caller can try again.
+    # [CK: wrong; sciris does now, check again (just updated)]
+    previous = socket.getdefaulttimeout()
+    socket.setdefaulttimeout(DOWNLOAD_TIMEOUT)
+    try:
+        sc.download(url, filename=str(path), convert=False, verbose=verbose)
+    finally:
+        socket.setdefaulttimeout(previous)
     _write_sidecar(path, url)
     return path
 
