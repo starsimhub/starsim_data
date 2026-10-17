@@ -62,11 +62,11 @@ Coverage varies between datasets, so `load()` resolves against the locations tha
 
 ```{python}
 #| error: true
-ssd.load('Kenya', which='mistry2021')
+ssd.load('Japan', which='prem2021')
 ```
 
 ```{python}
-len(ssd.list_locations('prem2017')), len(ssd.list_locations('mistry2021'))
+len(ssd.list_locations('prem2021')), len(ssd.list_locations('mistry2021'))
 ```
 
 `list_locations(which)` gives the locations in one dataset, and `list_all_locations()` gives every location the package knows about.
