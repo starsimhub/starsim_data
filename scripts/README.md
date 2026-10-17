@@ -15,14 +15,15 @@ Re-run after adding a location, or to pick up a newer `pycountry`.
 
 ## build_hdf5.py
 
-Walks [`raw_data/contact_matrices/`](../raw_data/contact_matrices/) and writes one HDF5 file per dataset (contact source) into [`starsim_data/data/`](../starsim_data/data/). Each store is keyed by location, with one dataset per contact setting; matrices are cast to `float32` and compressed with gzip9 + byte-shuffle.
+Walks [`raw_data/contact_matrices/`](../raw_data/contact_matrices/) and writes one HDF5 file per dataset (contact source). Each store is keyed by location, with one dataset per contact setting; matrices are cast to `float32` and compressed with gzip9 + byte-shuffle. The sources in `BUNDLED` (`prem2021`) go into [`starsim_data/data/`](../starsim_data/data/); the others are fetched on demand, so their stores go into [`fetched/`](../fetched/), outside the package, and are rebuilt only with `--fetched` (a rebuild changes their bytes, and `fetch()` downloads them from the commit pinned for each in `PINNED`). Every run rewrites the manifest `starsim_data/data/fetched.json` from the stores in `fetched/`.
 
 ```bash
-python scripts/build_hdf5.py            # rebuild all datasets found in raw_data
-python scripts/build_hdf5.py --check    # also round-trip validate against the CSVs
+python scripts/build_hdf5.py              # rebuild prem2021.h5 and the manifest
+python scripts/build_hdf5.py --check      # also round-trip validate against the CSVs
+python scripts/build_hdf5.py --fetched    # also rebuild the stores in fetched/
 ```
 
-Run this whenever `raw_data/` changes. Adding a new dataset requires no code change here — drop its `<source>_contacts_<setting>.csv` files into the country folders and re-run; the script discovers sources automatically, and `starsim_data.list_datasets()` will pick up the new `.h5`.
+Run this whenever `raw_data/` changes. A new source is discovered automatically from its `<source>_contacts_<setting>.csv` files: add it to `BUNDLED`, or build it with `--fetched`, push its store, and give its commit in `PINNED`.
 
 ## download_wpp.py
 

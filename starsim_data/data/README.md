@@ -6,7 +6,8 @@ Each store carries a root `spec` attribute recording its `layout`, so `load()` r
 
 **Contact matrices** (`layout='matrix'`), built from [`raw_data/contact_matrices/`](../../raw_data/contact_matrices/) by [`scripts/build_hdf5.py`](../../scripts/build_hdf5.py):
 
-- `<source>.h5` — one store per contact source (`prem2017.h5`, `prem2021.h5`, `mistry2021.h5`), keyed by location with one `float32` matrix per contact setting: `/<Location>/<setting>`.
+- `prem2021.h5` — the bundled contact source, keyed by location with one `float32` matrix per contact setting: `/<Location>/<setting>`.
+- `fetched.json` — the manifest of the contact sources that are fetched rather than bundled (`prem2017`, `mistry2021`): for each, its URL at a pinned commit, SHA-256, locations and provenance. Their stores, built the same way, are in [`fetched/`](../../fetched/) at the top of the repository, outside the package; `fetch()` downloads them.
 
 **Demographic series** from UN WPP, all grouped in `demographics-<revision>.h5` (e.g. `demographics-2024.h5`), built by [`scripts/build_demographics.py`](../../scripts/build_demographics.py). One group per series, each with its own `spec`:
 
