@@ -4,6 +4,8 @@ This repository aggregates third-party demographic and contact-matrix datasets. 
 
 If you use these data, you must comply with the applicable upstream license and cite the corresponding paper.
 
+Of the contact matrices, only `prem2021` is bundled in the installed package. `prem2017` and `mistry2021` are distributed from this repository (in `fetched/`) and downloaded by `fetch()` on first use; they are redistributed under the same terms, below.
+
 ## Sources
 
 ### Demographics — UN World Population Prospects 2024 (CC BY 3.0 IGO)
@@ -36,14 +38,16 @@ The Apache-2.0 license requires that its copyright notice, this attribution, and
 - **Paper:** Prem K, Cook AR, Jit M. *Projecting social contact matrices in 152 countries using contact surveys and demographic data.* PLoS Computational Biology 13(9): e1005697 (2017). https://journals.plos.org/ploscompbiol/article?id=10.1371/journal.pcbi.1005697
 - **Format:** 16×16 matrices; 5-year age groups (0–4, 5–9, …, 75+).
 
-### Node table — UNOCHA COD-AB (CC BY 3.0 IGO) and geoBoundaries (CC BY 4.0)
+### Node table — UNOCHA COD-AB (CC BY 3.0 IGO), geoBoundaries (CC BY 4.0) and WorldPop (CC BY 4.0)
 
-The bundled `nodes.h5` (centroids, areas, p-codes and hierarchy for administrative levels 0 and 1) is **derived data**: it is computed from the boundary sources below, which are themselves not redistributed. Every row records which source it came from, in its `source` column.
+The bundled `nodes.h5` (centroids, areas, populations, p-codes and hierarchy for administrative levels 0 and 1) and `adjacency.h5` (which units share a border) are **derived data**: they are computed from the boundary sources below, and the level-1 populations from WorldPop's 2020 1 km UN-adjusted rasters summed within each unit; none of the sources is itself redistributed. Every row records which boundary source it came from, in its `source` column.
 
 - **UNOCHA COD-AB** — Common Operational Datasets, Administrative Boundaries, via the [laser-base/unocha](https://github.com/laser-base/unocha) mirror of the [UNOCHA Humanitarian Data Exchange](https://data.humdata.org/). License: Creative Commons Attribution 3.0 IGO. **Citation:** United Nations Office for the Coordination of Humanitarian Affairs (UNOCHA), *Common Operational Datasets — Administrative Boundaries (COD-AB).*
 - **geoBoundaries CGAZ v6.0.0** (gbOpen) — [geoboundaries.org](https://www.geoboundaries.org). License: Creative Commons Attribution 4.0. **Citation:** Runfola D, Anderson A, Baier H, et al. *geoBoundaries: A global database of political administrative boundaries.* PLoS ONE 15(4): e0231866 (2020). https://doi.org/10.1371/journal.pone.0231866
 
-Both licenses permit redistribution of derived works with attribution, which is what this section provides.
+- **WorldPop** — 1 km gridded population, [worldpop.org](https://www.worldpop.org), for the level-1 populations. License: Creative Commons Attribution 4.0. **Citation:** WorldPop (www.worldpop.org), School of Geography and Environmental Science, University of Southampton. https://dx.doi.org/10.5258/SOTON/WP00645
+
+All three licenses permit redistribution of derived works with attribution, which is what this section provides.
 
 ## Fetched, never redistributed
 

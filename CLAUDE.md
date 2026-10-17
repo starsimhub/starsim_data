@@ -30,7 +30,7 @@ The `.h5` files in `starsim_data/data/` are **committed build artifacts**, gener
 
 ```bash
 python scripts/build_locations.py --check     # derived columns of locations.csv, from pycountry
-python scripts/build_hdf5.py --check          # contact matrices, from raw_data/contact_matrices/
+python scripts/build_hdf5.py --check          # prem2021.h5 and data/fetched.json, from raw_data/contact_matrices/ (--fetched also rebuilds fetched/*.h5)
 python scripts/build_demographics.py --check  # demographics, from raw_data/demographics/
 python scripts/build_nodes.py --check         # node table; ~420 MB cold, [spatial] required
 python scripts/build_nodes.py --limit 5       # a quick subset while developing
@@ -54,7 +54,7 @@ Tier is a field on the dataset descriptor and `load()` enforces it: asking `load
 
 `registry.py` holds two tables, and nearly every extension goes through one of them rather than through an `if` branch:
 
-- `DATASETS` — name → `Dataset` descriptor (layout, tier, levels, licence, revisions, location count, store). Bundled descriptors are **discovered** by opening each `.h5` and reading its root attributes, so the stores are self-describing: adding a new contact source is dropping CSVs in `raw_data/` and re-running `build_hdf5.py`, with no code change.
+- `DATASETS` — name → `Dataset` descriptor (layout, tier, levels, licence, revisions, location count, store). Bundled descriptors are **discovered** by opening each `.h5` and reading its root attributes, so the stores are self-describing: adding a new contact source is dropping CSVs in `raw_data/` and re-running `build_hdf5.py`. The contact sources that are fetched rather than bundled (`prem2017`, `mistry2021`, in `fetched/` outside the wheel) are described by the manifest `data/fetched.json`, which `build_hdf5.py` writes with each store's pinned URL, SHA-256, locations and provenance.
 - `LAYOUTS` — layout name → the shaper that turns a stored array into a dataframe (`matrix`, `crude`, `mortality`, `population`, `nodes`).
 
 `load()` resolves the descriptor, picks the source for the revision, resolves the location scoped to that dataset, then hands off to the shaper with an `opts` dict carrying layout-specific arguments (`kind` for matrices, `level` for nodes). An argument a layout has no use for is **rejected, not ignored**. `register_dataset()`, `register_layout()` and `plotting.PLOTTERS` are the public hooks; a descriptor with a `loader` makes `load()` delegate entirely, which is how downstream code adds data this package doesn't ship.
