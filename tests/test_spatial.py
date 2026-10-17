@@ -91,6 +91,30 @@ def test_raster_year_defaults_to_the_node_tables():
 
 # --- Downloads ----------------------------------------------------------------------- #
 
+# [CK: this test feels brittle and the name is terrible, do we really need it?]
+def test_aggregate_a_raster_rastertoolkit_refuses(tmp_path):
+    """A raster whose edge is at -180 degrees (WorldPop's for Eritrea covers the world) is summed by reading only the window the shapes cover."""
+    tifffile = pytest.importorskip("tifffile")
+    from shapely.geometry import box
+    dx = 0.5
+    grid = np.arange(360 * 720, dtype=np.float32).reshape(360, 720) % 7     # the world in half degrees
+    grid[0, 0] = -99999                                                     # nodata
+    path = tmp_path / "world.tif"
+    tifffile.imwrite(path, grid, tile=(64, 64), extratags=[
+        (33550, 12, 3, (dx, dx, 0.0)),                       # ModelPixelScaleTag
+        (33922, 12, 6, (0.0, 0.0, 0.0, -180.0, 90.0, 0.0)),  # ModelTiepointTag
+        (42113, 2, None, "-99999")])                          # GDAL_NODATA
+    shapes = geopandas.GeoDataFrame(dict(pcode=["a", "b"]),
+                                    geometry=[box(10, -5, 20, 5), box(-180, 80, -170, 90)], crs="EPSG:4326")
+    totals = ssd.rasters._aggregate_window(path, shapes, by="pcode")
+    rows = lambda lat0, lat1: slice(int((90 - lat1) / dx), int((90 - lat0) / dx))
+    cols = lambda lon0, lon1: slice(int((lon0 + 180) / dx), int((lon1 + 180) / dx))
+    expected_a = grid[rows(-5, 5), cols(10, 20)].sum()
+    corner = grid[rows(80, 90), cols(-180, -170)]
+    assert totals["a"] == pytest.approx(float(expected_a))
+    assert totals["b"] == pytest.approx(float(corner[corner >= 0].sum()))   # the nodata cell counts as nobody
+
+
 @pytest.mark.network
 def test_fetch_shapes_from_unocha():
     gdf = ssd.fetch_shapes("kenya", level=1, verbose=False)
@@ -138,6 +162,20 @@ def test_fetch_nodes_fills_population():
     assert 0.9 < nodes.population.sum() / national < 1.1
     # Nairobi is Kenya's most populous county and its smallest by area.
     assert nodes.loc[nodes.population.idxmax(), "name"] == "Nairobi"
+
+
+# [CK: this test name is too long too ... in fact most of the test names in this file/(repo?) are too long. write the tests in starsim style, with a __main__ block, timings, etc]
+@pytest.mark.network
+@pytest.mark.slow
+def test_fetch_nodes_builds_a_level_that_is_not_bundled():
+    pytest.importorskip("rastertoolkit", reason="needs the [spatial] extra")
+    nodes = ssd.fetch_nodes("kenya", level=2, verbose=False)
+    assert len(nodes) == 290 and (nodes.level == 2).all()      # Kenya's sub-counties
+    assert nodes.population.notna().all() and nodes.lat.notna().all()
+    level1 = ssd.load_nodes("kenya", level=1).population.sum()
+    assert abs(nodes.population.sum() / level1 - 1) < 0.01     # the same raster, cut finer
+    a = ssd.adjacency("kenya", level=2, nodes=nodes)           # the borders come with the table
+    assert a.shape == (290, 290) and (a.values == a.values.T).all() and a.values.sum(axis=1).min() >= 1
 
 
 @pytest.mark.network

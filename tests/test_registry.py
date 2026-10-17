@@ -59,7 +59,8 @@ def test_detailed_listing_is_a_frame():
 def test_tier_filter():
     assert "life_table" in ssd.list_datasets(tier=1)
     assert "life_table" not in ssd.list_datasets(tier=0)
-    assert "prem2017" in ssd.list_datasets(tier=0)
+    assert "prem2021" in ssd.list_datasets(tier=0)
+    assert "prem2017" in ssd.list_datasets(tier=1)  # fetched, not bundled
 
 
 def test_load_refuses_a_tier_2_dataset_and_points_at_fetch():

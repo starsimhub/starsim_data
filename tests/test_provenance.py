@@ -45,10 +45,10 @@ def test_provenance_records_the_build():
 
 
 def test_loaded_frames_carry_provenance():
-    df = ssd.load("Kenya", which="prem2017")
+    df = ssd.load("Kenya", which="prem2021")
     assert df.attrs["provenance"].license == "GPL-3.0"
     assert df.attrs["location"] == "Kenya"
-    assert df.attrs["dataset"] == "prem2017"
+    assert df.attrs["dataset"] == "prem2021"
 
 
 def test_provenance_survives_an_alias_lookup():
@@ -83,7 +83,7 @@ def test_unknown_revision_raises():
 def test_revision_is_rejected_for_contact_matrices():
     """Contact sources are versioned by name, so a revision argument is a mistake."""
     with pytest.raises(ValueError, match="does not apply"):
-        ssd.load("Kenya", which="prem2017", revision=2024)
+        ssd.load("Kenya", which="prem2021", revision=2024)
 
 
 @pytest.mark.parametrize("which", ["births", "deaths", "migration", "population"])

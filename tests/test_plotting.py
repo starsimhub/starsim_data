@@ -19,7 +19,7 @@ def _visible(fig):
 def test_summary_draws_a_panel_per_dataset():
     fig = ssd.plot("kenya")
     titles = [ax.get_title() for ax in _visible(fig)]
-    for name in ("population", "births", "deaths", "prem2017"):
+    for name in ("population", "births", "deaths", "prem2021"):
         assert any(t.startswith(name) for t in titles), f"no {name} panel in {titles}"
 
 
@@ -30,7 +30,7 @@ def test_summary_skips_datasets_the_location_lacks():
     assert all("mistry2021" not in ax.get_title() for ax in _visible(fig))
 
 
-@pytest.mark.parametrize("which", ["population", "births", "migration", "deaths", "prem2017"])
+@pytest.mark.parametrize("which", ["population", "births", "migration", "deaths", "prem2021"])
 def test_single_dataset_gives_one_panel(which):
     fig = ssd.plot("kenya", which=which)
     # A contact-matrix panel adds a colorbar axis, so count the ones with a title.
@@ -90,8 +90,9 @@ def test_unknown_dataset_is_reported():
 
 def test_explicitly_requested_missing_data_still_raises():
     """Unlike a summary, naming a dataset the location lacks is an error."""
+    assert "Japan" not in ssd.list_locations("prem2021")
     with pytest.raises(KeyError):
-        ssd.plot("Kenya", which="mistry2021")
+        ssd.plot("Japan", which="prem2021")
 
 
 def test_unknown_location_raises():

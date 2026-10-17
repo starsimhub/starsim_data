@@ -97,11 +97,6 @@ def test_national_population_matches_the_bundled_series():
     assert np.isclose(nodes.population.iloc[0], expected)
 
 
-def test_subnational_population_is_absent_by_design():
-    """Level-1 population is a WorldPop fetch, not a bundled lookup."""
-    assert ssd.load_nodes("Kenya", level=1).population.isna().all()
-
-
 def test_coverage():
     nodes_locations = set(ssd.list_locations("nodes"))
     assert len(nodes_locations) >= 180
@@ -170,3 +165,37 @@ def test_triangle_inequality_holds():
     direct = d[:, :, None]
     via = d[:, None, :] + d[None, :, :].transpose(0, 2, 1)
     assert (direct <= via + 1e-6).all()
+
+
+def test_level_1_has_populations():
+    """Level-1 populations are bundled: WorldPop, summed within each unit when the table was built."""
+    nodes = ssd.load_nodes("kenya", level=1)
+    assert nodes.population.notna().all() and (nodes.population > 0).all()
+    national = ssd.load_nodes("kenya").population.iloc[0]
+    assert abs(nodes.population.sum() / national - 1) < 0.05     # WorldPop and WPP differ by a percent or two
+
+
+def test_adjacency_is_symmetric_with_no_self_loops():
+    a = ssd.adjacency("kenya", level=1)
+    assert a.shape == (47, 47)
+    assert (a.values == a.values.T).all() and not np.diag(a.values).any()
+    assert a.values.sum(axis=1).min() >= 1                      # every county has a neighbour
+
+
+def test_adjacency_has_the_right_neighbours():
+    a = ssd.adjacency("kenya", level=1)
+    assert a.loc["Kenya:Nairobi", "Kenya:Kiambu"]
+    assert not a.loc["Kenya:Nairobi", "Kenya:Mombasa"]
+
+
+def test_adjacency_follows_a_subset_of_nodes():
+    nodes = ssd.load_nodes("kenya", level=1)
+    some = nodes[nodes.name.isin(["Nairobi", "Kiambu", "Mombasa"])]
+    a = ssd.adjacency("kenya", level=1, nodes=some, index="name")
+    assert list(a.index) == list(some.name)
+    assert a.loc["Nairobi", "Kiambu"] and not a.loc["Nairobi", "Mombasa"]
+
+
+def test_adjacency_beyond_the_bundled_levels_raises():
+    with pytest.raises(ValueError, match="no borders are bundled"):
+        ssd.adjacency("kenya", level=2, nodes=ssd.load_nodes("kenya", level=1).assign(level=2))
