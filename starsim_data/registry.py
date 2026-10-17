@@ -5,8 +5,10 @@ Two tables live here.
 
 `DATASETS` maps a dataset name to a `Dataset` descriptor -- its layout, tier, admin
 level, license, available UN WPP revisions and location count. Bundled datasets are
-discovered once by reading the HDF5 stores in `data/`; anything else can be added with
-`register_dataset()`.
+discovered once by reading the HDF5 stores in `data/`. Stores that are built the same way
+but kept out of the wheel (tier 1, fetched on demand by `fetch()`) are described by the
+manifest `data/fetched.json`, which `scripts/build_hdf5.py` writes. Anything else can be
+added with `register_dataset()`.
 
 `LAYOUTS` maps a layout name to the function that turns a stored array into a dataframe
 (`matrix`, `crude`, `mortality`, `population`, `nodes`). This replaces dispatching on
@@ -39,6 +41,9 @@ __all__ = ["Dataset", "Source", "datasets", "dataset", "register_dataset",
 # Demographic stores are named `demographics-<revision>.h5`, e.g. demographics-2024.h5.
 DEMOGRAPHICS_PREFIX = "demographics-"
 
+# The manifest of stores that are not bundled but fetched (see `scripts/build_hdf5.py`).
+FETCHED_MANIFEST = "fetched.json"
+
 # One-line descriptions of the bundled datasets. Everything else about a dataset is read
 # from the store itself; these are the only facts that are not in the data.
 DESCRIPTIONS = {
@@ -47,6 +52,7 @@ DESCRIPTIONS = {
     "migration": "Crude net-migration rate (per 1,000), UN WPP",
     "population": "Population by 5-year age group and sex (persons), UN WPP",
     "nodes": "Administrative units: centroids, areas, p-codes and hierarchy",
+    "adjacency": "Administrative units that share a border, as pairs of nodeids",
 }
 MATRIX_DESCRIPTION = "Age-structured contact matrix by setting"
 
@@ -54,9 +60,16 @@ MATRIX_DESCRIPTION = "Age-structured contact matrix by setting"
 @dataclass(frozen=True)
 class Source:
     """Where one revision of a dataset physically lives."""
-    store: str              # bundled file name, e.g. 'demographics-2024.h5'
+    store: str              # file name, e.g. 'demographics-2024.h5'
     group: str = ""         # group within the store; '' means the file root
     revision: str = ""      # UN WPP revision; '' for datasets not versioned this way
+    url: str = ""           # where a store that is not bundled is downloaded from
+    sha256: str = ""        # the digest that download must have
+
+    @property
+    def bundled(self):
+        """Whether the store ships inside the wheel (rather than being fetched)."""
+        return not self.url
 
 
 @dataclass(frozen=True)
@@ -75,6 +88,9 @@ class Dataset:
         description (str): a one-line summary.
         loader (callable): if set, `load()` delegates to it instead of reading a bundled
             store -- the hook for registering a dataset this package does not ship.
+        locations (tuple): for a store that is fetched, the locations it holds, so that
+            they can be listed without downloading it.
+        provenance (dict): for a store that is fetched, the provenance recorded in it.
     """
     name: str
     layout: str
@@ -85,6 +101,8 @@ class Dataset:
     n_locations: int = 0
     description: str = ""
     loader: Optional[Callable] = field(default=None, repr=False)
+    locations: Tuple[str, ...] = field(default=(), repr=False)
+    provenance: dict = field(default_factory=dict, repr=False)
 
     @property
     def level(self):
@@ -170,6 +188,26 @@ def _spec(node):
     return json.loads(raw) if raw is not None else {"layout": "matrix"}
 
 
+def _fetched():
+    """Build descriptors for the fetched stores, from the manifest."""
+    path = data_dir() / FETCHED_MANIFEST
+    if not path.is_file():
+        return {}
+    found = {}
+    for name, entry in json.loads(path.read_text(encoding="utf-8")).items():
+        found[name] = Dataset(name=name,
+                              layout=entry["layout"],
+                              tier=1,
+                              sources=(Source(store=entry["store"], url=entry["url"],
+                                              sha256=entry["sha256"]),),
+                              license=entry["provenance"].get("license", ""),
+                              n_locations=len(entry["locations"]),
+                              description=entry.get("description", MATRIX_DESCRIPTION),
+                              locations=tuple(entry["locations"]),
+                              provenance=entry["provenance"])
+    return found
+
+
 def _license(f):
     raw = f.attrs.get("provenance")
     return json.loads(raw).get("license", "") if raw is not None else ""
@@ -209,6 +247,8 @@ def _discover():
                                       license=license_,
                                       n_locations=len(node),
                                       description=DESCRIPTIONS.get(name, MATRIX_DESCRIPTION))
+    for name, ds in _fetched().items():  # a bundled store wins over a fetched one
+        found.setdefault(name, ds)
     return found
 
 

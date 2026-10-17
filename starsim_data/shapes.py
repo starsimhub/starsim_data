@@ -40,13 +40,14 @@ few MB. And its transformer writes GeoPackages to an output directory as a pipel
 here `fetch_shapes()` just returns the frame, and saving is `gdf.to_file(...)`.
 """
 
+import warnings
 import zipfile
 from dataclasses import dataclass
 
 import sciris as sc
 import starsim_data as ssd
 
-__all__ = ["fetch_shapes", "list_shape_sources"]
+__all__ = ["fetch_shapes", "list_shape_sources", "geometry_facts", "borders"]
 
 
 @dataclass(frozen=True)
@@ -280,3 +281,51 @@ def fetch_shapes(location, level=1, source=None, refresh=False, verbose=None):
     detail = "; ".join(problems)
     raise KeyError(f"no boundaries for {key} ({iso3}) at level {level} from "
                    f"{wanted} ({detail})")
+
+
+# Centroids are taken in an equal-area projection and converted back: the centroid of a
+# polygon in raw degrees is pulled poleward and is simply the wrong point.
+EQUAL_AREA = "ESRI:54009"      # Mollweide
+TOUCH_TOLERANCE = 1e-3         # degrees (~100 m): units closer than this share a border, which absorbs slivers between polygons
+
+
+def geometry_facts(gdf):
+    """
+    The centroid latitude and longitude, and the geodesic area in km², of each polygon.
+
+    Args:
+        gdf (GeoDataFrame): polygons in WGS84, e.g. from `fetch_shapes()`.
+
+    Returns:
+        tuple: arrays of latitudes, longitudes and areas, one entry per row.
+    """
+    import numpy as np                  # pylint: disable=import-outside-toplevel
+    from pyproj import Geod             # pylint: disable=import-outside-toplevel
+
+    geod = Geod(ellps="WGS84")
+    areas = np.array([abs(geod.geometry_area_perimeter(g)[0]) / 1e6 for g in gdf.geometry])
+    centroids = gdf.to_crs(EQUAL_AREA).centroid.to_crs("EPSG:4326")
+    return centroids.y.to_numpy(), centroids.x.to_numpy(), areas
+
+
+def borders(gdf, tolerance=TOUCH_TOLERANCE):
+    """
+    The pairs of polygons that share a border.
+
+    Args:
+        gdf (GeoDataFrame): polygons in WGS84, e.g. from `fetch_shapes()`.
+        tolerance (float): polygons closer than this, in degrees, count as touching
+            (default about 100 m, which absorbs slivers between neighbouring polygons).
+
+    Returns:
+        numpy.ndarray: `(n, 2)` row positions `(i, j)` with `i < j`.
+    """
+    import numpy as np                  # pylint: disable=import-outside-toplevel
+    # [CK: why import numpy here rather than top level?]
+
+    with warnings.catch_warnings():     # a buffer in degrees is what is meant here, so geopandas' warning about it does not apply
+        warnings.simplefilter("ignore", UserWarning)
+        geoms = gdf.geometry.reset_index(drop=True).buffer(tolerance / 2)
+    pairs = geoms.sindex.query(geoms, predicate="intersects")
+    keep = pairs[0] < pairs[1]
+    return np.stack([pairs[0][keep], pairs[1][keep]], axis=1).astype(np.int32)
