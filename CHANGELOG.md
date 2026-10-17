@@ -2,6 +2,19 @@
 
 All notable changes to `starsim_data` are recorded here. Versions follow [semantic versioning](https://semver.org); the *data* is versioned too, so a change to a bundled dataset is a release, not an amendment.
 
+## 2.0.0 (2026-10-XX)
+[CK: this entry is too long; assume people are coming at this doc fresh and want to understand what's going on, not that they're on the previous version and need to know very specific technical details about what changed.]
+
+- **`prem2021` is the bundled contact source, and the default.** `load('kenya')` now reads `prem2021` (it read `prem2017`). It is the authors' own update of `prem2017`, covering 177 locations against 152, from newer surveys and demographic data; against UN WPP 2020 populations its matrices are more nearly reciprocal (mean asymmetry 0.108 against 0.162), and the two agree closely where both exist (median correlation 0.957 per country).
+- **`prem2017` and `mistry2021` are fetched on demand** (tier 1) rather than bundled, which takes the bundled data from 14.6 MB to 8.2 MB. `ssd.fetch('japan', which='prem2017', kind='home')` downloads the same store `load()` used to read (once, about 3 MB) from this repository at a pinned commit, checks it against the SHA-256 recorded in the new manifest `data/fetched.json`, and returns the same frame. Their locations and provenance are still listed offline (`list_locations()`, `provenance()`, `list_datasets()`), and `load()` points at `fetch()` for them. The stores are committed in `fetched/`, outside the wheel; `scripts/build_hdf5.py` rebuilds them only with `--fetched`.
+- A location that `prem2021` lacks (Japan, Australia, Haiti and seven others) raises with the calls that do have it, e.g. `fetch('Japan', which='prem2017')`. [CK: for ones missing the prem2021 default, why not pick something from one of the other ones for the default? Excluding US states and other large, low-use datasets of course.]
+- **Level-1 populations are bundled.** `load_nodes(loc, level=1)` now has a `population` for every unit: WorldPop's 2020 1 km UN-adjusted raster summed within it, worked out when `scripts/build_nodes.py` builds the table (a ~1 GB download, paid once at build time; the result is about 3,000 numbers). Other years and finer levels are still `fetch_nodes()`.
+- **Borders.** `ssd.adjacency(loc, level=1)` says which units share a border, as a square boolean matrix indexed like `distances()`; it is bundled as `data/adjacency.h5`, worked out from the same polygons as the node table (units within about 100 m count as touching).
+- **`fetch_nodes()` at any level.** At a level that is not bundled (2 and up), it builds the node table from the boundaries themselves, as the bundled one is built, and keeps the borders in `.attrs['borders']` for `adjacency(nodes=...)`: `ssd.fetch_nodes('kenya', level=2)` gives Kenya's 290 sub-counties. `ssd.shapes.geometry_facts()` and `ssd.shapes.borders()` are the shared pieces. [CK: "geometry_facts" is a terrible name. "shared pieces" doesn't make sense to me.]
+- `aggregate_raster()` sums a raster that rastertoolkit refuses (one whose edge is at -180°, as WorldPop's raster for Eritrea is, covering the whole world) by decoding only the tiles that the shapes cover. [CK: i don't understand this, feels more like an internal helper function than something to call out here]
+- Downloads give up after two minutes with no data (`cache.DOWNLOAD_TIMEOUT`), rather than waiting forever on a stalled connection, as one to WorldPop did; `sc.download()` sets no timeout of its own. [CK: it does have a timeout now]
+- `fetch()` takes `kind=` for the contact sources, and rejects arguments that do not apply to a dataset (`years=` for a contact source, `kind=` for a demographic series).
+
 ## 1.0.0 (2026-08-08)
 
 Merged with the [laser-init](https://github.com/laser-base/laser-init) project with additional features for geospatial modeling, name resolution, etc.
