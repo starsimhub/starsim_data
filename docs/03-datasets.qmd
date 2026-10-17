@@ -116,10 +116,10 @@ Pinning the revision is advisable in any analysis intended to be reproduced late
 
 ## Contact matrices
 
-Contact matrices give the average number of daily contacts between people in each pair of age bins. Three sources are included, each providing five contact settings, selected with the `kind` argument.
+Contact matrices give the average number of daily contacts between people in each pair of age bins. Three sources are available, each providing five contact settings, selected with the `kind` argument. One of them, `prem2021`, is bundled and is the default; the other two are fetched on first use (see [Tiers](tiers.qmd)).
 
 ```{python}
-matrix = ssd.load('kenya', which='prem2017')
+matrix = ssd.load('kenya')   # prem2021
 matrix.iloc[:6, :6].round(3)
 ```
 
@@ -132,33 +132,50 @@ matrix.loc[25, 30]
 ```{python}
 #| echo: false
 pd.DataFrame([
-    dict(source='prem2017', shape='16x16', bins='5-year, 0-4 ... 75+', countries=152,
-         study='Prem et al. 2017'),
-    dict(source='prem2021', shape='16x16', bins='5-year, 0-4 ... 75+', countries=177,
-         study='Prem et al. 2021'),
-    dict(source='mistry2021', shape='85x85', bins='single-year, 0 ... 84+', countries=36,
-         study='Mistry et al. 2021'),
+    dict(source='prem2021', tier='0 (bundled)', shape='16x16', bins='5-year, 0-4 ... 75+',
+         countries=177, study='Prem et al. 2021'),
+    dict(source='prem2017', tier='1 (fetched)', shape='16x16', bins='5-year, 0-4 ... 75+',
+         countries=152, study='Prem et al. 2017'),
+    dict(source='mistry2021', tier='1 (fetched)', shape='85x85', bins='single-year, 0 ... 84+',
+         countries=36, study='Mistry et al. 2021'),
 ])
 ```
 
 The `kind` argument selects the setting:
 
 ```{python}
-{kind: round(float(ssd.load('kenya', which='prem2017', kind=kind).to_numpy().sum()), 1)
+{kind: round(float(ssd.load('kenya', kind=kind).to_numpy().sum()), 1)
  for kind in ('all', 'home', 'work', 'school', 'community')}
 ```
 
 The `all` matrix is the combined one and the remaining four are its components, although they do not sum exactly to `all`, since the upstream sources construct them separately.
 
-Coverage differs between sources, and is worth checking before use:
+Coverage differs between sources, and is worth checking before use. The locations of a fetched source are listed without downloading it:
 
 ```{python}
-len(ssd.list_locations('prem2017')), len(ssd.list_locations('prem2021')), len(ssd.list_locations('mistry2021'))
+len(ssd.list_locations('prem2021')), len(ssd.list_locations('prem2017')), len(ssd.list_locations('mistry2021'))
 ```
+
+The other two sources are read with `fetch()`, which downloads each store once (about 3 MB) and returns exactly the frame `load()` would:
+
+```python
+ssd.fetch('japan', which='prem2017', kind='home')   # 16x16
+ssd.fetch('france', which='mistry2021')             # 85x85, single years of age
+```
+
+### Which source
+
+`prem2021` is the default because it is the better of the two general-purpose sources, not merely the newer:
+
+- It is the authors' own update of `prem2017`, built from more contact surveys and newer demographic data, and covers 177 locations against 152.
+- Against the UN WPP 2020 populations, its matrices are more nearly reciprocal (the contacts from group *i* to group *j* match those from *j* to *i*): the mean asymmetry is 0.108, against 0.162 for `prem2017`. [CK: not sure why this is an argument ... surely it would be trivial to make the matrice spurely symmetric? so isn't asymmetry a good thing?]
+- The two agree closely where both exist: the median correlation between a country's two matrices is 0.957.
+
+`prem2017` remains available for the ten locations `prem2021` dropped (Andorra, Antigua and Barbuda, Australia, Haiti, Japan, Kiribati, Lebanon, Monaco, Seychelles and Taiwan) and for reproducing earlier analyses. [CK: are those ten locations bundled? if not, can they be if which='default'?] `mistry2021` answers a different need: single-year age bins, but for only 36 mostly high-income countries, under the more permissive Apache-2.0 licence. Asking `load()` for a location `prem2021` lacks says where it can be found:
 
 ```{python}
 #| error: true
-ssd.load('Kenya', which='mistry2021')
+ssd.load('Japan')
 ```
 
 ## The node table
@@ -184,14 +201,14 @@ pd.DataFrame([
     dict(column='lat', dtype='float64', note='equal-area centroid latitude, WGS84'),
     dict(column='lon', dtype='float64', note='equal-area centroid longitude, WGS84'),
     dict(column='area_km2', dtype='float64', note='geodesic area on the WGS84 ellipsoid'),
-    dict(column='population', dtype='float64', note='level 0 only, from bundled WPP; NaN at level 1'),
+    dict(column='population', dtype='float64', note='UN WPP at level 0; WorldPop 2020 summed within each unit at level 1'),
     dict(column='source', dtype='str', note='unocha or geoboundaries'),
 ])
 ```
 
 ## Beyond the bundle
 
-For the four bundled series, `fetch()` returns the same schema at annual resolution. It also provides two datasets with no bundled counterpart:
+For the four bundled series, `fetch()` returns the same schema at annual resolution, and for the two contact sources that are not bundled (`prem2017` and `mistry2021`) the same frame `load()` returns for `prem2021`. It also provides two datasets with no bundled counterpart:
 
 ```{python}
 ssd.list_fetchable()
