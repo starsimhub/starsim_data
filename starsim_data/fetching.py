@@ -1,13 +1,16 @@
 """
-Fetch UN WPP data that is too big to bundle.
+Fetch data that is too big to bundle.
 
 `load()` is instant, offline and frozen: decadal snapshots of the Medium variant, which
-is what almost every model needs. `fetch()` covers the three things that deliberately
-did not fit in the wheel:
+is what almost every model needs, and the default contact matrices (`prem2021`).
+`fetch()` covers the things that deliberately did not fit in the wheel:
 
 - **annual** resolution rather than every tenth year,
 - **complete life tables** (`qx`, `lx`, `ex`, ...) rather than just `mx`,
-- **other projection variants** (High, Low, Constant fertility, ...) rather than Medium.
+- **other projection variants** (High, Low, Constant fertility, ...) rather than Medium,
+- **the other contact matrices** (`prem2017`, `mistry2021`), as the same stores `load()`
+  reads, downloaded once from this package's own repository at a pinned commit and
+  checked against the SHA-256 recorded in `data/fetched.json`.
 
 It works by downloading the UN's bulk CSVs -- the same files `laser-init` uses -- into
 the local cache and filtering them per call. No API token is needed (the WPP Data
@@ -25,10 +28,12 @@ ssd.fetch('kenya', which='deaths', years=(2000, 2025))     # annual mx, not deca
 ssd.fetch('kenya', which='life_table', years=2020)         # qx, lx, ex, ...
 ssd.fetch('kenya', which='births', variant='High')         # a different projection
 ssd.fetch('kenya', which='indicators', years=(2020, 2030)) # CDR, TFR, LEx, IMR, ...
+ssd.fetch('japan', which='prem2017', kind='home')          # a contact source not bundled
 ```
 """
 
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Tuple
 
 import numpy as np
@@ -151,7 +156,35 @@ def list_fetchable():
         >>> 'life_table' in ssd.list_fetchable()
         True
     """
-    return sorted(SERIES)
+    return sorted(set(SERIES) | set(_fetched_stores()))
+
+
+def _fetched_stores():
+    """The datasets that are stores kept out of the wheel, as {name: Dataset}."""
+    return {name: ds for name, ds in ssd.registry.datasets(tier=1).items()
+            if ds.sources and not ds.source().bundled}
+
+# [CK: this function and others aren't written in proper starsim style; commands broken up across lines, Path instead of sc.path, too complex, etc.]
+def _fetch_store(ds, location, kind, refresh, verbose):
+    """Download a store that is not bundled (once), check its digest, and read one location."""
+    source = ds.source()
+    path = None
+    for attempt in ("cached", "fresh"):
+        path = ssd.cached_download(source.url, filename=source.store, subdir="stores",
+                                   refresh=refresh or attempt == "fresh", verbose=verbose)
+        digest = (ssd.cache_provenance(path) or {}).get("sha256")
+        if digest == source.sha256:
+            break
+        if attempt == "fresh":  # a second download that does not match is not used
+            for p in (path, Path(str(path) + ssd.cache.SIDECAR_SUFFIX)):
+                p.unlink(missing_ok=True)
+            raise ValueError(f"the download of {ds.name!r} from {source.url} has SHA-256 "
+                             f"{digest}, not the {source.sha256} recorded for it; it was "
+                             f"deleted rather than used")
+    df = ssd.loaders._read(ds.name, location, kind=kind, path=path)
+    df.attrs["provenance"] = sc.objdict(df.attrs.get("provenance", ds.provenance), tier=1,
+                                        files=[dict(ssd.cache_provenance(path) or {})])
+    return df
 
 
 def _series(which):
@@ -249,9 +282,9 @@ def _shape(df, series, which):
 
 
 def fetch(location, which="deaths", years=None, variant=DEFAULT_VARIANT, revision=None,
-          refresh=False, verbose=None):
+          refresh=False, verbose=None, kind="all"):
     """
-    Fetch UN WPP data that is not bundled, downloading and caching as needed.
+    Fetch data that is not bundled, downloading and caching as needed.
 
     Unlike `load()`, this touches the network on a cache miss -- deliberately, and under
     a different name, so that `load()`'s "never needs the internet" guarantee stays
@@ -262,7 +295,8 @@ def fetch(location, which="deaths", years=None, variant=DEFAULT_VARIANT, revisio
             as for `load()`.
         which (str): `'births'`, `'deaths'`, `'migration'`, `'population'` (the bundled
             series, at annual resolution), `'life_table'` (the complete abridged life
-            table) or `'indicators'` (every WPP indicator). See `list_fetchable()`.
+            table), `'indicators'` (every WPP indicator), or a contact source that is
+            not bundled (`'prem2017'`, `'mistry2021'`). See `list_fetchable()`.
         years (int/tuple/list): a single year; a 2-tuple `(start, end)`, treated as an
             inclusive range; or an explicit list of years. None means all of 1950-2100,
             which for life tables means downloading both halves (~290 MB).
@@ -272,10 +306,11 @@ def fetch(location, which="deaths", years=None, variant=DEFAULT_VARIANT, revisio
             newest revision bundled with this package.
         refresh (bool): re-download even if the file is already cached.
         verbose (bool): report progress (default: `options.verbose`).
+        kind (str): for a contact source only, the contact setting, as for `load()`.
 
     Returns:
-        sciris.dataframe: for the four bundled series, exactly the schema `load()`
-        returns. For `life_table`, `[Time, Sex, AgeGrpStart, mx, qx, px, lx, dx, Lx, Sx,
+        sciris.dataframe: for the four bundled series and the contact sources, exactly
+        the schema `load()` returns. For `life_table`, `[Time, Sex, AgeGrpStart, mx, qx, px, lx, dx, Lx, Sx,
         Tx, ex, ax]` with a glossary in `.attrs['columns']`. For `indicators`, `Time`
         plus every indicator column. Provenance is in `.attrs['provenance']`.
 
@@ -287,8 +322,20 @@ def fetch(location, which="deaths", years=None, variant=DEFAULT_VARIANT, revisio
         >>> import starsim_data as ssd
         >>> d = ssd.fetch('kenya', which='deaths', years=(2020, 2024))  # doctest: +SKIP
         >>> lt = ssd.fetch('KEN', which='life_table', years=2020)       # doctest: +SKIP
+        >>> M = ssd.fetch('Japan', which='prem2017', kind='home')       # doctest: +SKIP
     """
-    verbose = ssd.options.verbose if verbose is None else verbose
+    verbose = ssd.options.verbose if verbose is None else verbose # [CK: can use sc.ifelse(verbose, ssd.options.verbose)]
+    stores = _fetched_stores()
+    if which in stores:
+        given = dict(years=years, variant=variant, revision=revision)
+        unused = [k for k, v in given.items() if v not in (None, DEFAULT_VARIANT)]
+        if unused:  # an argument a dataset has no use for is rejected, not ignored
+            raise ValueError(f"{sc.strjoin(unused)} does not apply to {which!r}, a contact "
+                             f"source; only kind= does")
+        return _fetch_store(stores[which], location, kind, refresh, verbose)
+    if kind != "all":
+        raise ValueError(f"kind={kind!r} does not apply to {which!r}; only contact sources "
+                         f"have contact settings")
     series = _series(which)
     bulk = FILES[series.file]
     wanted_years = _parse_years(years)
