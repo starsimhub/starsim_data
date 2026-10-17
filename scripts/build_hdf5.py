@@ -1,12 +1,12 @@
 """
-Build the bundled HDF5 contact-matrix stores from the raw CSV tree.
+Build the HDF5 contact-matrix stores from the raw CSV tree.
 
 Dev/CI tool -- NOT part of the installed package. Walks `raw_data/contact_matrices/`
-and writes one HDF5 file per dataset (contact source) into `starsim_data/data/`. Each
-store is keyed by location, with one dataset per contact layer:
+and writes one HDF5 file per dataset (contact source). Each store is keyed by location,
+with one dataset per contact layer:
 
 ```
-prem2017.h5
+prem2021.h5
   /Kenya/all        (n, n) float32
   /Kenya/home
   /Kenya/work
@@ -20,15 +20,28 @@ Matrices are cast to float32 and written with gzip9 + byte-shuffle (see
 reimplementation_plan.md for why this is the size/speed sweet spot). Re-run whenever
 the raw data changes; output is overwritten cleanly.
 
+Only `prem2021` is bundled, into `starsim_data/data/`. The other sources are fetched on
+demand (tier 1): their stores live in `fetched/` in the repository, outside the wheel,
+and `fetch()` downloads each from GitHub at the commit pinned in `PINNED` below,
+checking it against the SHA-256 in the manifest `starsim_data/data/fetched.json`. The
+manifest is rewritten on every run, from the stores in `fetched/`.
+
+A store is stamped with its build time, so rebuilding one changes its bytes. The fetched
+stores are therefore rebuilt only with `--fetched`; afterwards commit and push the new
+store, then set its commit in `PINNED` and run this script again, so that the manifest's
+URL serves the bytes its SHA-256 describes.
+
 Usage:
 
 ```bash
-python scripts/build_hdf5.py            # build all sources found in contact_matrices/
-python scripts/build_hdf5.py --check    # also round-trip validate against CSVs
+python scripts/build_hdf5.py              # build prem2021.h5 and rewrite the manifest
+python scripts/build_hdf5.py --check      # also round-trip validate against CSVs
+python scripts/build_hdf5.py --fetched    # also rebuild the stores in fetched/
 ```
 """
 
 import argparse
+import hashlib
 import json
 from pathlib import Path
 
@@ -41,6 +54,22 @@ from provenance import stamp
 REPO = Path(__file__).resolve().parent.parent
 CONTACT = REPO / "raw_data" / "contact_matrices"
 OUT = REPO / "starsim_data" / "data"
+FETCHED = REPO / "fetched"
+MANIFEST = OUT / "fetched.json"
+
+# The contact sources bundled in the wheel; every other source is fetched on demand.
+BUNDLED = ["prem2021"]
+
+# Where each fetched store is downloaded from: a commit on GitHub, and the store's path
+# at that commit. The bytes there must be those of the store in fetched/.
+URL = "https://raw.githubusercontent.com/starsimhub/starsim_data/{commit}/{path}"
+PINNED = {
+    "prem2017": dict(commit="56cb6a5d1ec502d4308d748506f98054c107c8f6",
+                     path="starsim_data/data/prem2017.h5"),
+    "mistry2021": dict(commit="56cb6a5d1ec502d4308d748506f98054c107c8f6",
+                       path="starsim_data/data/mistry2021.h5"),
+}
+DESCRIPTION = "Age-structured contact matrix by setting"
 
 # Machine-readable counterpart to NOTICE.md, written into each store so that the
 # attribution travels with the data rather than only with the repository.
@@ -111,8 +140,8 @@ def _ages(source, n):
 
 
 def build_source(source, check=False):
-    """Write `starsim_data/data/<source>.h5` for one contact source."""
-    out_path = OUT / f"{source}.h5"
+    """Write `<source>.h5` for one contact source: into the package if bundled, else `fetched/`."""
+    out_path = (OUT if source in BUNDLED else FETCHED) / f"{source}.h5"
     n_locations = 0
     ages = None
     with h5py.File(out_path, "w") as f:
@@ -147,17 +176,55 @@ def build_source(source, check=False):
     print(f"  {out_path.name}: {n_locations} locations, {size_mb:.1f} MB")
 
 
+def sha256(path):
+    """The SHA-256 of a file, as `fetch()` checks it."""
+    return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+def write_manifest(sources):
+    """Describe each fetched store (from its file in `fetched/`) in `data/fetched.json`."""
+    manifest = {}
+    for source in sources:
+        if source in BUNDLED:
+            continue
+        path = FETCHED / f"{source}.h5"
+        if source not in PINNED:
+            raise ValueError(f"{source!r} is fetched but has no commit in PINNED; push its "
+                             f"store and add it")
+        with h5py.File(path, "r") as f:
+            spec = json.loads(f.attrs["spec"])
+            manifest[source] = dict(store=path.name,
+                                    url=URL.format(**PINNED[source]),
+                                    sha256=sha256(path),
+                                    bytes=path.stat().st_size,
+                                    layout=spec["layout"],
+                                    description=DESCRIPTION,
+                                    locations=sorted(f.keys()),
+                                    provenance=json.loads(f.attrs["provenance"]))
+    MANIFEST.write_text(json.dumps(manifest, indent=1, ensure_ascii=False) + "\n",
+                        encoding="utf-8")
+    print(f"  {MANIFEST.name}: {len(manifest)} fetched store(s)")
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--check", action="store_true",
                         help="round-trip validate HDF5 values against the source CSVs")
+    parser.add_argument("--fetched", action="store_true",
+                        help="also rebuild the stores in fetched/ (then repin them in PINNED)")
     args = parser.parse_args()
 
     OUT.mkdir(parents=True, exist_ok=True)
+    FETCHED.mkdir(parents=True, exist_ok=True)
     sources = discover_sources()
     print(f"Found {len(sources)} dataset(s) in {CONTACT}: {', '.join(sources)}")
     for source in sources:
-        build_source(source, check=args.check)
+        if source in BUNDLED or args.fetched:
+            build_source(source, check=args.check)
+    write_manifest(sources)
+    if args.fetched:
+        print("The fetched stores were rebuilt: commit and push them, set their commit in "
+              "PINNED, and run this script again.")
     print("Done.")
 
 
