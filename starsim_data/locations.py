@@ -29,6 +29,7 @@ from functools import lru_cache
 from importlib import resources
 
 import sciris as sc
+import starsim_data as ssd
 
 __all__ = ["resolve", "location_info", "list_all_locations", "parse_level"]
 
@@ -147,12 +148,25 @@ def resolve(location, valid=None, dataset=None):
             where = f" in {dataset!r}" if dataset else ""
             hint = f"; see list_locations({dataset!r})" if dataset else ""
             raise KeyError(f"location {what} is not available{where} "
-                           f"({len(valid)} locations{hint})")
+                           f"({len(valid)} locations{hint}){_elsewhere(canonical, dataset)}")
         raise KeyError(f"location {location!r} not found{_did_you_mean(location, valid)}")
 
     if canonical is not None:
         return canonical
     raise KeyError(f"location {location!r} not found{_did_you_mean(location, list_all_locations())}")
+
+
+def _elsewhere(location, dataset):
+    """Return a fragment naming the other contact sources that do have `location`, if any."""
+    info, _ = _table()
+    others = [name for name in info[location]["contact_sources"].split("|")
+              if name and name != dataset and name in ssd.registry.datasets()]
+    if not others or dataset not in ssd.registry.datasets() or \
+            ssd.registry.dataset(dataset).layout != "matrix":
+        return ""
+    calls = [f"{'load' if ssd.registry.dataset(name).tier == 0 else 'fetch'}"
+             f"({location!r}, which={name!r})" for name in others]
+    return f"; it is in {sc.strjoin(calls, sep=' or ')}"
 
 
 def _did_you_mean(location, candidates):

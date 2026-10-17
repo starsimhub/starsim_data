@@ -71,6 +71,9 @@ def _default_year():
     return int(ssd.provenance("nodes").get("population_year", 2020))
 
 
+COAST_DISTANCE = 0.1    # degrees (about 10 km): a populated cell this close to a unit, but in none, counts for the nearest
+
+
 def fetch_raster(location, year=None, refresh=False, verbose=None):
     """
     Download a WorldPop 1 km gridded-population raster for a country, and cache it.
@@ -114,7 +117,7 @@ def fetch_raster(location, year=None, refresh=False, verbose=None):
     return path
 
 
-def aggregate_raster(raster, shapes, by="pcode"):
+def aggregate_raster(raster, shapes, by="pcode", nearest=None):
     """
     Sum a raster inside each polygon: zonal statistics, keyed by an attribute.
 
@@ -122,6 +125,10 @@ def aggregate_raster(raster, shapes, by="pcode"):
         raster (str/Path): a GeoTIFF, e.g. from `fetch_raster()`.
         shapes (GeoDataFrame): polygons, e.g. from `fetch_shapes()`.
         by (str): the column of `shapes` to key the result on.
+        nearest (float): if given, also count a cell whose centre is in no polygon but
+            within this distance (in degrees) of one, for the nearest: boundaries are
+            simplified at the coast, so otherwise a coastal city or a small island loses
+            its people. This uses a reader of its own rather than rastertoolkit. [CK: use american spellings]
 
     Returns:
         dict: `{key: total}` for each polygon.
@@ -143,26 +150,95 @@ def aggregate_raster(raster, shapes, by="pcode"):
     if by not in shapes.columns:
         raise ValueError(f"{by!r} is not a column of the shapes; available: "
                          f"{list(shapes.columns)}")
+    if nearest:
+        return _aggregate_window(raster, shapes, by, nearest=nearest)
 
     # rastertoolkit reads shapes with pyshp, so it wants a shapefile on disk rather than a
     # GeoDataFrame in memory.
     with tempfile.TemporaryDirectory() as tmp:
         stem = Path(tmp) / "shapes"
         shapes[[by, "geometry"]].to_file(stem.with_suffix(".shp"), driver="ESRI Shapefile")
-        with contextlib.redirect_stdout(io.StringIO()):     # it prints per-shape progress
-            return rtk.raster_clip(str(raster), str(stem), shape_attr=by, quiet=True)
+        try:
+            with contextlib.redirect_stdout(io.StringIO()):     # it prints per-shape progress
+                return rtk.raster_clip(str(raster), str(stem), shape_attr=by, quiet=True)
+        except AssertionError:  # it refuses a raster whose edge is at -180 degrees, as some of WorldPop's are (Eritrea's covers the whole world)
+            return _aggregate_window(raster, shapes, by)
+
+
+def _aggregate_window(raster, shapes, by, nearest=None):
+    """
+    Sum a north-up WGS84 raster inside each polygon, reading only the tiles the polygons cover. [CK: what's a WGS84 raster?]
+
+    Each populated cell goes to the polygon its centre is in. With `nearest` (in degrees),
+    a cell whose centre is in none of them, but within that distance of one, goes to the
+    nearest: boundary polygons are simplified at the coast, so otherwise the people of a
+    coastal city or a small island are dropped. Invalid polygons are repaired first.
+    """
+    import shapely                      # pylint: disable=import-outside-toplevel
+    import tifffile                     # pylint: disable=import-outside-toplevel
+    # [CK: don't worry about pylint, instead explain why it's imported here in plain english]
+
+    geoms = shapely.make_valid(np.asarray(shapes.geometry.values))
+    lon0, lat0, lon1, lat1 = shapely.total_bounds(geoms)
+    pad = nearest or 0
+    lons, lats, vals = [], [], []
+    with tifffile.TiffFile(raster) as tif:
+        page = tif.pages[0]
+        x0, y0 = page.tags["ModelTiepointTag"].value[3:5]
+        dx, dy = page.tags["ModelPixelScaleTag"].value[:2]
+        nodata = page.tags["GDAL_NODATA"].value if "GDAL_NODATA" in page.tags else None
+        rows, cols = page.shape[:2]
+        c0, c1 = max(int((lon0 - pad - x0) // dx), 0), min(int((lon1 + pad - x0) // dx) + 1, cols)
+        r0, r1 = max(int((y0 - lat1 - pad) // dy), 0), min(int((y0 - lat0 + pad) // dy) + 1, rows)
+
+        def keep(block, row, col):      # the populated cells of a block whose top left is (row, col)
+            block = np.asarray(block, dtype=float)
+            if nodata is not None:
+                block[block == float(nodata)] = 0
+            i, j = np.nonzero(np.isfinite(block) & (block > 0))
+            lons.append(x0 + (col + j + 0.5) * dx)
+            lats.append(y0 - (row + i + 0.5) * dy)
+            vals.append(block[i, j])
+
+        if not page.is_tiled:   # read whole: only a raster in strips, which WorldPop's large ones are not
+            keep(page.asarray()[r0:r1, c0:c1], r0, c0)
+        else:                   # only the tiles that cover the window
+            th, tw = page.tilelength, page.tilewidth
+            across = -(-cols // tw)
+            for ty in range(r0 // th, (r1 - 1) // th + 1):
+                for tx in range(c0 // tw, (c1 - 1) // tw + 1):
+                    index = ty * across + tx
+                    tif.filehandle.seek(page.dataoffsets[index])
+                    tile = page.decode(tif.filehandle.read(page.databytecounts[index]), index)[0]
+                    keep(np.asarray(tile).reshape(th, tw), ty * th, tx * tw)
+    lon, lat, val = np.concatenate(lons), np.concatenate(lats), np.concatenate(vals)
+
+    tree = shapely.STRtree(geoms)
+    points = shapely.points(lon, lat)
+    owner = np.full(len(points), -1)
+    inside, poly = tree.query(points, predicate="within")
+    owner[inside] = poly        # a cell on a shared border goes to one of the two
+    if nearest:
+        rest = np.flatnonzero(owner < 0)
+        near, poly = tree.query_nearest(points[rest], max_distance=nearest, all_matches=False)
+        owner[rest[near]] = poly
+    sums = np.bincount(owner[owner >= 0], weights=val[owner >= 0], minlength=len(geoms))
+    return {key: float(total) for key, total in zip(shapes[by], sums)}
 
 
 def fetch_nodes(location, level=1, year=None, source=None, refresh=False, verbose=None):
     """
-    The node table with `population` filled in, from WorldPop.
+    The node table with `population` filled in, from WorldPop, at any level and year.
 
-    `load_nodes()` is instant and offline but only knows national population.
+    `load_nodes()` is instant and offline, with populations for 2020 at levels 0 and 1.
     This downloads the boundaries and the population raster for a country, sums the
     raster inside each unit, and returns the same table with the numbers filled in.
 
-    The boundaries are fetched from whichever source the bundled node table used for this
-    country, so the p-codes line up and the join is exact rather than by name.
+    At a bundled level, the boundaries are fetched from whichever source the bundled node
+    table used for this country, so the p-codes line up and the join is exact rather than
+    by name. At a finer level (2 and up), the table is built from the boundaries
+    themselves, as the bundled one is, and which units share a border is worked out too
+    and kept in `.attrs['borders']`, for `adjacency(nodes=...)`.
 
     Args:
         location (str): location name, ISO-2/ISO-3 code, official name or alias.
@@ -189,16 +265,34 @@ def fetch_nodes(location, level=1, year=None, source=None, refresh=False, verbos
     """
     verbose = ssd.options.verbose if verbose is None else verbose
     year = _default_year() if year is None else int(year)
-    nodes = ssd.load_nodes(location, level=level)
-    source = source or nodes.source.iloc[0]
+    level = ssd.parse_level(level)
+    bundled = level in ssd.registry.dataset("nodes").levels
+    if bundled:
+        nodes = ssd.load_nodes(location, level=level)
+        source = source or nodes.source.iloc[0]
+    else:   # Not bundled: the boundary source the country uses at level 1, if it has this level too
+        source = source or ssd.load_nodes(location, level=1).source.iloc[0]
 
-    shapes = ssd.fetch_shapes(location, level=level, source=source, refresh=refresh,
-                              verbose=verbose)
+    try:
+        shapes = ssd.fetch_shapes(location, level=level, source=source, refresh=refresh,
+                                  verbose=verbose)
+    except KeyError:
+        if bundled:
+            raise
+        shapes = ssd.fetch_shapes(location, level=level, refresh=refresh, verbose=verbose)
+        source = shapes.source.iloc[0]
+    if not bundled:
+        nodes = _nodes_from_shapes(shapes)
     raster = fetch_raster(location, year=year, refresh=refresh, verbose=verbose)
-    totals = aggregate_raster(raster, shapes, by="pcode")
+    totals = aggregate_raster(raster, shapes.assign(unit=[str(i) for i in range(len(shapes))]), by="unit",
+                              nearest=COAST_DISTANCE)
 
     out = nodes.copy()
-    out["population"] = out.pcode.map(totals).astype(float)
+    if bundled:
+        by_pcode = dict(zip(shapes.pcode, (totals.get(str(i)) for i in range(len(shapes)))))
+        out["population"] = out.pcode.map(by_pcode).astype(float)
+    else:
+        out["population"] = [float(totals.get(str(i), np.nan)) for i in range(len(out))]
     unmatched = int(out.population.isna().sum())
     if unmatched and verbose:
         print(f"Note: {unmatched} of {len(out)} nodes got no population; the node table "
@@ -212,7 +306,20 @@ def fetch_nodes(location, level=1, year=None, source=None, refresh=False, verbos
         population_license=WORLDPOP_LICENSE, population_citation=WORLDPOP_CITATION,
         note="WorldPop constrained estimates are modelled and will not exactly match the "
              "UN WPP national total; rescale if your model needs them to.")
+    if not bundled:
+        out.attrs["borders"] = ssd.shapes.borders(shapes)
     return out
+
+
+def _nodes_from_shapes(shapes):
+    """A node table, as the bundled one is built, from the polygons of one level."""
+    lat, lon, area = ssd.shapes.geometry_facts(shapes)
+    out = sc.dataframe(shapes.drop(columns="geometry").reset_index(drop=True))
+    out["parent"] = out["location"]
+    out["lat"], out["lon"], out["area_km2"] = lat, lon, area
+    out["population"] = np.nan
+    return out[["nodeid", "location", "iso3", "level", "name", "pcode", "dot_name", "parent",
+                "lat", "lon", "area_km2", "population", "source"]]
 
 
 def rescale_to_national(nodes, location=None, year=None):

@@ -11,6 +11,7 @@ import starsim_data as ssd
 ssd.load_nodes('kenya')             # one row: the country
 ssd.load_nodes('kenya', level=1)    # 47 counties: centroids, areas, p-codes
 ssd.distances('kenya', level=1)     # the 47x47 great-circle distance matrix, in km
+ssd.adjacency('kenya', level=1)     # which of the 47 counties share a border
 ```
 
 Columns are `nodeid`, `location`, `iso3`, `level`, `name`, `pcode`, `dot_name`, `parent`,
@@ -22,9 +23,10 @@ is what joins a node back to its full geometry. **`dot_name`** is the readable
 hierarchical path (`Kenya:Baringo`), in this package's canonical spelling, so that
 `dot_name.split(':')[0]` is always a location `load()` accepts.
 
-`population` is filled at level 0 only, from this package's bundled UN WPP data.
-Subnational population needs WorldPop raster aggregation, which is a download rather than
-a lookup, so it lives behind `fetch_nodes()` in `starsim_data.rasters`.
+`population` is UN WPP at level 0, and WorldPop (1 km, UN-adjusted, 2020) summed within
+each unit at level 1, worked out when the table is built. Other years, and finer levels,
+need the raster aggregation at the time of use, which is a download rather than a
+lookup, so they live behind `fetch_nodes()` in `starsim_data.rasters`.
 
 Full geometry -- actual polygons, for maps and exact spatial operations -- is
 `starsim_data.shapes`, and needs the `[spatial]` extra.
@@ -36,7 +38,7 @@ import numpy as np
 import sciris as sc
 import starsim_data as ssd
 
-__all__ = ["load_nodes", "distances", "node_name"]
+__all__ = ["load_nodes", "distances", "adjacency", "node_name"]
 
 EARTH_RADIUS_KM = 6371.0088      # IUGG mean radius
 
@@ -144,3 +146,70 @@ def distances(location=None, level=1, nodes=None, units="km", index="dot_name"):
 
     labels = list(nodes[index])
     return sc.dataframe(matrix * UNITS[units], index=labels, columns=labels)
+
+
+def _shape_adjacency(group, key, spec, opts):
+    """The pairs of units that share a border, as a frame of `level`, `a` and `b` (nodeids, a < b)."""
+    data = group[key][()]
+    return sc.dataframe(data, columns=spec["columns"])
+
+
+ssd.registry.register_layout("adjacency", _shape_adjacency)
+
+
+def adjacency(location=None, level=1, nodes=None, index="dot_name"):
+    """
+    Which administrative units share a border: a square boolean matrix.
+
+    Worked out from the polygons when the node table is built (units within about 100 m
+    of each other count as touching, which absorbs slivers between neighbouring
+    polygons), so it needs no geospatial libraries and no download.
+
+    Args:
+        location (str): location name, ISO-2/ISO-3 code, official name or alias.
+        level (int/str): administrative level (default 1; level 1 is the finest bundled).
+        nodes (dataframe): label the rows and columns from this node table instead of
+            loading one, e.g. one from `fetch_nodes()` with population filled in; it
+            must be the units of `location` at `level`, in `nodeid` order or a subset.
+            A table from `fetch_nodes()` at a level that is not bundled carries its own
+            borders, so any level works that way.
+        index (str): which column labels the rows and columns -- `'dot_name'` (default),
+            `'pcode'`, `'name'` or `'nodeid'`.
+
+    Returns:
+        sciris.dataframe: a square, symmetric boolean matrix with a false diagonal.
+
+    Raises:
+        ValueError: if the level has no bundled borders, or `index` is not recognized.
+
+    Example:
+        >>> import starsim_data as ssd
+        >>> a = ssd.adjacency('kenya', level=1)
+        >>> bool(a.loc['Kenya:Nairobi', 'Kenya:Kiambu'])
+        True
+    """
+    level = ssd.parse_level(level)
+    if nodes is None:
+        nodes = load_nodes(location, level=level)
+    if index not in nodes.columns:
+        raise ValueError(f"index must be a column of the node table, not {index!r}; "
+                         f"available: {list(nodes.columns)}")
+    labels = list(nodes[index])
+    if nodes.attrs.get("borders") is not None:     # worked out by fetch_nodes() at a level that is not bundled
+        pairs = np.asarray(nodes.attrs["borders"], dtype=int).reshape(-1, 2)
+        matrix = np.zeros((len(nodes), len(nodes)), dtype=bool)
+        matrix[pairs[:, 0], pairs[:, 1]] = True
+        return sc.dataframe(matrix | matrix.T, index=labels, columns=labels)
+    known = ssd.registry.datasets()
+    if "adjacency" not in known or level not in known["adjacency"].levels:
+        raise ValueError(f"no borders are bundled at level {level}; the bundled levels "
+                         f"are {list(known['adjacency'].levels) if 'adjacency' in known else []}")
+    location = location if location is not None else str(nodes.location.iloc[0])
+    pairs = ssd.load(location, which="adjacency")
+    pairs = pairs[pairs.level == level]
+    full = max(int(nodes.nodeid.max()) + 1, int(pairs[["a", "b"]].to_numpy().max(initial=-1)) + 1)
+    matrix = np.zeros((full, full), dtype=bool)
+    matrix[pairs.a.to_numpy(), pairs.b.to_numpy()] = True
+    matrix |= matrix.T
+    ids = nodes.nodeid.to_numpy().astype(int)
+    return sc.dataframe(matrix[np.ix_(ids, ids)], index=labels, columns=labels)

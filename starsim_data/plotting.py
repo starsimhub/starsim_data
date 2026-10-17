@@ -31,7 +31,7 @@ __all__ = ["plot", "choropleth"]
 
 # The panels in the default summary figure, in order; those absent for a location are
 # skipped rather than left blank.
-SUMMARY = ("population", "births", "deaths", "prem2017")
+SUMMARY = ("population", "births", "deaths", "prem2021")
 
 SEX_COLORS = {"Female": "#c2185b", "Male": "#1976d2"}
 

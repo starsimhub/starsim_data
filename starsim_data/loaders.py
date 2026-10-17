@@ -4,10 +4,11 @@ Load bundled data.
 The data ships inside the package under `starsim_data/data/`, keyed by location. There
 are two families of dataset, and `load` returns the natural shape for each:
 
-- Contact matrices -- one file per source (`prem2017.h5`, `prem2021.h5`,
-  `mistry2021.h5`), each a `layout='matrix'` store. `load` returns a square `(n, n)`
-  frame whose rows and columns are indexed by the start age of each bin (e.g.
-  `0, 5, ..., 75`); the `kind` argument selects the contact setting (`all`, `home`, ...).
+- Contact matrices -- one file per source, each a `layout='matrix'` store. `load`
+  returns a square `(n, n)` frame whose rows and columns are indexed by the start age of
+  each bin (e.g. `0, 5, ..., 75`); the `kind` argument selects the contact setting
+  (`all`, `home`, ...). `prem2021.h5` is bundled; the other sources (`prem2017`,
+  `mistry2021`) are the same kind of store, fetched on demand by `fetch()`.
 - Demographic time series from UN WPP -- grouped in `demographics-<revision>.h5`, one
   group per series (`births`, `deaths`, `migration`, `population`). `load` returns a
   tidy frame with WPP-native column names, so e.g. `deaths` drops straight into
@@ -40,7 +41,7 @@ KINDS = ("all", "home", "work", "school", "community")
 
 
 def _data_file(name):
-    """Return a filesystem path to a bundled data file, e.g. `prem2017.h5`."""
+    """Return a filesystem path to a bundled data file, e.g. `prem2021.h5`."""
     return ssd.registry.data_dir() / name
 
 
@@ -72,7 +73,7 @@ def list_datasets(detailed=False, tier=None):
 
     Example:
         >>> import starsim_data as ssd
-        >>> 'prem2017' in ssd.list_datasets()
+        >>> 'prem2021' in ssd.list_datasets()
         True
     """
     known = ssd.registry.datasets(tier=tier)
@@ -88,25 +89,31 @@ def list_datasets(detailed=False, tier=None):
                               license=ds.license) for ds in known.values()])
 
 
-def _open(which, revision=None):
+def _open(which, revision=None, path=None):
     """Open the store holding `which`, returning (file, group). Caller closes the file.
 
     For a contact source the group is the file root; for a demographic series it is the
-    corresponding group inside the demographic store for `revision`.
+    corresponding group inside the demographic store for `revision`. `path` is where a
+    fetched store was downloaded to; a bundled store is found in the package.
     """
     source = ssd.registry.dataset(which).source(revision)
-    f = h5py.File(_data_file(source.store), "r")
+    f = h5py.File(path or _data_file(source.store), "r")
     return f, (f[source.group] if source.group else f)
 
 
 def list_locations(which, revision=None):
     """Return the sorted locations available in dataset `which`.
 
+    A fetched dataset lists its locations from the manifest, without downloading it.
+
     Example:
         >>> import starsim_data as ssd
-        >>> 'Kenya' in ssd.list_locations('prem2017')
+        >>> 'Kenya' in ssd.list_locations('prem2021')
         True
     """
+    ds = ssd.registry.dataset(which)
+    if ds.locations:
+        return sorted(ds.locations)
     f, group = _open(which, revision)
     try:
         return sorted(group.keys())
@@ -127,11 +134,14 @@ def provenance(which=None, revision=None):
 
     Example:
         >>> import starsim_data as ssd
-        >>> ssd.provenance('prem2017').license
+        >>> ssd.provenance('prem2021').license
         'GPL-3.0'
     """
     if which is None:
         return sc.objdict({name: provenance(name) for name in list_datasets(tier=0)})
+    ds = ssd.registry.dataset(which)
+    if ds.provenance:  # a fetched store's, as recorded in the manifest
+        return sc.objdict(ds.provenance)
     f, _ = _open(which, revision)
     try:
         # Provenance is per-store (all series in a demographic store share a source),
@@ -209,16 +219,17 @@ ssd.registry.register_layout("population", _shape_year_sex_age)
 ssd.registry.register_layout("nodes", _shape_nodes)
 
 
-def load(location, which="prem2017", kind="all", revision=None, level=None):
+def load(location, which="prem2021", kind="all", revision=None, level=None):
     """
     Load data for a location.
 
     Args:
         location (str): location name, ISO-2/ISO-3 code, official name or alias, e.g.
             `'Kenya'`, `'KE'`, `'KEN'`; case-, accent- and punctuation-insensitive.
-        which (str): dataset -- a contact source (`'prem2017'`, `'prem2021'`,
-            `'mistry2021'`) or a demographic series (`'births'`, `'deaths'`,
-            `'migration'`, `'population'`). See `list_datasets()`.
+        which (str): dataset -- the bundled contact source (`'prem2021'`, the default)
+            or a demographic series (`'births'`, `'deaths'`, `'migration'`,
+            `'population'`). See `list_datasets()`; the other contact sources
+            (`'prem2017'`, `'mistry2021'`) are fetched with `fetch()`.
         kind (str): for contact-matrix datasets only, the contact setting -- one of
             `'all'`, `'home'`, `'work'`, `'school'`, `'community'`. Ignored otherwise.
         revision (str/int): for demographic series only, the UN WPP revision to read
@@ -241,7 +252,7 @@ def load(location, which="prem2017", kind="all", revision=None, level=None):
 
     Example:
         >>> import starsim_data as ssd
-        >>> M = ssd.load(location='kenya', which='prem2017')          # (16, 16)
+        >>> M = ssd.load(location='kenya', which='prem2021')          # (16, 16)
         >>> d = ssd.load(location='KEN', which='deaths')              # tidy mortality
     """
     ds = ssd.registry.dataset(which)
@@ -254,8 +265,12 @@ def load(location, which="prem2017", kind="all", revision=None, level=None):
         # `load` never touches the network; say so rather than quietly downloading.
         raise ValueError(f"{which!r} is not bundled (tier {ds.tier}); use "
                          f"fetch({location!r}, which={which!r}) to download it")
+    return _read(which, location, kind=kind, revision=revision, level=level)
 
-    f, group = _open(which, revision)
+
+def _read(which, location, kind="all", revision=None, level=None, path=None):
+    """Read one location from the store holding `which` (at `path`, if it was fetched)."""
+    f, group = _open(which, revision, path)
     try:
         spec = _spec(group)
         key = ssd.resolve(location, valid=group.keys(), dataset=which)
