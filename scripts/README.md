@@ -15,7 +15,7 @@ Re-run after adding a location, or to pick up a newer `pycountry`.
 
 ## build_hdf5.py
 
-Walks [`raw_data/contact_matrices/`](../raw_data/contact_matrices/) and writes one HDF5 file per dataset (contact source). Each store is keyed by location, with one dataset per contact setting; matrices are cast to `float32` and compressed with gzip9 + byte-shuffle. The sources in `BUNDLED` (`prem2021`) go into [`starsim_data/data/`](../starsim_data/data/); the others are fetched on demand, so their stores go into [`fetched/`](../fetched/), outside the package, and are rebuilt only with `--fetched` (a rebuild changes their bytes, and `fetch()` downloads them from the commit pinned for each in `PINNED`). Every run rewrites the manifest `starsim_data/data/fetched.json` from the stores in `fetched/`.
+Walks [`raw_data/contact_matrices/`](../raw_data/contact_matrices/) and writes one HDF5 file per dataset (contact source). Each store is keyed by location, with one dataset per contact setting; matrices are cast to `float32` and compressed with gzip9 + byte-shuffle. The sources in `BUNDLED` (`prem2021`) go into [`starsim_data/data/`](../starsim_data/data/), along with `prem/prem2017.h5`, the `prem2017` matrices for the ten locations `prem2021` lacks, which the default contact matrices use. The others are fetched on demand, so their stores go into [`fetched/`](../fetched/), outside the package, and are rebuilt only with `--fetched` (a rebuild changes their bytes, and `fetch()` downloads them from the commit pinned for each in `PINNED`). Every run rewrites the manifest `starsim_data/data/fetched.json` from the stores in `fetched/`.
 
 ```bash
 python scripts/build_hdf5.py              # rebuild prem2021.h5 and the manifest
@@ -23,7 +23,7 @@ python scripts/build_hdf5.py --check      # also round-trip validate against the
 python scripts/build_hdf5.py --fetched    # also rebuild the stores in fetched/
 ```
 
-Run this whenever `raw_data/` changes. A new source is discovered automatically from its `<source>_contacts_<setting>.csv` files: add it to `BUNDLED`, or build it with `--fetched`, push its store, and give its commit in `PINNED`.
+Run this whenever `raw_data/` changes. A new source is discovered automatically from its `<source>_contacts_<setting>.csv` files: add it to `BUNDLED`, or make it a fetched one. The existing sources are published and won't change; adding a fetched one means building it with `--fetched`, getting its store onto `main` on GitHub (make a pull request), and recording that commit in `PINNED`.
 
 ## download_wpp.py
 
@@ -49,15 +49,15 @@ It classifies each WPP CSV by its columns (so exact filenames don't matter), fil
 Builds `nodes.h5` — the bundled node table: centroids, geodesic areas, p-codes and hierarchy for administrative levels 0 and 1, worldwide.
 
 ```bash
-python scripts/build_nodes.py --check    # ~420 MB of downloads on a cold cache
+python scripts/build_nodes.py --check    # ~1.4 GB of downloads on a cold cache
 python scripts/build_nodes.py --limit 5  # a quick subset, for development
 ```
 
 Boundaries come from UNOCHA COD-AB where the [laser-base mirror](https://github.com/laser-base/unocha) has the country (~110 of them, and the reason the table has p-codes at all) and from the two global geoBoundaries CGAZ v6.0.0 GeoPackages otherwise. The two do not always agree on how a country subdivides, so each row records its `source`. Downloads go through the package cache, so a rebuild after the first is fast.
 
-The script refuses to draw on any source whose descriptor says `redistributable=False` — that is how GADM's non-commercial licence is kept out of bundled data, rather than by remembering.
+The script refuses to draw on any source whose descriptor says `redistributable=False` — that is how GADM's non-commercial license is kept out of bundled data, rather than by remembering.
 
-National population is read from this package's own bundled WPP data. Subnational population is deliberately *not* baked in: it needs WorldPop raster aggregation, which is a ~1 GB scrape of a slow server with real coverage gaps, so it belongs at fetch time (`ssd.fetch_nodes()`).
+National population is read from this package's own bundled WPP data. Level-1 population is WorldPop's 2020 raster summed within each unit, a ~1 GB download paid once here rather than by every user; other years and finer levels are left to `ssd.fetch_nodes()`.
 
 Needs the `[spatial]` extra as well as `[dev]`: `pip install -e ".[dev,spatial]"`.
 

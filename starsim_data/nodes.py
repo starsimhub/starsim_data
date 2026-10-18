@@ -33,16 +33,15 @@ Full geometry -- actual polygons, for maps and exact spatial operations -- is
 """
 
 import unicodedata
-
 import numpy as np
 import sciris as sc
 import starsim_data as ssd
 
-__all__ = ["load_nodes", "distances", "adjacency", "node_name"]
+__all__ = ['load_nodes', 'distances', 'adjacency', 'node_name']
 
-EARTH_RADIUS_KM = 6371.0088      # IUGG mean radius
+EARTH_RADIUS_KM = 6371.0088 # IUGG mean radius
 
-UNITS = {"km": 1.0, "m": 1000.0, "mi": 0.621371, "miles": 0.621371}
+UNITS = {'km': 1.0, 'm': 1000.0, 'mi': 0.621371, 'miles': 0.621371}
 
 
 def node_name(name):
@@ -55,10 +54,10 @@ def node_name(name):
     Shared by the node-table build and by `fetch_shapes()`, so that a shape's `dot_name`
     is always the same string as its node's.
     """
-    decomposed = unicodedata.normalize("NFKD", str(name or "").strip())
-    stripped = "".join(c for c in decomposed if not unicodedata.combining(c))
-    cleaned = "".join(" " if c in "-_/" else c for c in stripped if c.isalnum() or c in " -_/")
-    return "_".join(cleaned.split())
+    decomposed = unicodedata.normalize('NFKD', str(name or '').strip())
+    stripped = ''.join(c for c in decomposed if not unicodedata.combining(c))
+    cleaned = ''.join(' ' if c in '-_/' else c for c in stripped if c.isalnum() or c in ' -_/')
+    return '_'.join(cleaned.split())
 
 
 def load_nodes(location, level=0):
@@ -85,7 +84,7 @@ def load_nodes(location, level=0):
         >>> ssd.load_nodes('kenya', level=1).shape[0]
         47
     """
-    return ssd.load(location, which="nodes", level=level)
+    return ssd.load(location, which='nodes', level=level)
 
 
 def _coordinates(location, level, nodes):
@@ -93,11 +92,20 @@ def _coordinates(location, level, nodes):
     if nodes is None:
         nodes = load_nodes(location, level=level)
     if not len(nodes):
-        raise ValueError(f"no nodes for {location!r} at level {level}")
-    return nodes, np.radians(nodes.lat.to_numpy()), np.radians(nodes.lon.to_numpy())
+        raise ValueError(f'no nodes for {location!r} at level {level}')
+    lat = np.radians(nodes.lat.to_numpy())
+    lon = np.radians(nodes.lon.to_numpy())
+    return nodes, lat, lon
 
 
-def distances(location=None, level=1, nodes=None, units="km", index="dot_name"):
+def _check_index(nodes, index):
+    """Check that `index` is a column of the node table."""
+    if index not in nodes.columns:
+        raise ValueError(f'index must be a column of the node table, not {index!r}; available: {list(nodes.columns)}')
+    return
+
+
+def distances(location=None, level=1, nodes=None, units='km', index='dot_name'):
     """
     Great-circle distances between node centroids -- the input a gravity model needs.
 
@@ -130,18 +138,15 @@ def distances(location=None, level=1, nodes=None, units="km", index="dot_name"):
         True
     """
     if units not in UNITS:
-        raise ValueError(f"units must be one of {sorted(UNITS)}, not {units!r}")
+        raise ValueError(f'units must be one of {sorted(UNITS)}, not {units!r}')
     nodes, lat, lon = _coordinates(location, level, nodes)
-    if index not in nodes.columns:
-        raise ValueError(f"index must be a column of the node table, not {index!r}; "
-                         f"available: {list(nodes.columns)}")
+    _check_index(nodes, index)
 
     dlat = lat[:, None] - lat[None, :]
     dlon = lon[:, None] - lon[None, :]
-    haversine = np.sin(dlat / 2) ** 2 + np.cos(lat)[:, None] * np.cos(lat)[None, :] * np.sin(dlon / 2) ** 2
-    # Clip before arcsin: floating-point error can push a self-distance fractionally
-    # above 1 and turn a zero on the diagonal into a NaN.
-    matrix = 2 * EARTH_RADIUS_KM * np.arcsin(np.sqrt(np.clip(haversine, 0, 1)))
+    haversine = np.sin(dlat/2)**2 + np.cos(lat)[:, None] * np.cos(lat)[None, :] * np.sin(dlon/2)**2
+    haversine = np.clip(haversine, 0, 1) # Floating-point error can push a self-distance fractionally above 1, and turn a zero on the diagonal into a NaN
+    matrix = 2 * EARTH_RADIUS_KM * np.arcsin(np.sqrt(haversine))
     np.fill_diagonal(matrix, 0.0)
 
     labels = list(nodes[index])
@@ -151,18 +156,18 @@ def distances(location=None, level=1, nodes=None, units="km", index="dot_name"):
 def _shape_adjacency(group, key, spec, opts):
     """The pairs of units that share a border, as a frame of `level`, `a` and `b` (nodeids, a < b)."""
     data = group[key][()]
-    return sc.dataframe(data, columns=spec["columns"])
+    return sc.dataframe(data, columns=spec['columns'])
 
 
-ssd.registry.register_layout("adjacency", _shape_adjacency)
+ssd.registry.register_layout('adjacency', _shape_adjacency)
 
 
-def adjacency(location=None, level=1, nodes=None, index="dot_name"):
+def adjacency(location=None, level=1, nodes=None, index='dot_name'):
     """
     Which administrative units share a border: a square boolean matrix.
 
     Worked out from the polygons when the node table is built (units within about 100 m
-    of each other count as touching, which absorbs slivers between neighbouring
+    of each other count as touching, which absorbs slivers between neighboring
     polygons), so it needs no geospatial libraries and no download.
 
     Args:
@@ -191,24 +196,27 @@ def adjacency(location=None, level=1, nodes=None, index="dot_name"):
     level = ssd.parse_level(level)
     if nodes is None:
         nodes = load_nodes(location, level=level)
-    if index not in nodes.columns:
-        raise ValueError(f"index must be a column of the node table, not {index!r}; "
-                         f"available: {list(nodes.columns)}")
+    _check_index(nodes, index)
     labels = list(nodes[index])
-    if nodes.attrs.get("borders") is not None:     # worked out by fetch_nodes() at a level that is not bundled
-        pairs = np.asarray(nodes.attrs["borders"], dtype=int).reshape(-1, 2)
+
+    # Borders worked out by fetch_nodes(), at a level that is not bundled
+    if nodes.attrs.get('borders') is not None:
+        pairs = np.asarray(nodes.attrs['borders'], dtype=int).reshape(-1, 2)
         matrix = np.zeros((len(nodes), len(nodes)), dtype=bool)
         matrix[pairs[:, 0], pairs[:, 1]] = True
         return sc.dataframe(matrix | matrix.T, index=labels, columns=labels)
-    known = ssd.registry.datasets()
-    if "adjacency" not in known or level not in known["adjacency"].levels:
-        raise ValueError(f"no borders are bundled at level {level}; the bundled levels "
-                         f"are {list(known['adjacency'].levels) if 'adjacency' in known else []}")
-    location = location if location is not None else str(nodes.location.iloc[0])
-    pairs = ssd.load(location, which="adjacency")
+
+    # Otherwise, the bundled borders
+    adj = ssd.registry.datasets().get('adjacency')
+    if (adj is None) or (level not in adj.levels):
+        bundled = list(adj.levels) if adj else []
+        raise ValueError(f'no borders are bundled at level {level}; the bundled levels are {bundled}')
+    if location is None:
+        location = str(nodes.location.iloc[0])
+    pairs = ssd.load(location, which='adjacency')
     pairs = pairs[pairs.level == level]
-    full = max(int(nodes.nodeid.max()) + 1, int(pairs[["a", "b"]].to_numpy().max(initial=-1)) + 1)
-    matrix = np.zeros((full, full), dtype=bool)
+    n = max(int(nodes.nodeid.max()), int(pairs[['a', 'b']].to_numpy().max(initial=-1))) + 1 # Big enough for every nodeid, in the table or in the pairs
+    matrix = np.zeros((n, n), dtype=bool)
     matrix[pairs.a.to_numpy(), pairs.b.to_numpy()] = True
     matrix |= matrix.T
     ids = nodes.nodeid.to_numpy().astype(int)

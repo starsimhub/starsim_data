@@ -12,7 +12,7 @@ import starsim_data as ssd
 [ssd.resolve(name) for name in ['Kenya', 'kenya', 'KE', 'KEN', 'Republic of Kenya']]
 ```
 
-## What is recognised
+## What is recognized
 
 The resolver matches, in the following order of generality, against a table generated into `data/locations.csv`:
 
@@ -27,7 +27,7 @@ The resolver matches, in the following order of generality, against a table gene
 | Former name | `Zaire`, `Burma` | the current country |
 | French, Spanish or Portuguese name | `Allemagne`, `Alemania` | `Germany` |
 
-Accents, case, punctuation and separator style are normalised away before matching, so the following are all the same string as far as the resolver is concerned:
+Accents, case, punctuation and separator style are normalized away before matching, so the following are all the same string as far as the resolver is concerned:
 
 ```{python}
 {name: ssd.locations.normalize(name) for name in
@@ -123,7 +123,7 @@ ssd.parse_level(True)
 
 ## Naming below the country level
 
-Subnational units in the node table follow the same normalisation, with case preserved, and are addressed by a hierarchical `dot_name`:
+Subnational units in the node table follow the same normalization, with case preserved, and are addressed by a hierarchical `dot_name`:
 
 ```{python}
 ssd.load_nodes('France', level=1).dot_name.head(4).tolist()

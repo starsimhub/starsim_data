@@ -19,10 +19,9 @@ with ssd.options.context(cache_dir='/tmp/x'):  # temporarily
 """
 
 import contextlib
-
 import sciris as sc
 
-__all__ = ["options"]
+__all__ = ['options']
 
 
 class Options(sc.objdict):
@@ -41,8 +40,9 @@ class Options(sc.objdict):
         super().__init__()
         optdesc, options = self.get_orig_options()
         self.update(options)
-        self.setattribute("optdesc", optdesc)
-        self.setattribute("orig_options", sc.dcp(options))
+        self.setattribute('optdesc', optdesc) # Set the description as an attribute, not a dict entry
+        self.setattribute('orig_options', sc.dcp(options))
+        return
 
     @staticmethod
     def get_orig_options():
@@ -50,13 +50,11 @@ class Options(sc.objdict):
         optdesc = sc.objdict()
         options = sc.objdict()
 
-        optdesc.cache_dir = ("Where downloaded (non-bundled) data is cached. None means "
-                             "a platform-appropriate default; see cache_dir().")
-        # which=None so an unset variable stays None rather than becoming ''.
-        options.cache_dir = sc.parse_env("STARSIM_DATA_CACHE_DIR", None, None)
+        optdesc.cache_dir = 'Where downloaded (non-bundled) data is cached. None means a platform-appropriate default; see cache_dir().'
+        options.cache_dir = sc.parse_env('STARSIM_DATA_CACHE_DIR', None, None) # which=None so an unset variable stays None rather than becoming an empty string
 
-        optdesc.verbose = "Whether to report progress while downloading."
-        options.verbose = sc.parse_env("STARSIM_DATA_VERBOSE", True, bool)
+        optdesc.verbose = 'Whether to report progress while downloading.'
+        options.verbose = sc.parse_env('STARSIM_DATA_VERBOSE', True, bool)
 
         return optdesc, options
 
@@ -70,9 +68,8 @@ class Options(sc.objdict):
             kwargs = sc.mergedicts(kwargs, {key: value})
         for name, val in kwargs.items():
             if name not in self.orig_options:
-                raise KeyError(f"unknown option {name!r}; valid options are "
-                               f"{sc.strjoin(self.orig_options.keys())}")
-            if val == "default":
+                raise KeyError(f'unknown option {name!r}; valid options are {sc.strjoin(self.orig_options.keys())}')
+            if val == 'default':
                 val = self.orig_options[name]
             self[name] = val
         return self
@@ -100,12 +97,12 @@ class Options(sc.objdict):
 
     def help(self, output=False):
         """Print (or return) each option with its description and current value."""
-        lines = [f"{key:>12s} = {self[key]!r:<28} # {self.optdesc[key]}" for key in self.orig_options]
-        text = "\n".join(lines)
+        lines = [f'{key:>12s} = {self[key]!r:<28} # {self.optdesc[key]}' for key in self.orig_options]
+        text = sc.newlinejoin(lines)
         if output:
             return text
         print(text)
-        return None
+        return
 
 
 options = Options()

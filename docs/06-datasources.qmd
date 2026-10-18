@@ -8,7 +8,7 @@ The sources drawn on by this package disagree with one another in places, cover 
 
 Much of the material on boundaries and rasters is adapted from the corresponding page in [`laser-init`](https://github.com/laser-base/laser-init). [Related projects](related-projects.qmd) covers that debt, and the equivalent one to [epydemix-data](https://github.com/epistorm/epydemix-data), at greater length, and compares this package with the other ways of obtaining the same data.
 
-The operative attribution and licence text is in [NOTICE.md](https://github.com/starsimhub/starsim_data/blob/main/NOTICE.md). Each dataset also carries its attribution as data, retrievable with `ssd.provenance(which)` or from `df.attrs['provenance']` on any frame returned by `load()` or `fetch()`.
+The operative attribution and license text is in [NOTICE.md](https://github.com/starsimhub/starsim_data/blob/main/NOTICE.md). Each dataset also carries its attribution as data, retrievable with `ssd.provenance(which)` or from `df.attrs['provenance']` on any frame returned by `load()` or `fetch()`.
 
 ## What comes from where
 
@@ -40,7 +40,7 @@ The standard national demographic series, covering all countries from 1950 to 21
 | **Variants** | Medium (bundled), plus High, Low, Constant fertility and others via `fetch()` |
 | **Update** | Biennial: 2022, 2024, … |
 
-**Strengths.** The estimates are standardised across every country, which makes cross-country comparison meaningful, and the time series is long and methodologically consistent. The methodology is well documented, and revisions are frequent enough that the data remains current.
+**Strengths.** The estimates are standardized across every country, which makes cross-country comparison meaningful, and the time series is long and methodologically consistent. The methodology is well documented, and revisions are frequent enough that the data remains current.
 
 **Limitations.** The data is national only; province-level rates cannot be derived from it. Projections are scenarios rather than predictions. Estimates change between revisions, sometimes substantially, since a new census can revise a country's recorded history — which is why this package versions the data by revision (`load(..., revision=2024)`) rather than replacing it in place.
 
@@ -52,7 +52,7 @@ The standard national demographic series, covering all countries from 1950 to 21
 
 ## Contact matrices
 
-Three sources are available. `prem2021` is bundled and is the default; the other two are fetched on first use. They differ in age resolution and country coverage, and to a lesser extent in method; see [Datasets](datasets.qmd#which-source) for why `prem2021` is the default.
+Three sources are available. `prem2021` is bundled; the other two are fetched on first use. They differ in age resolution and country coverage, and to a lesser extent in method. The default contact matrices are `prem2021`, or `prem2017` for the ten locations it lacks; see [Datasets](datasets.qmd#which-source).
 
 | Source | Tier | Matrix | Age bins | Countries | License |
 |---|---|---|---|---|---|
@@ -117,14 +117,14 @@ The three boundary sources are complementary rather than interchangeable, which 
 
 **Strengths.** The most complete and most detailed of the three, with names in several languages and frequent updates.
 
-**The licence is the constraint.** GADM is free for non-commercial use only, which makes it unusable in much applied public-health work, and which means this package may fetch it on request but may never redistribute anything derived from it. Two consequences follow:
+**The license is the constraint.** GADM is free for non-commercial use only, which makes it unusable in much applied public-health work, and which means this package may fetch it on request but may never redistribute anything derived from it. Two consequences follow:
 
 - GADM is not part of the automatic fallback chain. `fetch_shapes(..., source='gadm')` must be requested by name, and prints a reminder of the terms.
 - The bundled node table is not built from GADM, and the build script will refuse to build it from any source whose descriptor sets `redistributable=False`. The constraint is recorded as data on the source descriptor rather than as a comment.
 
 ### Choosing between them
 
-With no `source` argument, `fetch_shapes()` tries UNOCHA and then geoBoundaries. This is a reasonable default for most disease modelling, giving p-codes where they exist and coverage elsewhere. It is worth overriding when:
+With no `source` argument, `fetch_shapes()` tries UNOCHA and then geoBoundaries. This is a reasonable default for most disease modeling, giving p-codes where they exist and coverage elsewhere. It is worth overriding when:
 
 - **you need level 4–5** — geoBoundaries or GADM;
 - **you are reproducing a published analysis** — whichever it used, pinned;
@@ -153,7 +153,7 @@ Summing the grid within each polygon yields a population for each node, which is
 
 **Strengths.** Global, open, fine-grained, UN-adjusted and extensively validated. The time series allows a model's spatial population structure to change over time rather than being held fixed.
 
-**Limitations.** These are modelled estimates rather than enumerated counts. The constrained product used here does not reproduce the UN WPP national total for the same year; for Kenya in 2020 it is approximately 1.2% lower. Neither figure is incorrect, as they estimate slightly different quantities. Where a model requires the national total to match WPP, `rescale_to_national()` performs that adjustment explicitly rather than leaving two totals in circulation. Accuracy is also better in urban than in rural areas, and the standard products carry no uncertainty estimates.
+**Limitations.** These are modeled estimates rather than enumerated counts. The constrained product used here does not reproduce the UN WPP national total for the same year; for Kenya in 2020 it is approximately 1.2% lower. Neither figure is incorrect, as they estimate slightly different quantities. Where a model requires the national total to match WPP, `rescale_to_national()` performs that adjustment explicitly rather than leaving two totals in circulation. Accuracy is also better in urban than in rural areas, and the standard products carry no uncertainty estimates.
 
 WorldPop's server is also slow, at roughly 0.3 MB/s, so the first request for a country takes some time and subsequent ones are served from the cache. Very small territories return an empty file rather than an HTTP error; this is detected and reported rather than passed on as a malformed raster.
 

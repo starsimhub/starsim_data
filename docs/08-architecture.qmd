@@ -4,7 +4,7 @@ guide-section: "Internals"
 tags: [Architecture, Internals]
 ---
 
-This page describes how the package is organised internally: what the modules do, how a call to `load()` is dispatched, how data is stored on disk, and where the extension points are. It is intended for people modifying the package or adding data to it, rather than for people using it.
+This page describes how the package is organized internally: what the modules do, how a call to `load()` is dispatched, how data is stored on disk, and where the extension points are. It is intended for people modifying the package or adding data to it, rather than for people using it.
 
 ## Modules
 
@@ -44,7 +44,7 @@ def load_nodes(location, level=0):
 
 The registry holds two tables.
 
-`DATASETS` maps a dataset name to a descriptor recording its layout, tier, administrative levels, licence, available revisions, location count and where its store lives.
+`DATASETS` maps a dataset name to a descriptor recording its layout, tier, administrative levels, license, available revisions, location count and where its store lives.
 
 ```{python}
 import starsim_data as ssd
@@ -52,7 +52,7 @@ import starsim_data as ssd
 ssd.registry.dataset('deaths')
 ```
 
-Descriptors for bundled data are discovered once, by opening each `.h5` file in the data directory and reading its root attributes. The result is cached; `registry.refresh()` discards the cache, which is needed only if the files change within a running process, such as after a rebuild in a test.
+Descriptors for bundled data are discovered once, by opening each `.h5` file in the data directory and reading its root attributes. The result is cached; `registry.refresh()` discards the cache, which is needed only if the files change within a running process, such as after a rebuild in a test. The default contact matrices, `prem`, are described at the same time, from `prem2021.h5` and the ten matrices in `prem/prem2017.h5`; their descriptor has a `loader` that reads whichever store has the location.
 
 `LAYOUTS` maps a layout name to the function that turns a stored array into a dataframe.
 
@@ -68,7 +68,7 @@ Adding a new family of data is a shaper plus a registry entry.
 load(location, which, kind, revision, level)
   │
   ├─ registry.dataset(which)          → the descriptor, or an error with suggestions
-  ├─ descriptor.loader?               → delegate, if this is a registered dataset
+  ├─ descriptor.loader?               → delegate (e.g. `prem`, which picks prem2021 or prem2017)
   ├─ descriptor.tier > 0?             → refuse, and point at fetch()
   ├─ descriptor.source(revision)      → which file, and which group inside it
   ├─ h5py.File(...)                   → open the store
@@ -91,7 +91,7 @@ Bundled data is stored as HDF5, one store per family, with a `spec` attribute de
 ```{python}
 #| echo: false
 pd.DataFrame([
-    dict(file='prem2021.h5 (and, fetched, prem2017.h5, mistry2021.h5)', layout='matrix',
+    dict(file='prem2021.h5, prem/prem2017.h5 (and, fetched, prem2017.h5, mistry2021.h5)', layout='matrix',
          structure='/<Location>/<setting> → a square float32 array'),
     dict(file='fetched.json', layout='—',
          structure='the stores that are fetched: URL, SHA-256, locations and provenance'),
@@ -177,4 +177,4 @@ pd.DataFrame([
 ])
 ```
 
-Continuous integration also rebuilds every store from `raw_data/` and re-runs the suite against the result, so the committed artefacts cannot drift from their sources. The node table has a separate, manually triggered workflow, since rebuilding it downloads roughly 420 MB.
+Continuous integration also rebuilds every store from `raw_data/` and re-runs the suite against the result, so the committed artifacts cannot drift from their sources. The node table has a separate, manually triggered workflow, since rebuilding it downloads roughly 1.4 GB.

@@ -1,121 +1,116 @@
-"""Tests for the dataset registry and layout dispatch."""
+"""
+Test the dataset registry and layout dispatch
+"""
 
+import sciris as sc
 import pytest
 
 import starsim_data as ssd
 
 
-def test_registry_covers_every_dataset():
-    assert set(ssd.registry.datasets()) == set(ssd.list_datasets())
+@sc.timer()
+def test_datasets():
+    """ The registry lists every dataset, and rediscovers the same ones after a refresh """
+    sc.heading("Testing the registry")
+    datasets = ssd.registry.datasets()
+    assert set(datasets) == set(ssd.list_datasets()) # The registry and the listing agree
 
-
-def test_bundled_datasets_are_tier_0():
-    for name in ssd.list_datasets(tier=0):
-        assert ssd.registry.dataset(name).tier == 0
-
-
-def test_descriptor_fields():
-    ds = ssd.registry.dataset("deaths")
-    assert ds.layout == "mortality"
-    assert ds.levels == (0,)
-    assert ds.level == 0
-    assert ds.license == "CC BY 3.0 IGO"
-    assert ds.n_locations == len(ssd.list_locations("deaths"))
-    assert ds.revisions == ("2024",)
-    assert ds.description
-
-
-def test_contact_sources_have_no_revisions():
-    assert ssd.registry.dataset("prem2017").revisions == ()
-
-
-def test_unknown_dataset_suggests_alternatives():
-    with pytest.raises(ValueError, match="did you mean.*prem2017"):
-        ssd.registry.dataset("prem2016")
-
-
-def test_source_defaults_to_newest_revision():
-    ds = ssd.registry.dataset("births")
-    assert ds.source().revision == ds.revisions[-1]
-
-
-def test_source_rejects_a_revision_for_contact_matrices():
-    with pytest.raises(ValueError, match="does not apply"):
-        ssd.registry.dataset("prem2017").source(2024)
-
-
-def test_source_rejects_an_unknown_revision():
-    with pytest.raises(ValueError, match="unknown revision"):
-        ssd.registry.dataset("births").source(1999)
-
-
-def test_detailed_listing_is_a_frame():
     df = ssd.list_datasets(detailed=True)
-    assert set(df.columns) == {"dataset", "description", "layout", "tier", "levels",
-                               "locations", "revisions", "license"}
-    assert len(df) == len(ssd.list_datasets())
+    assert set(df.columns) == {"dataset", "description", "layout", "tier", "levels", "locations", "revisions", "license"} # The detailed listing is a frame
+    assert len(df) == len(ssd.list_datasets()) # With a row per dataset
+
+    ssd.registry.refresh()
+    assert set(ssd.registry.datasets()) == set(datasets) # refresh() clears the cache; the same datasets come back
+    return df
 
 
-def test_tier_filter():
-    assert "life_table" in ssd.list_datasets(tier=1)
-    assert "life_table" not in ssd.list_datasets(tier=0)
-    assert "prem2021" in ssd.list_datasets(tier=0)
-    assert "prem2017" in ssd.list_datasets(tier=1)  # fetched, not bundled
-
-
-def test_load_refuses_a_tier_2_dataset_and_points_at_fetch():
-    """`load` must never reach for the network -- it should say so instead."""
-    with pytest.raises(ValueError, match="not bundled.*use fetch"):
+@sc.timer()
+def test_tiers():
+    """ Bundled datasets are tier 0, fetched ones tier 1, and load() refuses tier 1 """
+    sc.heading("Testing tiers")
+    for name in ssd.list_datasets(tier=0):
+        assert ssd.registry.dataset(name).tier == 0, f"Expected bundled {name} to be tier 0"
+    assert "life_table" in ssd.list_datasets(tier=1) # Fetched
+    assert "life_table" not in ssd.list_datasets(tier=0) # Not bundled
+    assert "prem2021" in ssd.list_datasets(tier=0) # Bundled
+    assert "prem2017" in ssd.list_datasets(tier=1) # Fetched, not bundled
+    with pytest.raises(ValueError, match="not bundled.*use fetch"): # load() never reaches for the network; it says so instead
         ssd.load("Kenya", which="life_table")
 
 
-# --- Registration hooks ------------------------------------------------------------ #
+@sc.timer()
+def test_descriptor():
+    """ A descriptor's fields, and the error for an unknown name """
+    sc.heading("Testing descriptors")
+    ds = ssd.registry.dataset("deaths")
+    assert ds.layout == "mortality" # How it is shaped
+    assert ds.levels == (0,) # National only
+    assert ds.level == 0 # Ditto
+    assert ds.license == "CC BY 3.0 IGO" # WPP's license
+    assert ds.n_locations == len(ssd.list_locations("deaths")) # The count matches the store
+    assert ds.revisions == ("2024",) # The WPP revisions bundled
+    assert ds.description # Described
+    assert ssd.registry.dataset("prem2017").revisions == () # Contact sources have no revisions
+    with pytest.raises(ValueError, match="did you mean.*prem2017"): # An unknown name suggests alternatives
+        ssd.registry.dataset("prem2016")
+    return ds
 
-def test_register_and_use_a_custom_dataset():
-    ds = ssd.registry.Dataset(name="_test_custom", layout="crude", tier=1,
-                              loader=lambda location, **kw: f"loaded {location}")
+
+@sc.timer()
+def test_source():
+    """ A descriptor's source defaults to the newest revision, and checks the one asked for """
+    sc.heading("Testing sources")
+    ds = ssd.registry.dataset("births")
+    assert ds.source().revision == ds.revisions[-1] # The newest by default
+    with pytest.raises(ValueError, match="does not apply"): # Contact sources take no revision
+        ssd.registry.dataset("prem2017").source(2024)
+    with pytest.raises(ValueError, match="unknown revision"):
+        ds.source(1999)
+    return ds
+
+
+@sc.timer()
+def test_register():
+    """ A custom dataset can be registered, used and unregistered; the bundled ones are protected """
+    sc.heading("Testing dataset registration")
+    ds = ssd.registry.Dataset(name="_test_custom", layout="crude", tier=1, loader=lambda location, **kw: f"loaded {location}")
     ssd.registry.register_dataset(ds)
     try:
-        assert "_test_custom" in ssd.list_datasets()
-        assert ssd.load("Kenya", which="_test_custom") == "loaded Kenya"
+        assert "_test_custom" in ssd.list_datasets() # Listed once registered
+        assert ssd.load("Kenya", which="_test_custom") == "loaded Kenya" # load() delegates to the loader
     finally:
         ssd.registry.unregister_dataset("_test_custom")
-    assert "_test_custom" not in ssd.list_datasets()
+    assert "_test_custom" not in ssd.list_datasets() # Gone once unregistered
 
-
-def test_registering_a_duplicate_needs_overwrite():
-    ds = ssd.registry.Dataset(name="prem2017", layout="matrix")
-    with pytest.raises(ValueError, match="already registered"):
-        ssd.registry.register_dataset(ds)
-
-
-def test_register_dataset_type_checked():
-    with pytest.raises(TypeError):
+    with pytest.raises(ValueError, match="already registered"): # A duplicate needs overwrite
+        ssd.registry.register_dataset(ssd.registry.Dataset(name="prem2017", layout="matrix"))
+    with pytest.raises(TypeError): # Only a Dataset can be registered
         ssd.registry.register_dataset({"name": "nope"})
-
-
-def test_unregistering_a_bundled_dataset_fails():
-    with pytest.raises(KeyError):
+    with pytest.raises(KeyError): # A bundled dataset cannot be unregistered
         ssd.registry.unregister_dataset("prem2017")
+    return ds
 
 
-def test_layouts_are_registered_for_every_bundled_dataset():
+@sc.timer()
+def test_layouts():
+    """ Every bundled dataset has a layout, and layouts are protected like datasets """
+    sc.heading("Testing layouts")
     for name in ssd.list_datasets(tier=0):
-        assert ssd.registry.dataset(name).layout in ssd.registry.LAYOUTS
-
-
-def test_registering_a_duplicate_layout_needs_overwrite():
-    with pytest.raises(ValueError, match="already registered"):
+        assert ssd.registry.dataset(name).layout in ssd.registry.LAYOUTS, f"Expected {name}'s layout to be registered"
+    with pytest.raises(ValueError, match="already registered"): # A duplicate needs overwrite
         ssd.registry.register_layout("matrix", lambda *a: None)
-
-
-def test_get_layout_rejects_the_unknown():
     with pytest.raises(ValueError, match="unrecognized layout"):
         ssd.registry.get_layout("no_such_layout")
 
 
-def test_refresh_rediscovers():
-    """refresh() clears the cache; the same datasets should come back."""
-    before = set(ssd.registry.datasets())
-    ssd.registry.refresh()
-    assert set(ssd.registry.datasets()) == before
+if __name__ == "__main__":
+    T = sc.timer()
+
+    datasets = test_datasets()
+    test_tiers()
+    desc     = test_descriptor()
+    source   = test_source()
+    custom   = test_register()
+    test_layouts()
+
+    T.toc()

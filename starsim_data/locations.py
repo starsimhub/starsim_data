@@ -25,16 +25,14 @@ ssd.location_info('KE').iso3  # 'KEN'
 
 import csv
 import unicodedata
-from functools import lru_cache
-from importlib import resources
-
+import functools as ft
 import sciris as sc
 import starsim_data as ssd
 
-__all__ = ["resolve", "location_info", "list_all_locations", "parse_level"]
+__all__ = ['resolve', 'location_info', 'list_all_locations', 'parse_level']
 
 # Columns whose values are matched directly, in addition to the `aliases` column.
-NAME_COLS = ("location", "iso_code", "iso3", "official_name")
+NAME_COLS = ('location', 'iso_code', 'iso3', 'official_name')
 
 # 0=country, 1=state/province, 2=district, ... (see parse_level). 5 is the finest
 # level any of the boundary sources in `starsim_data.shapes` publishes.
@@ -50,29 +48,28 @@ def normalize(name):
     Must stay in step with `normalize` in `scripts/build_locations.py`, which uses it
     to decide which aliases are distinct.
     """
-    decomposed = unicodedata.normalize("NFKD", str(name or "").strip())
-    stripped = "".join(c for c in decomposed if not unicodedata.combining(c))
-    cleaned = "".join(" " if c in "-_/" else c for c in stripped.casefold()
-                      if c.isalnum() or c in " -_/")
-    return "_".join(cleaned.split())
+    decomposed = unicodedata.normalize('NFKD', str(name or '').strip())
+    stripped = ''.join(c for c in decomposed if not unicodedata.combining(c))
+    cleaned = ''.join(' ' if c in '-_/' else c for c in stripped.casefold() if c.isalnum() or c in ' -_/')
+    return '_'.join(cleaned.split())
 
 
-@lru_cache(maxsize=1)
+@ft.lru_cache(maxsize=1)
 def _table():
     """Load locations.csv, returning (info_by_location, canonical_by_match_key).
 
     Read with the `csv` module rather than pandas deliberately: pandas' default
     `na_values` turns Namibia's ISO-2 code, the string "NA", into NaN.
     """
-    path = resources.files("starsim_data") / "data" / "locations.csv"
+    path = sc.thispath(__file__) / 'data' / 'locations.csv'
     info, index = {}, {}
-    with path.open(newline="", encoding="utf-8") as f:
+    with open(path, newline='', encoding='utf-8') as f:
         for row in csv.DictReader(f):
-            location = row["location"]
-            row["aliases"] = [a for a in row.get("aliases", "").split("|") if a]
-            row["level"] = int(row["level"])
+            location = row['location']
+            row['aliases'] = [a for a in row.get('aliases', '').split('|') if a]
+            row['level'] = int(row['level'])
             info[location] = sc.objdict(row)
-            names = [row[col] for col in NAME_COLS if row.get(col)] + row["aliases"]
+            names = [row[col] for col in NAME_COLS if row.get(col)] + row['aliases']
             for name in names:
                 # First writer wins; the build script has already dropped any alias
                 # that is ambiguous across locations, so collisions here are benign
@@ -132,54 +129,65 @@ def resolve(location, valid=None, dataset=None):
     key = normalize(location)
     canonical = index.get(key)
 
-    if valid is not None:
-        valid = list(valid)
-        if canonical is not None and canonical in valid:
-            return canonical
-        # A dataset may hold a key that predates the location table; match it directly
-        # rather than insisting every dataset key be registered.
-        direct = {normalize(v): v for v in valid}
-        if key in direct:
-            return direct[key]
+    if valid is None:
         if canonical is not None:
-            what = f"{location!r}"
-            if normalize(canonical) != key:
-                what += f" (resolved to {canonical!r})"
-            where = f" in {dataset!r}" if dataset else ""
-            hint = f"; see list_locations({dataset!r})" if dataset else ""
-            raise KeyError(f"location {what} is not available{where} "
-                           f"({len(valid)} locations{hint}){_elsewhere(canonical, dataset)}")
-        raise KeyError(f"location {location!r} not found{_did_you_mean(location, valid)}")
+            return canonical
+        raise KeyError(f'location {location!r} not found{_did_you_mean(location, list_all_locations())}')
 
-    if canonical is not None:
+    valid = list(valid)
+    if canonical in valid:
         return canonical
-    raise KeyError(f"location {location!r} not found{_did_you_mean(location, list_all_locations())}")
+
+    # A dataset may hold a key that predates the location table; match it directly
+    # rather than insisting every dataset key be registered.
+    direct = {normalize(v): v for v in valid}
+    if key in direct:
+        return direct[key]
+    if canonical is None:
+        raise KeyError(f'location {location!r} not found{_did_you_mean(location, valid)}')
+
+    # The location is known, but not in this dataset: say so, and where else to find it
+    what  = f'{location!r}'
+    where = ''
+    hint  = ''
+    if normalize(canonical) != key:
+        what += f' (resolved to {canonical!r})'
+    if dataset:
+        where = f' in {dataset!r}'
+        hint  = f'; see list_locations({dataset!r})'
+    errormsg = f'location {what} is not available{where} ({len(valid)} locations{hint}){_elsewhere(canonical, dataset)}'
+    raise KeyError(errormsg)
 
 
 def _elsewhere(location, dataset):
     """Return a fragment naming the other contact sources that do have `location`, if any."""
     info, _ = _table()
-    others = [name for name in info[location]["contact_sources"].split("|")
-              if name and name != dataset and name in ssd.registry.datasets()]
-    if not others or dataset not in ssd.registry.datasets() or \
-            ssd.registry.dataset(dataset).layout != "matrix":
-        return ""
-    calls = [f"{'load' if ssd.registry.dataset(name).tier == 0 else 'fetch'}"
-             f"({location!r}, which={name!r})" for name in others]
+    known = ssd.registry.datasets()
+    sources = info[location]['contact_sources'].split('|')
+    others = [name for name in sources if name and (name != dataset) and (name in known)]
+    if (not others) or (dataset not in known) or (known[dataset].layout != 'matrix'):
+        return ''
+
+    calls = []
+    prem = known.get('prem')
+    if prem and (location in prem.locations): # The default contact matrices have it too
+        calls.append(f'load({location!r})')
+    for name in others:
+        func = 'load' if known[name].tier == 0 else 'fetch'
+        calls.append(f'{func}({location!r}, which={name!r})')
     return f"; it is in {sc.strjoin(calls, sep=' or ')}"
 
 
-def _did_you_mean(location, candidates):
+def _did_you_mean(name, candidates):
     """Return a ' (did you mean ...)' fragment, or '' if nothing is close enough.
 
     Fuzzy matching is confined to this function: it shapes the error message and
-    never influences which location is returned.
+    never influences which location (or dataset) is returned.
     """
-    matches = sc.suggest(str(location), list(candidates), n=3, die=False)
+    matches = sc.suggest(str(name), list(candidates), n=3, die=False)
     if not matches:
-        return ""
-    matches = sc.tolist(matches)
-    return f" (did you mean: {', '.join(matches)}?)"
+        return ''
+    return f' (did you mean: {sc.strjoin(sc.tolist(matches))}?)'
 
 
 def parse_level(level):
@@ -205,19 +213,18 @@ def parse_level(level):
         2
     """
     if isinstance(level, bool):  # bool is an int subclass; not a level
-        raise ValueError(f"invalid administrative level {level!r}")
+        raise ValueError(f'invalid administrative level {level!r}')
     if isinstance(level, int):
         number = level
     else:
         text = str(level).strip().lower()
-        for prefix in ("admin", "adm", "level", "l"):
+        for prefix in ('admin', 'adm', 'level', 'l'):
             if text.startswith(prefix):
                 text = text[len(prefix):]
                 break
         if not text.isdigit():
-            raise ValueError(f"could not parse administrative level from {level!r}; "
-                             f"expected e.g. 'admin1', 'ADM2' or 2")
+            raise ValueError(f"could not parse administrative level from {level!r}; expected e.g. 'admin1', 'ADM2' or 2")
         number = int(text)
-    if not 0 <= number <= MAX_LEVEL:
-        raise ValueError(f"administrative level {number} out of range (0 to {MAX_LEVEL})")
+    if not (0 <= number <= MAX_LEVEL):
+        raise ValueError(f'administrative level {number} out of range (0 to {MAX_LEVEL})')
     return number

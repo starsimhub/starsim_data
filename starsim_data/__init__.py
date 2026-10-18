@@ -14,7 +14,7 @@ start age of each bin:
 
 ```python
 import starsim_data as ssd
-M = ssd.load(location='kenya', which='prem2021')  # square, age-indexed (0, 5, ..., 75)
+M = ssd.load(location='kenya')                    # square, age-indexed (0, 5, ..., 75)
 M.loc[25, 30]                                      # contacts between the 25-29 and 30-34 bins
 ```
 
@@ -23,12 +23,12 @@ Locations can be given as a name, ISO-2/ISO-3 code, official name or alias -- `'
 dataset records where it came from; see `provenance()`.
 
 `load` never touches the network. What is not bundled -- annual series, complete life
-tables, other projection variants, the contact sources other than `prem2021` -- is
-available from `fetch()`, which downloads and caches; see `cache_info()` and `options`. `plot()` draws the data for a quick check
-before it goes into a model.
+tables, other projection variants, the full `prem2017` and `mistry2021` contact matrices
+-- is available from `fetch()`, which downloads and caches; see `cache_info()` and
+`options`. `plot()` draws the data for a quick check before it goes into a model.
 """
 
-__version__ = "0.4.0"
+__version__ = '0.4.0'
 
 # This is the one module that uses `from` imports, to assemble the public namespace.
 # Everywhere else in the package, follow Starsim's convention: `import starsim_data as
@@ -47,11 +47,11 @@ from .nodes import load_nodes, distances, adjacency, node_name
 from .shapes import fetch_shapes, list_shape_sources
 from .rasters import fetch_nodes, fetch_raster, aggregate_raster, rescale_to_national
 
-__all__ = ["load", "fetch", "plot", "choropleth", "provenance", "options", "registry",
-           "load_nodes", "distances", "adjacency", "node_name",
-           "fetch_shapes", "list_shape_sources",
-           "fetch_nodes", "fetch_raster", "aggregate_raster", "rescale_to_national",
-           "list_datasets", "list_locations", "list_revisions", "list_fetchable",
-           "resolve", "location_info", "list_all_locations", "parse_level",
-           "register_dataset", "register_layout",
-           "cache_dir", "cache_info", "cache_provenance", "cached_download", "clear_cache"]
+__all__ = ['load', 'fetch', 'plot', 'choropleth', 'provenance', 'options', 'registry',
+           'load_nodes', 'distances', 'adjacency', 'node_name',
+           'fetch_shapes', 'list_shape_sources',
+           'fetch_nodes', 'fetch_raster', 'aggregate_raster', 'rescale_to_national',
+           'list_datasets', 'list_locations', 'list_revisions', 'list_fetchable',
+           'resolve', 'location_info', 'list_all_locations', 'parse_level',
+           'register_dataset', 'register_layout',
+           'cache_dir', 'cache_info', 'cache_provenance', 'cached_download', 'clear_cache']

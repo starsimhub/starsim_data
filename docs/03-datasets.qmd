@@ -12,7 +12,7 @@ import starsim_data as ssd
 ssd.list_datasets(detailed=True).drop(columns='license')
 ```
 
-Licences are omitted here for width; they are listed in [Provenance](provenance.qmd), and in full in `NOTICE.md`.
+Licenses are omitted here for width; they are listed in [Provenance](provenance.qmd), and in full in `NOTICE.md`.
 
 ## Demographics
 
@@ -116,7 +116,7 @@ Pinning the revision is advisable in any analysis intended to be reproduced late
 
 ## Contact matrices
 
-Contact matrices give the average number of daily contacts between people in each pair of age bins. Three sources are available, each providing five contact settings, selected with the `kind` argument. One of them, `prem2021`, is bundled and is the default; the other two are fetched on first use (see [Tiers](tiers.qmd)).
+Contact matrices give the average number of daily contacts between people in each pair of age bins. Three sources are available, each providing five contact settings, selected with the `kind` argument. One of them, `prem2021`, is bundled; the other two are fetched on first use (see [Tiers](tiers.qmd)). The default, `prem`, is `prem2021`, or `prem2017` for the ten locations `prem2021` lacks (see [Which source](#which-source)).
 
 ```{python}
 matrix = ssd.load('kenya')   # prem2021
@@ -132,6 +132,8 @@ matrix.loc[25, 30]
 ```{python}
 #| echo: false
 pd.DataFrame([
+    dict(source='prem', tier='0 (bundled)', shape='16x16', bins='5-year, 0-4 ... 75+',
+         countries=187, study='prem2021, with prem2017 for the ten locations it lacks'),
     dict(source='prem2021', tier='0 (bundled)', shape='16x16', bins='5-year, 0-4 ... 75+',
          countries=177, study='Prem et al. 2021'),
     dict(source='prem2017', tier='1 (fetched)', shape='16x16', bins='5-year, 0-4 ... 75+',
@@ -165,18 +167,22 @@ ssd.fetch('france', which='mistry2021')             # 85x85, single years of age
 
 ### Which source
 
-`prem2021` is the default because it is the better of the two general-purpose sources, not merely the newer:
+`prem2021` is the authors' own update of `prem2017`, built from more contact surveys and newer demographic data, and covering 177 locations against 152. Where both have a country, they agree closely: the median correlation between a country's two matrices is 0.957.
 
-- It is the authors' own update of `prem2017`, built from more contact surveys and newer demographic data, and covers 177 locations against 152.
-- Against the UN WPP 2020 populations, its matrices are more nearly reciprocal (the contacts from group *i* to group *j* match those from *j* to *i*): the mean asymmetry is 0.108, against 0.162 for `prem2017`. [CK: not sure why this is an argument ... surely it would be trivial to make the matrice spurely symmetric? so isn't asymmetry a good thing?]
-- The two agree closely where both exist: the median correlation between a country's two matrices is 0.957.
+`prem2021` dropped ten locations that `prem2017` has: Andorra, Antigua and Barbuda, Australia, Haiti, Japan, Kiribati, Lebanon, Monaco, Seychelles and Taiwan. Their `prem2017` matrices are bundled too, and the default contact matrices, `prem`, use them, so `ssd.load()` has a matrix for all 187 locations. Which study a frame came from is recorded on it:
 
-`prem2017` remains available for the ten locations `prem2021` dropped (Andorra, Antigua and Barbuda, Australia, Haiti, Japan, Kiribati, Lebanon, Monaco, Seychelles and Taiwan) and for reproducing earlier analyses. [CK: are those ten locations bundled? if not, can they be if which='default'?] `mistry2021` answers a different need: single-year age bins, but for only 36 mostly high-income countries, under the more permissive Apache-2.0 licence. Asking `load()` for a location `prem2021` lacks says where it can be found:
+```{python}
+ssd.load('Japan').attrs['dataset']
+```
+
+Asking for `prem2021` by name gives that study alone, and says where else a location can be found:
 
 ```{python}
 #| error: true
-ssd.load('Japan')
+ssd.load('Japan', which='prem2021')
 ```
+
+The full `prem2017` is fetched for reproducing earlier analyses. `mistry2021` answers a different need: single-year age bins, but for only 36 mostly high-income countries, under the more permissive Apache-2.0 license.
 
 ## The node table
 

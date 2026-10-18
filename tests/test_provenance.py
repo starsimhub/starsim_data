@@ -1,5 +1,8 @@
-"""Tests for dataset provenance and revision handling."""
+"""
+Test dataset provenance and revision handling
+"""
 
+import sciris as sc
 import pytest
 
 import starsim_data as ssd
@@ -10,88 +13,97 @@ import starsim_data as ssd
 REQUIRED = ("dataset", "source", "source_url", "license", "citation", "built", "builder")
 
 
-@pytest.mark.parametrize("which", ssd.list_datasets(tier=0))
-def test_every_bundled_dataset_has_provenance(which):
-    prov = ssd.provenance(which)
-    for field in REQUIRED:
-        assert prov.get(field), f"{which!r} provenance is missing {field!r}"
+@sc.timer()
+def test_provenance():
+    """ Every bundled dataset records where it came from and how it was built """
+    sc.heading("Testing provenance")
+    for which in ssd.list_datasets(tier=0):
+        prov = ssd.provenance(which)
+        for field in REQUIRED:
+            assert prov.get(field), f"{which!r} provenance is missing {field!r}"
+
+    allprov = ssd.provenance()
+    assert set(allprov.keys()) == set(ssd.list_datasets(tier=0)) # No argument covers every bundled dataset
+
+    prov = ssd.provenance("prem2017")
+    assert prov.builder.endswith("build_hdf5.py") # The script that built it
+    assert prov.built.startswith("20") # An ISO timestamp
+    assert prov.package_version # The version that built it
+    return allprov
 
 
-@pytest.mark.parametrize("which, license", [
-    ("prem2017", "GPL-3.0"),
-    ("prem2021", "GPL-3.0"),
-    ("mistry2021", "Apache-2.0"),
-    ("deaths", "CC BY 3.0 IGO"),
-])
-def test_licenses_match_notice(which, license):
-    """Licenses recorded in the data must match the ones asserted in NOTICE.md.
+@sc.timer()
+def test_licenses():
+    """
+    Licenses recorded in the data must match the ones asserted in NOTICE.md.
 
     If these drift apart, the machine-readable attribution and the human-readable
     attribution disagree, and one of them is wrong.
     """
-    assert ssd.provenance(which).license == license
+    sc.heading("Testing licenses")
+    licenses = {
+        "prem2017":   "GPL-3.0",
+        "prem2021":   "GPL-3.0",
+        "mistry2021": "Apache-2.0",
+        "deaths":     "CC BY 3.0 IGO",
+    }
+    for which, license in licenses.items():
+        assert ssd.provenance(which).license == license, f"Expected {which} to be {license}, as NOTICE.md says"
+    return licenses
 
 
-def test_provenance_with_no_argument_covers_all_datasets():
-    allprov = ssd.provenance()
-    assert set(allprov.keys()) == set(ssd.list_datasets(tier=0))
-
-
-def test_provenance_records_the_build():
-    prov = ssd.provenance("prem2017")
-    assert prov.builder.endswith("build_hdf5.py")
-    assert prov.built.startswith("20")          # ISO timestamp
-    assert prov.package_version
-
-
-def test_loaded_frames_carry_provenance():
+@sc.timer()
+def test_attrs():
+    """ Loaded frames carry their provenance, location and dataset """
+    sc.heading("Testing provenance on loaded frames")
     df = ssd.load("Kenya", which="prem2021")
-    assert df.attrs["provenance"].license == "GPL-3.0"
-    assert df.attrs["location"] == "Kenya"
-    assert df.attrs["dataset"] == "prem2021"
+    assert df.attrs["provenance"].license == "GPL-3.0" # The provenance travels with the data
+    assert df.attrs["location"] == "Kenya" # So does the location
+    assert df.attrs["dataset"] == "prem2021" # And the dataset
+    assert ssd.load("KEN", which="deaths").attrs["location"] == "Kenya" # Canonical, not the alias
+    return df
 
 
-def test_provenance_survives_an_alias_lookup():
-    df = ssd.load("KEN", which="deaths")
-    assert df.attrs["location"] == "Kenya"      # canonical, not the alias
-
-
-def test_list_revisions():
+@sc.timer()
+def test_revisions():
+    """ WPP revisions: listed, defaulting to the newest, and refused where they mean nothing """
+    sc.heading("Testing revisions")
     revisions = ssd.list_revisions()
-    assert revisions == sorted(revisions)
-    assert "2024" in revisions
+    assert revisions == sorted(revisions) # Sorted
+    assert "2024" in revisions # The current WPP
 
-
-def test_default_revision_is_the_newest():
-    newest = ssd.list_revisions()[-1]
     default = ssd.load("Kenya", which="deaths")
-    pinned = ssd.load("Kenya", which="deaths", revision=newest)
-    assert default.equals(pinned)
+    assert default.equals(ssd.load("Kenya", which="deaths", revision=revisions[-1])) # The default is the newest
+    assert ssd.load("Kenya", which="deaths", revision=2024).equals(ssd.load("Kenya", which="deaths", revision="2024")) # An int or a str
 
-
-def test_revision_can_be_int_or_str():
-    a = ssd.load("Kenya", which="deaths", revision=2024)
-    b = ssd.load("Kenya", which="deaths", revision="2024")
-    assert a.equals(b)
-
-
-def test_unknown_revision_raises():
     with pytest.raises(ValueError, match="unknown revision"):
         ssd.load("Kenya", which="deaths", revision=1999)
-
-
-def test_revision_is_rejected_for_contact_matrices():
-    """Contact sources are versioned by name, so a revision argument is a mistake."""
-    with pytest.raises(ValueError, match="does not apply"):
+    with pytest.raises(ValueError, match="does not apply"): # Contact sources are versioned by name, so a revision is a mistake
         ssd.load("Kenya", which="prem2021", revision=2024)
+    return revisions
 
 
-@pytest.mark.parametrize("which", ["births", "deaths", "migration", "population"])
-def test_namibia_has_demographic_data(which):
-    """Namibia is present in every demographic series, like any other country.
-
-    A regression test for the ISO-2 `NA` bug: pandas' default `na_values` read
-    Namibia's country code as NaN, which dropped it from the WPP download and from
-    every ISO-2-keyed lookup downstream.
+@sc.timer()
+def test_namibia():
     """
-    assert "Namibia" in ssd.list_locations(which)
+    Namibia is present in every demographic series, like any other country.
+
+    A regression test for the ISO-2 `NA` bug: pandas' default `na_values` read Namibia's
+    country code as NaN, which dropped it from the WPP download and from every
+    ISO-2-keyed lookup downstream.
+    """
+    sc.heading("Testing Namibia's demographic data")
+    for which in ["births", "deaths", "migration", "population"]:
+        assert "Namibia" in ssd.list_locations(which), f"Expected Namibia in {which}"
+
+
+if __name__ == "__main__":
+    T = sc.timer()
+
+    prov      = test_provenance()
+    licenses  = test_licenses()
+    df        = test_attrs()
+    revisions = test_revisions()
+    test_namibia()
+
+    T.toc()

@@ -21,7 +21,7 @@ ssd.list_datasets(detailed=True)[['dataset', 'tier', 'levels', 'locations']]
 
 ## Tier 0: bundled
 
-The demographic series, the default contact matrices (`prem2021`), `locations.csv` and the node table are included in the wheel, amounting to roughly 8 MB. Installing a given version of the package therefore gives every user byte-identical data with no network access, which means the package works offline, its tests are deterministic, and citing a version fully specifies the data an analysis used.
+The demographic series, the default contact matrices (`prem2021`, and `prem2017` for the ten locations it lacks), `locations.csv` and the node table are included in the wheel, amounting to roughly 8 MB. Installing a given version of the package therefore gives every user byte-identical data with no network access, which means the package works offline, its tests are deterministic, and citing a version fully specifies the data an analysis used.
 
 ::: {.callout-important}
 ## `load()` does not access the network
@@ -38,7 +38,7 @@ ssd.load('kenya', which='life_table')
 Tier 1 holds the data that is too large to bundle:
 
 - Annual WPP series, complete life tables, and non-Medium projection variants, from 17 MB to 290 MB per file.
-- The contact matrices other than the default (`prem2017` and `mistry2021`), about 3 MB each. These are the same stores `load()` reads, downloaded from this package's own repository at a pinned commit and checked against a SHA-256 recorded in the wheel, so a given version still fixes their contents exactly. Their locations and provenance are listed without downloading them.
+- The full `prem2017` and `mistry2021` contact matrices, about 3 MB each. A given version of the package fixes their contents exactly, as it does for the bundled data, and their locations and provenance are listed without downloading them.
 - Administrative boundaries with geometry, at tens of megabytes per country at admin level 2.
 - Gridded population rasters, at 1–40 MB per country-year.
 
@@ -63,7 +63,7 @@ Size and use, not subject. The same UN WPP 2024 release appears in both: decadal
 #| echo: false
 import pandas as pd
 pd.DataFrame([
-    dict(requirement="Age structure, mortality, births, contact matrices (prem2021)",
+    dict(requirement="Age structure, mortality, births, contact matrices",
          call="load()", tier=0, cost="instant"),
     dict(requirement="Positions, areas and separations of administrative units",
          call="load_nodes(), distances()", tier=0, cost="instant"),

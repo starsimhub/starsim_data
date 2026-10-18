@@ -11,8 +11,8 @@ import starsim_data as ssd
 
 ssd.list_datasets()                              # what's available
 ssd.load('kenya', which='deaths')                # UN WPP mortality rates (tidy DataFrame)
-ssd.load('kenya', kind='home')                   # a contact matrix, prem2021 (square DataFrame)
-ssd.provenance('prem2021')                       # where it came from, and its license
+ssd.load('kenya', kind='home')                   # a contact matrix (square DataFrame)
+ssd.provenance('prem')                           # where it came from, and its license
 ssd.plot('kenya')                                # eyeball it before it goes into a model
 ssd.fetch('kenya', which='deaths', years=(2000, 2025))  # annual data, downloaded on demand
 ```
@@ -65,11 +65,12 @@ Age-structured contact rates — the average number of contacts between age grou
 
 | `which=` | Bundled | Matrix | Age groups | Countries | Source study |
 |---|---|---|---|---|---|
-| `prem2021` | ✅ (the default) | 16×16 | 5-year (`0–4, …, 75+`) | 177 | [Prem et al. 2021](https://journals.plos.org/ploscompbiol/article?id=10.1371/journal.pcbi.1009098) |
+| `prem` | ✅ (the default) | 16×16 | 5-year (`0–4, …, 75+`) | 187 | `prem2021`, and `prem2017` for the ten locations it lacks |
+| `prem2021` | ✅ | 16×16 | 5-year (`0–4, …, 75+`) | 177 | [Prem et al. 2021](https://journals.plos.org/ploscompbiol/article?id=10.1371/journal.pcbi.1009098) |
 | `prem2017` | ⬇️ `fetch()` | 16×16 | 5-year (`0–4, …, 75+`) | 152 | [Prem et al. 2017](https://journals.plos.org/ploscompbiol/article?id=10.1371/journal.pcbi.1005697) |
 | `mistry2021` | ⬇️ `fetch()` | 85×85 | single-year (`0–84`, last is `84+`) | 36 | [Mistry et al. 2021](https://www.nature.com/articles/s41467-020-20544-y) |
 
-`prem2021` is the default because it is the authors' own update of `prem2017`: more countries, newer surveys and demography, and matrices that are more nearly reciprocal against current populations. The other two are fetched on first use (about 3 MB each, checked against a SHA-256 recorded in the package): `prem2017` for the ten locations `prem2021` dropped (such as Japan and Australia) or to reproduce earlier work, and `mistry2021` for single-year ages: [CK: please don't say things like "checked against a SHA-256, our audience is epidemiologists, no one cares.]
+The default uses `prem2021`, the authors' own update of `prem2017`, built from more contact surveys and newer demographic data; for the ten locations it dropped (such as Japan and Australia), it uses `prem2017`. The full `prem2017` (e.g. to reproduce earlier work) and `mistry2021` (for single years of age) are downloaded the first time they are used, about 3 MB each:
 
 ```python
 ssd.fetch('japan', which='prem2017', kind='home')
@@ -105,7 +106,7 @@ ssd.cache_info()         # what's cached, from where, and when it was fetched
 ssd.clear_cache()        # or clear_cache('wpp/*')
 ```
 
-Every cached file gets a sidecar recording its source URL, download time, size and SHA-256, and `fetch()` results carry the same in `.attrs['provenance']`.
+Every cached file records where and when it was downloaded, and `fetch()` results carry the same in `.attrs['provenance']`.
 
 ## Plotting
 
@@ -172,7 +173,7 @@ ssd.choropleth('kenya', level=1)               # a filled map
 
 `fetch_shapes()` tries UNOCHA then geoBoundaries. **GADM is never tried automatically**: it is licensed for non-commercial use only, so it has to be asked for by name (`source='gadm'`), and nothing derived from it is ever bundled or redistributed. Shapes join to the node table on `pcode` and `dot_name`.
 
-`fetch_nodes()` sums a WorldPop 1 km raster inside each unit. WorldPop's constrained estimates are modelled rather than counted and will not equal the UN WPP national total — about 1.2% low for Kenya in 2020 — so if your model needs them to agree, `ssd.rescale_to_national(nodes)` makes that choice explicit.
+`fetch_nodes()` sums a WorldPop 1 km raster inside each unit. WorldPop's constrained estimates are modeled rather than counted and will not equal the UN WPP national total — about 1.2% low for Kenya in 2020 — so if your model needs them to agree, `ssd.rescale_to_national(nodes)` makes that choice explicit.
 
 Together, `load_nodes()` and `distances()` are the inputs a gravity model needs (`P_i`, `P_j`, `D_ij`); the gravity formulation itself belongs in the model, not in a data package.
 
@@ -205,7 +206,7 @@ great-docs build      # -> great-docs/_site/
 great-docs preview    # live reload on http://localhost:3000
 ```
 
-Adding a page means dropping a `.qmd` file in `docs/` with a `title` and a `guide-section` — there is no navigation or reference configuration to update. [`docs/assets/starsim-theme.html`](docs/assets/starsim-theme.html) holds three small style overrides (figure scaling, navbar centring, and the Starsim footer) for which great-docs has no setting.
+Adding a page means dropping a `.qmd` file in `docs/` with a `title` and a `guide-section` — there is no navigation or reference configuration to update. [`docs/assets/starsim-theme.html`](docs/assets/starsim-theme.html) holds three small style overrides (figure scaling, navbar centering, and the Starsim footer) for which great-docs has no setting.
 
 ## Building from source
 
