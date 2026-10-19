@@ -45,6 +45,8 @@ def test_licenses():
         "prem2017":   "GPL-3.0",
         "prem2021":   "GPL-3.0",
         "mistry2021": "Apache-2.0",
+        "mistry2021_us": "Apache-2.0",
+        "population_us": "Public domain",
         "deaths":     "CC BY 3.0 IGO",
     }
     for which, license in licenses.items():

@@ -210,6 +210,7 @@ def _fetched():
             name        = name,
             layout      = entry['layout'],
             tier        = 1,
+            levels      = tuple(entry.get('levels', [0])),
             sources     = (source,),
             license     = entry['provenance'].get('license', ''),
             n_locations = len(entry['locations']),

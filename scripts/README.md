@@ -21,9 +21,21 @@ Walks [`raw_data/contact_matrices/`](../raw_data/contact_matrices/) and writes o
 python scripts/build_hdf5.py              # rebuild prem2021.h5 and the manifest
 python scripts/build_hdf5.py --check      # also round-trip validate against the CSVs
 python scripts/build_hdf5.py --fetched    # also rebuild the stores in fetched/
+python scripts/build_hdf5.py --fetched population_us   # ...or only those named
 ```
 
 Run this whenever `raw_data/` changes. A new source is discovered automatically from its `<source>_contacts_<setting>.csv` files: add it to `BUNDLED`, or make it a fetched one. The existing sources are published and won't change; adding a fetched one means building it with `--fetched`, getting its store onto `main` on GitHub (make a pull request), and recording that commit in `PINNED`.
+
+It also builds `fetched/population_us.h5`, the US states' populations, from `raw_data/population_us.csv`, and writes each state's matrices under the location key `United_States:Massachusetts` (from the folder `United_States__Massachusetts`).
+
+## download_epydemix.py
+
+Copies the US states' contact matrices (Mistry et al. 2021) and populations (US Census Bureau, 2023) from a pinned commit of [epydemix-data](https://github.com/epistorm/epydemix-data) into `raw_data/`, checking that each state is in the node table under the same name. No token needed.
+
+```bash
+python scripts/download_epydemix.py                         # -> raw_data/
+python scripts/build_hdf5.py --fetched mistry2021_us population_us
+```
 
 ## download_wpp.py
 

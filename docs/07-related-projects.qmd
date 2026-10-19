@@ -14,7 +14,7 @@ Two projects in particular shaped this one, and are acknowledged here in more de
 
 [epydemix-data](https://github.com/epistorm/epydemix-data) is the data repository behind [epydemix](https://github.com/epistorm/epydemix), the ISI Foundation's Python package for stochastic compartmental modeling with approximate Bayesian calibration. It holds age distributions and age-structured contact matrices for more than 3,500 regions, as a tree of per-location CSV folders in git, with a top-level `locations.csv` recording which contact sources exist for each location.
 
-**What this package took from it.** The bundled contact matrices are derived from epydemix-data: the `prem2017`, `prem2021` and `mistry2021` matrices here were taken from its curated CSVs, trimmed to national level and reorganized into one HDF5 store per source. Assembling those matrices from the original supplementary material is a genuinely tedious job — inconsistent spreadsheet layouts, inconsistent country naming — and epydemix-data had already done it carefully. Two of its design decisions were also adopted rather than reinvented: a single manifest file listing every location and the sources available for it, which is what `locations.csv` is here too, and pinning data releases so that a version of the package implies an exact version of the data.
+**What this package took from it.** The bundled contact matrices are derived from epydemix-data: the `prem2017`, `prem2021` and `mistry2021` matrices here were taken from its curated CSVs, trimmed to national level (and later the US states, as `mistry2021_us`, with their populations) and reorganized into one HDF5 store per source. Assembling those matrices from the original supplementary material is a genuinely tedious job — inconsistent spreadsheet layouts, inconsistent country naming — and epydemix-data had already done it carefully. Two of its design decisions were also adopted rather than reinvented: a single manifest file listing every location and the sources available for it, which is what `locations.csv` is here too, and pinning data releases so that a version of the package implies an exact version of the data.
 
 **Where the two differ.** epydemix-data resolves over the network by default: `load_epydemix_population()` reads from `raw.githubusercontent.com` unless a local copy has been downloaded and `path_to_data` points at it. `ssd.load()` never touches the network, because the data is in the wheel. The trade-off is deliberate on both sides — a git-hosted CSV tree can hold 3,500 regions and four contact sources, which a wheel cannot, whereas a wheel is instant, works offline and is byte-identical for everyone on the same version.
 
@@ -44,13 +44,13 @@ Smaller differences: laser-init writes files and this returns objects; laser-ini
 | **You get** | Dataframes | A `Population` object | A directory of files and a model script |
 | **Network on first use** | No, for bundled data | Yes, unless downloaded first | Yes, always |
 | **Demographics** | Four UN WPP series, 1950–2100 | One age distribution per location | CBR/CDR series, age distribution, survival curve |
-| **Contact matrices** | 3 sources, national only | 4 sources, national to US county | None |
+| **Contact matrices** | 3 sources, national and US state | 4 sources, national to US county | None |
 | **Geography** | Node table bundled; shapes and rasters fetched | None | Shapes and rasters fetched |
-| **Locations** | 187 countries | 3,500+ regions | Any one country per run |
+| **Locations** | 187 countries, 51 US states | 3,500+ regions | Any one country per run |
 | **Generates a model** | No | No | Yes |
 | **License** | MIT code, per-dataset data licenses | GPL-3.0 | MIT |
 
-Each package is best for a different use case. If you are running a compartmental model of a US state and want the finest contact structure available, epydemix-data has data this package does not. If you want a spatial LASER model of Nigeria running this ASAP, laser-init will get you there faster than assembling one from `load_nodes()`. This package is aimed at the case where a Starsim model needs national demographic rates and a contact matrix, offline and reproducibly, with subnational structure available when it is wanted.
+Each package is best for a different use case. If you are running a compartmental model of a US county, or of another country's provinces, and want the finest contact structure available, epydemix-data has data this package does not. If you want a spatial LASER model of Nigeria running this ASAP, laser-init will get you there faster than assembling one from `load_nodes()`. This package is aimed at the case where a Starsim model needs national demographic rates and a contact matrix, offline and reproducibly, with subnational structure available when it is wanted.
 
 ## Other places these data come from
 

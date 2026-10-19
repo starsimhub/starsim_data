@@ -15,8 +15,8 @@ Each file ends with an `if __name__ == "__main__":` block that calls every test 
 
 | File | What it covers |
 |---|---|
-| `test_load.py` | The core API: listing, matrix shapes and axes, location matching, settings, the default contact source, fetched contact sources and their manifest, error paths |
-| `test_locations.py` | Name/code/alias resolution, the "did you mean" path, `valid` scoping, `location_info`, `parse_level`, `normalize`, and the Namibia `NA` regression |
+| `test_load.py` | The core API: listing, matrix shapes and axes, location matching, settings, the default contact source, fetched contact sources and their manifest, the US states, error paths |
+| `test_locations.py` | Name/code/alias resolution, the "did you mean" path, `valid` scoping, subnational units, `location_info`, `parse_level`, `normalize`, and the Namibia `NA` regression |
 | `test_demographics.py` | The build pipeline end to end, from synthetic WPP CSVs through `build_demographics.py` to `load` |
 | `test_demographics_data.py` | Sanity checks on the real bundled demographics (plausible rates, coverage, units) |
 | `test_provenance.py` | Every bundled store is attributable, licenses match `NOTICE.md`, provenance on loaded frames, revision pinning |

@@ -176,6 +176,7 @@ def _download_store(source, refresh, verbose):
 def _fetch_store(ds, location, kind, refresh, verbose):
     """Download a store that is not bundled (once), check its digest, and read one location."""
     source = ds.source()
+    ssd.resolve(location, valid=ds.locations, dataset=ds.name) # From the manifest, so a location the store lacks is refused before downloading it
 
     # Use the cached copy if its digest is right, and download it afresh if not
     path, digest = _download_store(source, refresh, verbose)
@@ -298,11 +299,13 @@ def fetch(location, which='deaths', years=None, variant=DEFAULT_VARIANT, revisio
 
     Args:
         location (str): location name, ISO-2/ISO-3 code, official name or alias, exactly
-            as for `load()`.
+            as for `load()`. A US state is `'United States:Massachusetts'`; see `resolve()`.
         which (str): `'births'`, `'deaths'`, `'migration'`, `'population'` (the bundled
             series, at annual resolution), `'life_table'` (the complete abridged life
             table), `'indicators'` (every WPP indicator), or a contact source that is
-            not bundled (`'prem2017'`, `'mistry2021'`). See `list_fetchable()`.
+            not bundled (`'prem2017'`, `'mistry2021'`, and `'mistry2021_us'` for the US
+            states), or `'population_us'` (the population of each US state by single
+            year of age). See `list_fetchable()`.
         years (int/tuple/list): a single year; a 2-tuple `(start, end)`, treated as an
             inclusive range; or an explicit list of years. None means all of 1950-2100,
             which for life tables means downloading both halves (~290 MB).
@@ -316,7 +319,8 @@ def fetch(location, which='deaths', years=None, variant=DEFAULT_VARIANT, revisio
 
     Returns:
         sciris.dataframe: for the four bundled series and the contact sources, exactly
-        the schema `load()` returns. For `life_table`, `[Time, Sex, AgeGrpStart, mx, qx, px, lx, dx, Lx, Sx,
+        the schema `load()` returns; `population_us` has that of `population`, for the
+        one year 2023 and `Sex` `'Both sexes'`. For `life_table`, `[Time, Sex, AgeGrpStart, mx, qx, px, lx, dx, Lx, Sx,
         Tx, ex, ax]` with a glossary in `.attrs['columns']`. For `indicators`, `Time`
         plus every indicator column. Provenance is in `.attrs['provenance']`.
 
@@ -332,14 +336,18 @@ def fetch(location, which='deaths', years=None, variant=DEFAULT_VARIANT, revisio
     """
     verbose = sc.ifelse(verbose, ssd.options.verbose)
 
-    # A contact source kept out of the wheel: download the store, then read it as load() does
+    # A store kept out of the wheel: download it, then read it as load() does
     stores = _fetched_stores()
     if which in stores:
+        ds = stores[which]
         given = dict(years=years, variant=variant, revision=revision)
         unused = [k for k, v in given.items() if v not in (None, DEFAULT_VARIANT)]
+        if (ds.layout != 'matrix') and (kind != 'all'):
+            unused.append('kind')
         if unused: # An argument a dataset has no use for is rejected, not ignored
-            raise ValueError(f'{sc.strjoin(unused)} does not apply to {which!r}, a contact source; only kind= does')
-        return _fetch_store(stores[which], location, kind, refresh, verbose)
+            takes = 'only kind= does' if ds.layout == 'matrix' else 'it takes only the location'
+            raise ValueError(f'{sc.strjoin(unused)} does not apply to {which!r}, a stored {ds.layout!r} dataset; {takes}')
+        return _fetch_store(ds, location, kind, refresh, verbose)
 
     # Otherwise, a WPP series: check the arguments
     if kind != 'all':
@@ -356,6 +364,8 @@ def fetch(location, which='deaths', years=None, variant=DEFAULT_VARIANT, revisio
         raise ValueError(errormsg)
 
     key = ssd.resolve(location)
+    if ssd.locations.SEP in key:
+        raise KeyError(f'UN WPP is national, and {key!r} is a subnational unit{ssd.locations._elsewhere(key, which)}')
     iso3 = ssd.location_info(key).iso3
     if not iso3:
         raise KeyError(f'location {location!r} has no ISO-3 code, so it cannot be matched against the WPP bulk files')

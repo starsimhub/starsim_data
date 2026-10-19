@@ -59,12 +59,19 @@ Three sources are available. `prem2021` is bundled; the other two are fetched on
 | `prem2021` | 0 (bundled) | 16×16 | 5-year, 0–75+ | 177 | GPL-3.0 |
 | `prem2017` | 1 (fetched) | 16×16 | 5-year, 0–75+ | 152 | GPL-3.0 |
 | `mistry2021` | 1 (fetched) | 85×85 | single-year, 0–84+ | 36 | Apache-2.0 |
+| `mistry2021_us` | 1 (fetched) | 85×85 | single-year, 0–84+ | 51 US states (with DC) | Apache-2.0 |
 
 **Prem et al. 2017 and 2021** project contact patterns onto countries lacking their own survey, using household composition and demographic structure. The 2021 paper is an update covering more countries, with a revised method and a comparison against empirical data, and is generally preferable except when reproducing earlier work. Both provide the same five settings: `all`, `home`, `work`, `school` and `community`.
 
-**Mistry et al. 2021** offers a different trade-off: considerably finer age resolution (single years to 84) for considerably fewer countries (36). It is appropriate where the age structure of transmission matters at a finer grain than five-year bins, such as school-entry effects or single-year cohorts, and where the restricted coverage is acceptable.
+**Mistry et al. 2021** offers a different trade-off: considerably finer age resolution (single years to 84) for considerably fewer countries (36). It is appropriate where the age structure of transmission matters at a finer grain than five-year bins, such as school-entry effects or single-year cohorts, and where the restricted coverage is acceptable. The same study's matrices for the US states are `mistry2021_us`; they come from the synthetic population of each state, so they reflect its own households, schools and workplaces rather than the national average.
 
-Not every country appears in every source, so `list_locations('prem2021')` is worth consulting first. The matrices were adapted from [epydemix-data](https://github.com/epistorm/epydemix-data) and trimmed to national level; epydemix additionally provides subnational matrices, a fourth source, and US matrices stratified by sex and race/ethnicity, none of which are included here — see [Related projects](related-projects.qmd).
+Not every country appears in every source, so `list_locations('prem2021')` is worth consulting first. The matrices were adapted from [epydemix-data](https://github.com/epistorm/epydemix-data), keeping the national ones and those of the US states; epydemix additionally provides subnational matrices for other countries and for US counties, a fourth source, and US matrices stratified by sex and race/ethnicity, none of which are included here — see [Related projects](related-projects.qmd).
+
+### US Census Bureau
+
+**Provider:** US Census Bureau, Population Estimates Program · [census.gov/popest](https://www.census.gov/programs-surveys/popest.html) · public domain
+
+`population_us` is the Vintage 2023 estimate of each state's population by single year of age, as compiled by epydemix-data. It covers the 50 states and the District of Columbia (not the territories), for 2023 only, both sexes together, with the last age group 84+ to match `mistry2021_us`. Population totals for other years, or by sex, are not included.
 
 ---
 

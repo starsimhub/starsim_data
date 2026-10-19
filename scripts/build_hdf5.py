@@ -13,8 +13,12 @@ prem2021.h5
   /Kenya/school
   /Kenya/community
   /United_States/...
+  /United_States:Massachusetts/...   (a subnational unit, from a `United_States__Massachusetts` folder)
   ...
 ```
+
+It also builds `population_us.h5`, the population of each US state by single year of
+age, from `raw_data/population_us.csv` (see `scripts/download_epydemix.py`).
 
 Matrices are cast to float32 and written with gzip9 + byte-shuffle (see
 reimplementation_plan.md for why this is the size/speed sweet spot). Re-run whenever
@@ -30,16 +34,18 @@ the stores in `fetched/`.
 
 The existing matrices are published and won't change; this script records how they were
 built, and is how a new source would be added. A store is stamped with its build time, so
-rebuilding one changes its bytes: the fetched stores are rebuilt only with `--fetched`,
-which is only needed for a new fetched source. Its store then has to be on `main` on
-GitHub (make a pull request), and that commit set in `PINNED`.
+rebuilding one changes its bytes: the fetched stores are rebuilt only with `--fetched`
+(given the names of the ones to rebuild, or none for all), which is only needed for a new
+fetched source. Its store then has to be on `main` on GitHub (make a pull request), and
+that commit set in `PINNED`.
 
 Usage:
 
 ```bash
 python scripts/build_hdf5.py              # build the bundled stores and rewrite the manifest
 python scripts/build_hdf5.py --check      # also round-trip validate against CSVs
-python scripts/build_hdf5.py --fetched    # also rebuild the stores in fetched/
+python scripts/build_hdf5.py --fetched    # also rebuild every store in fetched/
+python scripts/build_hdf5.py --fetched population_us   # ...or just this one
 ```
 """
 
@@ -54,6 +60,7 @@ from provenance import stamp
 
 REPO     = sc.thispath(__file__).parent
 CONTACT  = REPO / 'raw_data' / 'contact_matrices'
+POP_US   = REPO / 'raw_data' / 'population_us.csv'
 OUT      = REPO / 'starsim_data' / 'data'
 FETCHED  = REPO / 'fetched'
 MANIFEST = OUT / 'fetched.json'
@@ -66,14 +73,21 @@ BUNDLED = ['prem2021']
 BASE, FILL = 'prem2021', 'prem2017'
 FILL_PATH = OUT / 'prem' / f'{FILL}.h5'
 
-# Where each fetched store is downloaded from: a commit on GitHub, and the store's path
-# at that commit. The bytes there must be those of the store in fetched/.
+# Every fetched store, and where it is downloaded from: a commit on GitHub, and the
+# store's path at that commit. The bytes there must be those of the store in fetched/.
+# The manifest describes exactly these.
 URL = 'https://raw.githubusercontent.com/starsimhub/starsim_data/{commit}/{path}'
 PINNED = {
-    'prem2017':   dict(commit='56cb6a5d1ec502d4308d748506f98054c107c8f6', path='starsim_data/data/prem2017.h5'),
-    'mistry2021': dict(commit='56cb6a5d1ec502d4308d748506f98054c107c8f6', path='starsim_data/data/mistry2021.h5'),
+    'prem2017':      dict(commit='56cb6a5d1ec502d4308d748506f98054c107c8f6', path='starsim_data/data/prem2017.h5'),
+    'mistry2021':    dict(commit='56cb6a5d1ec502d4308d748506f98054c107c8f6', path='starsim_data/data/mistry2021.h5'),
+    'mistry2021_us': dict(commit='main', path='fetched/mistry2021_us.h5'), # TODO: pin to the commit that puts these on main
+    'population_us': dict(commit='main', path='fetched/population_us.h5'),
 }
 DESCRIPTION = 'Age-structured contact matrix by setting'
+DESCRIPTIONS = {
+    'mistry2021_us': 'Contact matrices by setting for each US state, Mistry et al. 2021',
+    'population_us': 'Population of each US state by single year of age (persons), US Census Bureau',
+}
 
 # Machine-readable counterpart to NOTICE.md, written into each store so that the
 # attribution travels with the data rather than only with the repository.
@@ -102,6 +116,22 @@ SOURCES = {
         citation   = 'Mistry D, Litvinova M, Pastore y Piontti A, et al. Inferring high-resolution human mixing patterns for disease modeling. Nature Communications 12, 323 (2021).',
         note       = '85x85 matrices; single-year age groups (0-84, last group is 84+).',
     ),
+    'mistry2021_us': dict(
+        source     = 'Mistry et al. 2021',
+        source_url = 'https://github.com/mobs-lab/mixing-patterns',
+        via        = 'https://github.com/epistorm/epydemix-data',
+        license    = 'Apache-2.0',
+        citation   = 'Mistry D, Litvinova M, Pastore y Piontti A, et al. Inferring high-resolution human mixing patterns for disease modeling. Nature Communications 12, 323 (2021).',
+        note       = '85x85 matrices for each US state and DC; single-year age groups (0-84, last group is 84+).',
+    ),
+    'population_us': dict(
+        source     = 'US Census Bureau, Population Estimates Program (Vintage 2023)',
+        source_url = 'https://api.census.gov/data/2023/pep/charv',
+        via        = 'https://github.com/epistorm/epydemix-data',
+        license    = 'Public domain',
+        citation   = 'U.S. Census Bureau, Population Division. Vintage 2023 Population Estimates, population by characteristics.',
+        note       = 'Both sexes, single years of age 0-84 (last group is 84+), for each US state and DC.',
+    ),
 }
 
 # Contact layers, in a stable order. Each is a `{source}_contacts_{kind}.csv` file.
@@ -110,7 +140,7 @@ KINDS = ['all', 'home', 'work', 'school', 'community']
 # Width (in years) of each source's age bins, used to label the matrix axes with the
 # start age of each bin (e.g. prem's 16 bins -> 0, 5, ..., 75). Sources not listed here
 # fall back to a positional 0..n-1 axis.
-AGE_WIDTH = {'prem2017': 5, 'prem2021': 5, 'mistry2021': 1}
+AGE_WIDTH = {'prem2017': 5, 'prem2021': 5, 'mistry2021': 1, 'mistry2021_us': 1}
 
 # HDF5 dataset creation options: float32 + gzip9 + byte-shuffle. Chunk = one matrix.
 H5OPTS = dict(compression='gzip', compression_opts=9, shuffle=True)
@@ -122,9 +152,14 @@ def discover_sources():
     return sorted(sources)
 
 
+def location_key(folder):
+    """ The location a folder holds: `United_States__Massachusetts` -> `United_States:Massachusetts` """
+    return folder.name.replace('__', ':')
+
+
 def locations_with(source):
     """ Return the set of locations that have matrices from `source` """
-    return {csv.parent.name for csv in CONTACT.glob(f'*/{source}_contacts_all.csv')}
+    return {location_key(csv.parent) for csv in CONTACT.glob(f'*/{source}_contacts_all.csv')}
 
 
 def read_matrix(path):
@@ -148,7 +183,7 @@ def build_source(source, check=False, out_path=None, only=None):
     n_ages = None
     with h5py.File(out_path, 'w') as f:
         for loc_dir in sorted(p for p in CONTACT.iterdir() if p.is_dir()):
-            location = loc_dir.name
+            location = location_key(loc_dir)
             if only is not None and location not in only:
                 continue
             csvs = [(kind, loc_dir / f'{source}_contacts_{kind}.csv') for kind in KINDS]
@@ -175,6 +210,27 @@ def build_source(source, check=False, out_path=None, only=None):
     return
 
 
+def build_population_us(check=False):
+    """ Write `population_us.h5` into `fetched/`: a (year, sex, age) array per state, as WPP's population is stored """
+    out_path = FETCHED / 'population_us.h5'
+    df = pd.read_csv(POP_US, keep_default_na=False)
+    ages = sorted(df.age.unique())
+    with h5py.File(out_path, 'w') as f:
+        for location, sub in df.groupby('location'):
+            values = sub.set_index('age').population.reindex(ages).to_numpy(np.float32)
+            f.create_dataset(location, data=values.reshape(1, 1, -1), **H5OPTS)
+            if check:
+                assert not np.isnan(values).any(), f'missing ages for {location}'
+                assert np.array_equal(f[location][0, 0], values), f'mismatch: {location}'
+        spec = dict(layout='population', years=[2023], sexes=['Both sexes'], ages=[int(a) for a in ages], age_col='AgeGrp', value_col='Value')
+        f.attrs['spec'] = json.dumps(spec)
+        n_locations = df.location.nunique()
+        prov = stamp('population_us', 'scripts/build_hdf5.py', n_locations=n_locations, **SOURCES['population_us'])
+        f.attrs['provenance'] = json.dumps(prov)
+    print(f'  {out_path.relative_to(REPO)}: {n_locations} locations, {out_path.stat().st_size/1e6:.2f} MB')
+    return
+
+
 def build_fill(check=False):
     """ Write the prem2017 matrices for the locations prem2021 lacks, for the default contacts """
     FILL_PATH.parent.mkdir(exist_ok=True)
@@ -188,24 +244,24 @@ def sha256(path):
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
-def write_manifest(sources):
-    """ Describe each fetched store (from its file in `fetched/`) in `data/fetched.json` """
+def write_manifest():
+    """ Describe each fetched store in `PINNED` (from its file in `fetched/`) in `data/fetched.json` """
     manifest = {}
-    for source in sources:
-        if source in BUNDLED:
-            continue
-        if source not in PINNED:
-            raise ValueError(f'{source!r} is fetched but has no commit in PINNED; get its store onto main on GitHub and set that commit there')
+    for source in sorted(PINNED):
         path = FETCHED / f'{source}.h5'
+        if PINNED[source]['commit'] == 'main':
+            print(f'  WARNING: {source!r} is not pinned to a commit yet; set one in PINNED once its store is on main')
         with h5py.File(path, 'r') as f:
+            locations = sorted(f.keys())
             manifest[source] = dict(
                 store       = path.name,
                 url         = URL.format(**PINNED[source]),
                 sha256      = sha256(path),
                 bytes       = path.stat().st_size,
                 layout      = json.loads(f.attrs['spec'])['layout'],
-                description = DESCRIPTION,
-                locations   = sorted(f.keys()),
+                description = DESCRIPTIONS.get(source, DESCRIPTION),
+                levels      = sorted({key.count(':') for key in locations}), # 'United_States:Massachusetts' is level 1
+                locations   = locations,
                 provenance  = json.loads(f.attrs['provenance']),
             )
     MANIFEST.write_text(json.dumps(manifest, indent=1, ensure_ascii=False) + '\n', encoding='utf-8')
@@ -216,19 +272,28 @@ def write_manifest(sources):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--check',   action='store_true', help='round-trip validate HDF5 values against the source CSVs')
-    parser.add_argument('--fetched', action='store_true', help='also rebuild the stores in fetched/ (only needed for a new fetched source)')
+    parser.add_argument('--fetched', nargs='*', metavar='NAME', help='also rebuild these stores in fetched/, or all of them if none are named (only needed for a new fetched source)')
     args = parser.parse_args()
 
     OUT.mkdir(parents=True, exist_ok=True)
     FETCHED.mkdir(parents=True, exist_ok=True)
     sources = discover_sources()
     print(f'Found {len(sources)} dataset(s) in {CONTACT}: {sc.strjoin(sources)}')
+    unpinned = [source for source in sources if source not in BUNDLED + list(PINNED)]
+    if unpinned:
+        raise ValueError(f'{unpinned} are fetched but have no entry in PINNED; add them there (and pin a commit once their stores are on main on GitHub)')
+    fetched = args.fetched
+    if fetched == []: # --fetched on its own: all of them
+        fetched = sources + ['population_us']
+    fetched = fetched or []
     for source in sources:
-        if source in BUNDLED or args.fetched:
+        if source in BUNDLED or source in fetched:
             build_source(source, check=args.check)
+    if 'population_us' in fetched:
+        build_population_us(check=args.check)
     build_fill(check=args.check)
-    write_manifest(sources)
-    if args.fetched:
+    write_manifest()
+    if fetched:
         print('The fetched stores were rebuilt: get them onto main on GitHub (make a pull request), then set that commit in PINNED.')
     print('Done.')
     return

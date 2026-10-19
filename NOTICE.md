@@ -4,7 +4,7 @@ This repository aggregates third-party demographic and contact-matrix datasets. 
 
 If you use these data, you must comply with the applicable upstream license and cite the corresponding paper.
 
-Of the contact matrices, only `prem2021` is bundled in the installed package. `prem2017` and `mistry2021` are distributed from this repository (in `fetched/`) and downloaded by `fetch()` on first use; they are redistributed under the same terms, below.
+Of the contact matrices, only `prem2021` is bundled in the installed package. `prem2017`, `mistry2021` and `mistry2021_us` are distributed from this repository (in `fetched/`) and downloaded by `fetch()` on first use, as is `population_us`; they are redistributed under the same terms, below.
 
 ## Sources
 
@@ -21,8 +21,16 @@ Of the contact matrices, only `prem2021` is bundled in the installed package. `p
 - **License:** Apache License 2.0 — full text in [licenses/LICENSE_MISTRY2021](licenses/LICENSE_MISTRY2021) ([upstream](https://github.com/mobs-lab/mixing-patterns/blob/main/LICENSE))
 - **Paper:** Mistry D, Litvinova M, Pastore y Piontti A, et al. *Inferring high-resolution human mixing patterns for disease modeling.* Nature Communications 12, 323 (2021). https://www.nature.com/articles/s41467-020-20544-y
 - **Format:** 85×85 matrices; single-year age groups (0–84, last group is 84+).
+- **`mistry2021_us`:** the same study's matrices for each US state and the District of Columbia, under the same license.
 
 The Apache-2.0 license requires that its copyright notice, this attribution, and any applicable NOTICE be preserved on redistribution.
+
+### `population_us` — US Census Bureau (public domain)
+
+- **Data source:** [US Census Bureau, Population Estimates Program](https://www.census.gov/programs-surveys/popest.html), Vintage 2023 ([API](https://api.census.gov/data/2023/pep/charv)), as compiled by [epydemix-data](https://github.com/epistorm/epydemix-data).
+- **License:** a work of the US federal government, in the public domain.
+- **Citation:** U.S. Census Bureau, Population Division. *Vintage 2023 Population Estimates, population by characteristics.*
+- **Format:** population of each US state and the District of Columbia in 2023, both sexes, by single year of age (0–84, last group is 84+).
 
 ### `prem2021` — Prem et al. 2021 (GPL-3.0)
 

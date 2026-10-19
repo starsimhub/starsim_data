@@ -132,10 +132,33 @@ def test_fetched_contacts():
 
 
 @sc.timer()
+def test_us_states():
+    """ The US states have contact matrices and populations, fetched, and other datasets point to them """
+    sc.heading("Testing US states")
+    state = "United States:Massachusetts"
+    m = ssd.fetch(state, which="mistry2021_us", kind="school")
+    assert m.shape == (85, 85) # Single-year ages, as mistry2021
+    assert m.attrs["location"] == "United_States:Massachusetts" # The node's dot_name
+    pop = ssd.fetch(state, which="population_us")
+    assert list(pop.columns) == ["Time", "Sex", "AgeGrp", "Value"] # The schema of WPP's population
+    assert list(pop.AgeGrp) == list(m.index) # Matching the matrices' age bins
+    assert 6e6 < pop.Value.sum() < 8e6 # About 7 million people
+    assert len(ssd.list_locations("population_us")) == 51 # The states and DC
+
+    with pytest.raises(KeyError, match=r"fetch\('United_States:Massachusetts', which='mistry2021_us'\)"): # The national matrices say where the state's are
+        ssd.load(state)
+    with pytest.raises(KeyError, match="which='population_us'"): # As does WPP
+        ssd.fetch(state, which="population")
+    with pytest.raises(ValueError, match="does not apply"): # A population has no contact setting
+        ssd.fetch(state, which="population_us", kind="home")
+    return pop
+
+
+@sc.timer()
 def test_manifest():
     """ The digest fetch() checks must be that of the store in fetched/, or a download would be refused """
     sc.heading("Testing the fetched-store manifest")
-    for name in ("prem2017", "mistry2021"):
+    for name in ssd.fetching._fetched_stores():
         source = ssd.registry.dataset(name).source()
         digest = hashlib.sha256((FETCHED / source.store).read_bytes()).hexdigest()
         assert digest == source.sha256, f"Expected fetched/{source.store} to match the manifest"
@@ -170,6 +193,7 @@ if __name__ == "__main__":
     default  = test_default_contacts()
     errors   = test_errors()
     fetched  = test_fetched_contacts()
+    states   = test_us_states()
     manifest = test_manifest()
     if do_network:
         pinned = test_pinned_download(sc.path(tempfile.mkdtemp()))

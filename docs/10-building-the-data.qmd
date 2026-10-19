@@ -34,13 +34,13 @@ Each script takes a `--check` flag, which rebuilds and then reads the result bac
 python scripts/build_hdf5.py --check
 ```
 
-Reads the per-country CSVs in `raw_data/contact_matrices/` and writes one store per source, keyed by location, with one `float32` matrix per contact setting. The source CSVs were derived from [epydemix-data](https://github.com/epistorm/epydemix-data), trimmed to national level and reorganized into a flat layout.
+Reads the per-location CSVs in `raw_data/contact_matrices/` and writes one store per source, keyed by location, with one `float32` matrix per contact setting. The source CSVs were derived from [epydemix-data](https://github.com/epistorm/epydemix-data), trimmed to national level and reorganized into a flat layout. The US states' were added later by `scripts/download_epydemix.py`, from a pinned commit of epydemix-data, as folders named like `United_States__Massachusetts` (the `__` stands for the `:` of the location key), along with their populations in `raw_data/population_us.csv`, which this script also builds into `population_us.h5`.
 
 Attribution for each source is held in a `SOURCES` table in the script, and the script warns if a source has no attribution recorded, so that adding a dataset without a license is noticed at build time rather than at review.
 
-`prem2021` is written into the package, together with the `prem2017` matrices for the ten locations `prem2021` lacks (`prem/prem2017.h5`), which the default contact matrices use. The full `prem2017` and `mistry2021` are kept in the repository's `fetched/` folder instead, outside the package, and `fetch()` downloads them from there. The package records exactly which version of each file it expects, so a given release always reads the same data.
+`prem2021` is written into the package, together with the `prem2017` matrices for the ten locations `prem2021` lacks (`prem/prem2017.h5`), which the default contact matrices use. The full `prem2017` and `mistry2021`, and the US states' `mistry2021_us` and `population_us`, are kept in the repository's `fetched/` folder instead, outside the package, and `fetch()` downloads them from there. The package records exactly which version of each file it expects, so a given release always reads the same data.
 
-These matrices are already published and won't change, so the script leaves the fetched files alone. Its `--fetched` option rebuilds them, which is only needed to add a new fetched source: its file then has to be published on GitHub, and that commit recorded in the script's `PINNED` table.
+These matrices are already published and won't change, so the script leaves the fetched files alone. Its `--fetched` option rebuilds them (or only those named, as in `--fetched population_us`), which is only needed to add a new fetched source: its file then has to be published on GitHub, and that commit recorded in the script's `PINNED` table.
 
 ## Demographics
 

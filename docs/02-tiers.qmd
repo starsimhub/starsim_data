@@ -38,7 +38,7 @@ ssd.load('kenya', which='life_table')
 Tier 1 holds the data that is too large to bundle:
 
 - Annual WPP series, complete life tables, and non-Medium projection variants, from 17 MB to 290 MB per file.
-- The full `prem2017` and `mistry2021` contact matrices, about 3 MB each. A given version of the package fixes their contents exactly, as it does for the bundled data, and their locations and provenance are listed without downloading them.
+- The full `prem2017` and `mistry2021` contact matrices, about 3 MB each, and the US states' (`mistry2021_us`, 5 MB) and their populations (`population_us`). A given version of the package fixes their contents exactly, as it does for the bundled data, and their locations and provenance are listed without downloading them.
 - Administrative boundaries with geometry, at tens of megabytes per country at admin level 2.
 - Gridded population rasters, at 1–40 MB per country-year.
 
@@ -71,6 +71,8 @@ pd.DataFrame([
          call="fetch()", tier=1, cost="17-290 MB, once"),
     dict(requirement="The other contact matrices (prem2017, mistry2021)",
          call="fetch()", tier=1, cost="3 MB each, once"),
+    dict(requirement="US states: contact matrices and populations",
+         call="fetch()", tier=1, cost="5 MB, once"),
     dict(requirement="Polygon geometry, for mapping or spatial joins",
          call="fetch_shapes()", tier=1, cost="1-50 MB per country"),
     dict(requirement="Subnational population estimates",

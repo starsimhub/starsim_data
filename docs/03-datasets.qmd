@@ -140,6 +140,8 @@ pd.DataFrame([
          countries=152, study='Prem et al. 2017'),
     dict(source='mistry2021', tier='1 (fetched)', shape='85x85', bins='single-year, 0 ... 84+',
          countries=36, study='Mistry et al. 2021'),
+    dict(source='mistry2021_us', tier='1 (fetched)', shape='85x85', bins='single-year, 0 ... 84+',
+         countries='51 US states (with DC)', study='Mistry et al. 2021'),
 ])
 ```
 
@@ -184,6 +186,26 @@ ssd.load('Japan', which='prem2021')
 
 The full `prem2017` is fetched for reproducing earlier analyses. `mistry2021` answers a different need: single-year age bins, but for only 36 mostly high-income countries, under the more permissive Apache-2.0 license.
 
+### US states
+
+`mistry2021_us` has the Mistry et al. 2021 matrices for each US state and the District of Columbia, and `population_us` each one's population in 2023 by single year of age, from the US Census Bureau, in the same age bins. A state is named with its country, separated by a colon, as in the node table's `dot_name` (see [Locations](locations.qmd#subnational-units)):
+
+```{python}
+ssd.list_locations('mistry2021_us')[:3]
+```
+
+```python
+ssd.fetch('United States:Massachusetts', which='mistry2021_us', kind='school') # 85x85
+ssd.fetch('United States:Massachusetts', which='population_us') # Time, Sex, AgeGrp, Value
+```
+
+`population_us` has the columns of `population`, for the one year 2023 and with `Sex` equal to `'Both sexes'`, since the source does not split by sex. The national datasets say where a state's data is:
+
+```{python}
+#| error: true
+ssd.load('United States:Massachusetts')
+```
+
 ## The node table
 
 The node table contains one row per administrative unit. It is described in full in [Spatial data](spatial.qmd); the schema is reproduced here for completeness.
@@ -214,7 +236,7 @@ pd.DataFrame([
 
 ## Beyond the bundle
 
-For the four bundled series, `fetch()` returns the same schema at annual resolution, and for the two contact sources that are not bundled (`prem2017` and `mistry2021`) the same frame `load()` returns for `prem2021`. It also provides two datasets with no bundled counterpart:
+For the four bundled series, `fetch()` returns the same schema at annual resolution, and for the contact sources that are not bundled (`prem2017`, `mistry2021` and `mistry2021_us`) the same frame `load()` returns for `prem2021`. It also provides two datasets with no bundled counterpart:
 
 ```{python}
 ssd.list_fetchable()
@@ -241,7 +263,7 @@ lt.attrs['columns']['Lx']
 
 ## What is not here
 
-- **Subnational demographics.** WPP has no subnational dimension, so none can be derived from it.
+- **Subnational demographics,** other than the populations of the US states (`population_us`, above). WPP has no subnational dimension, so none can be derived from it.
 - **Age-specific fertility or migration.** WPP publishes only crude national rates for these.
 - **"Both sexes" rows** in the bundled series, which contain Female and Male only. `fetch('life_table')` does include `Total`.
 - **Hong Kong, Macao and Puerto Rico** in the node table, as no boundary source covers them as separate entities. Their demographics and contact matrices are present.

@@ -97,6 +97,19 @@ def test_valid():
 
 
 @sc.timer()
+def test_subnational():
+    """ A subnational unit is '<country>:<unit>', with the country resolved as usual and the unit matched exactly """
+    sc.heading("Testing subnational units")
+    for name in ["United States:Massachusetts", "USA:massachusetts", "us:MASSACHUSETTS"]:
+        assert ssd.resolve(name) == "United_States:Massachusetts", f"Expected {name!r} to resolve to the node's dot_name"
+    assert ssd.resolve("USA:new york") == "United_States:New_York" # Separators are folded as for countries
+    with pytest.raises(KeyError, match="did you mean: United_States:Massachusetts"): # A near-miss is suggested, not resolved
+        ssd.resolve("USA:Masachusetts")
+    with pytest.raises(KeyError, match="subnational"): # location_info() describes countries only
+        ssd.location_info("USA:Massachusetts")
+
+
+@sc.timer()
 def test_location_info():
     """ location_info() gives the codes, level and sources, for any alias """
     sc.heading("Testing location_info")
@@ -148,6 +161,7 @@ if __name__ == "__main__":
     namibia   = test_namibia()
     test_unknown()
     test_valid()
+    test_subnational()
     info      = test_location_info()
     levels    = test_parse_level()
     pairs     = test_normalize()

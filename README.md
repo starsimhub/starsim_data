@@ -69,6 +69,7 @@ Age-structured contact rates — the average number of contacts between age grou
 | `prem2021` | ✅ | 16×16 | 5-year (`0–4, …, 75+`) | 177 | [Prem et al. 2021](https://journals.plos.org/ploscompbiol/article?id=10.1371/journal.pcbi.1009098) |
 | `prem2017` | ⬇️ `fetch()` | 16×16 | 5-year (`0–4, …, 75+`) | 152 | [Prem et al. 2017](https://journals.plos.org/ploscompbiol/article?id=10.1371/journal.pcbi.1005697) |
 | `mistry2021` | ⬇️ `fetch()` | 85×85 | single-year (`0–84`, last is `84+`) | 36 | [Mistry et al. 2021](https://www.nature.com/articles/s41467-020-20544-y) |
+| `mistry2021_us` | ⬇️ `fetch()` | 85×85 | single-year (`0–84`, last is `84+`) | 51 US states (with DC) | [Mistry et al. 2021](https://www.nature.com/articles/s41467-020-20544-y) |
 
 The default uses `prem2021`, the authors' own update of `prem2017`, built from more contact surveys and newer demographic data; for the ten locations it dropped (such as Japan and Australia), it uses `prem2017`. The full `prem2017` (e.g. to reproduce earlier work) and `mistry2021` (for single years of age) are downloaded the first time they are used, about 3 MB each:
 
@@ -79,7 +80,14 @@ ssd.fetch('france', which='mistry2021')
 
 Not every country has every source; use `ssd.list_locations('prem2021')` etc. to check (this works for the fetched sources too, without downloading them). 
 
-*Note:* `epydemix` has additional datasets for subnational contact matrices that are not included here.
+For the US states, `mistry2021_us` has the same study's matrices, and `population_us` each state's population by single year of age (US Census Bureau, 2023), to match. A state is named with its country, separated by a colon, as in the node table's `dot_name`:
+
+```python
+ssd.fetch('United States:Massachusetts', which='mistry2021_us', kind='school')
+ssd.fetch('USA:massachusetts', which='population_us')
+```
+
+*Note:* `epydemix` has subnational contact matrices for other countries (and US counties) that are not included here.
 
 ---
 

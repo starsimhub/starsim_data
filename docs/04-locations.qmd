@@ -56,6 +56,16 @@ sc.suggest('Atlantis', ssd.list_all_locations(), n=3, die=False)
 
 Which is useful in an error message, and would be wrong as a lookup.
 
+## Subnational units
+
+A subnational unit is named by its country and its own name, separated by a colon, as in the node table's `dot_name`. The country part is resolved as above; the unit's name has to match exactly, up to case, accents and punctuation:
+
+```{python}
+[ssd.resolve(name) for name in ['United States:Massachusetts', 'USA:massachusetts', 'us:new york']]
+```
+
+Without a dataset to scope to, the units are those of the node table, so a misspelled unit gets suggestions from its own country. Only a few datasets have subnational units so far: `mistry2021_us` and `population_us`, for the US states (see [Datasets](datasets.qmd#us-states)).
+
 ## Scoping to a dataset
 
 Coverage varies between datasets, so `load()` resolves against the locations that are actually present in the dataset being read. A country that exists but is absent from a particular source produces a different error from one that does not exist at all:

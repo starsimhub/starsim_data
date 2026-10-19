@@ -8,6 +8,7 @@ All notable changes to `starsim_data` are recorded here. Versions follow [semant
 - **A smaller package.** The other contact sources, `prem2017` and `mistry2021`, are downloaded the first time they are used, e.g. `ssd.fetch('france', which='mistry2021')`, rather than shipped with the package.
 - **Subnational populations and borders, offline.** `ssd.load_nodes('kenya', level=1)` now gives the population of every state or province (from WorldPop, 2020), and `ssd.adjacency('kenya', level=1)` says which of them share a border.
 - **Finer levels on request.** `ssd.fetch_nodes('kenya', level=2)` builds the same table (centroids, areas, populations and borders) at any level, e.g. Kenya's 290 sub-counties.
+- **US states.** `ssd.fetch('United States:Massachusetts', which='mistry2021_us')` gives a state's contact matrices (Mistry et al. 2021), and `which='population_us'` its population by single year of age (US Census Bureau, 2023). A subnational unit is named `'<country>:<unit>'`, as in the node table.
 - `fetch()` takes `kind=` for the contact matrices, and rejects arguments that do not apply.
 - Requires Sciris 3.5.2 or later.
 

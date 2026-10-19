@@ -35,6 +35,7 @@ python scripts/build_demographics.py --check  # demographics, from raw_data/demo
 python scripts/build_nodes.py --check         # node table; ~1.4 GB cold, [spatial] required
 python scripts/build_nodes.py --limit 5       # a quick subset while developing
 python scripts/download_wpp.py                # refresh raw_data/demographics/ (needs a token in scripts/.env)
+python scripts/download_epydemix.py           # refresh the US states in raw_data/ (then build_hdf5.py --fetched mistry2021_us population_us)
 ```
 
 `build_nodes.py` is excluded from the per-PR CI job because of its size; it has a `workflow_dispatch`-only job in `.github/workflows/tests.yml`.
