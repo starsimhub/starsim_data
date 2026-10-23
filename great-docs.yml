@@ -72,7 +72,7 @@ funding:
   homepage: https://www.gatesfoundation.org
 
 # Three small style overrides great-docs has no setting for: figure scaling, navbar
-# centring, and the Starsim footer. The `..` is because Quarto resolves a `file:` include
+# centering, and the Starsim footer. The `..` is because Quarto resolves a `file:` include
 # relative to the build directory, which is a child of the project root.
 include_in_header:
   - file: ../docs/assets/starsim-theme.html

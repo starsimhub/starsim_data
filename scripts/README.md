@@ -15,14 +15,27 @@ Re-run after adding a location, or to pick up a newer `pycountry`.
 
 ## build_hdf5.py
 
-Walks [`raw_data/contact_matrices/`](../raw_data/contact_matrices/) and writes one HDF5 file per dataset (contact source) into [`starsim_data/data/`](../starsim_data/data/). Each store is keyed by location, with one dataset per contact setting; matrices are cast to `float32` and compressed with gzip9 + byte-shuffle.
+Walks [`raw_data/contact_matrices/`](../raw_data/contact_matrices/) and writes one HDF5 file per dataset (contact source). Each store is keyed by location, with one dataset per contact setting; matrices are cast to `float32` and compressed with gzip9 + byte-shuffle. The sources in `BUNDLED` (`prem2021`) go into [`starsim_data/data/`](../starsim_data/data/), along with `prem/prem2017.h5`, the `prem2017` matrices for the ten locations `prem2021` lacks, which the default contact matrices use. The others are fetched on demand, so their stores go into [`fetched/`](../fetched/), outside the package, and are rebuilt only with `--fetched` (a rebuild changes their bytes, and `fetch()` downloads them from the GitHub release named in `RELEASE`, where they are assets). Every run rewrites the manifest `starsim_data/data/fetched.json` from the stores in `fetched/`.
 
 ```bash
-python scripts/build_hdf5.py            # rebuild all datasets found in raw_data
-python scripts/build_hdf5.py --check    # also round-trip validate against the CSVs
+python scripts/build_hdf5.py              # rebuild prem2021.h5 and the manifest
+python scripts/build_hdf5.py --check      # also round-trip validate against the CSVs
+python scripts/build_hdf5.py --fetched    # also rebuild the stores in fetched/
+python scripts/build_hdf5.py --fetched population_us   # ...or only those named
 ```
 
-Run this whenever `raw_data/` changes. Adding a new dataset requires no code change here — drop its `<source>_contacts_<setting>.csv` files into the country folders and re-run; the script discovers sources automatically, and `starsim_data.list_datasets()` will pick up the new `.h5`.
+Run this whenever `raw_data/` changes. A new source is discovered automatically from its `<source>_contacts_<setting>.csv` files: add it to `BUNDLED`, or make it a fetched one. The existing sources are published and won't change; adding a fetched one means listing it in `FETCHED_SOURCES`, building it with `--fetched`, setting a new tag in `RELEASE`, and creating that release once the change is on `main`, with `publish.py` (below).
+
+It also builds `fetched/population_us.h5`, the US states' populations, from `raw_data/population_us.csv`, and writes each state's matrices under the location key `United_States:Massachusetts` (from the folder `United_States__Massachusetts`).
+
+## download_epydemix.py
+
+Copies the US states' contact matrices (Mistry et al. 2021) and populations (US Census Bureau, 2023) from a pinned commit of [epydemix-data](https://github.com/epistorm/epydemix-data) into `raw_data/`, checking that each state is in the node table under the same name. No token needed.
+
+```bash
+python scripts/download_epydemix.py                         # -> raw_data/
+python scripts/build_hdf5.py --fetched mistry2021_us population_us
+```
 
 ## download_wpp.py
 
@@ -48,17 +61,26 @@ It classifies each WPP CSV by its columns (so exact filenames don't matter), fil
 Builds `nodes.h5` — the bundled node table: centroids, geodesic areas, p-codes and hierarchy for administrative levels 0 and 1, worldwide.
 
 ```bash
-python scripts/build_nodes.py --check    # ~420 MB of downloads on a cold cache
+python scripts/build_nodes.py --check    # ~1.4 GB of downloads on a cold cache
 python scripts/build_nodes.py --limit 5  # a quick subset, for development
 ```
 
 Boundaries come from UNOCHA COD-AB where the [laser-base mirror](https://github.com/laser-base/unocha) has the country (~110 of them, and the reason the table has p-codes at all) and from the two global geoBoundaries CGAZ v6.0.0 GeoPackages otherwise. The two do not always agree on how a country subdivides, so each row records its `source`. Downloads go through the package cache, so a rebuild after the first is fast.
 
-The script refuses to draw on any source whose descriptor says `redistributable=False` — that is how GADM's non-commercial licence is kept out of bundled data, rather than by remembering.
+The script refuses to draw on any source whose descriptor says `redistributable=False` — that is how GADM's non-commercial license is kept out of bundled data, rather than by remembering.
 
-National population is read from this package's own bundled WPP data. Subnational population is deliberately *not* baked in: it needs WorldPop raster aggregation, which is a ~1 GB scrape of a slow server with real coverage gaps, so it belongs at fetch time (`ssd.fetch_nodes()`).
+National population is read from this package's own bundled WPP data. Level-1 population is WorldPop's 2020 raster summed within each unit, a ~1 GB download paid once here rather than by every user; other years and finer levels are left to `ssd.fetch_nodes()`.
 
 Needs the `[spatial]` extra as well as `[dev]`: `pip install -e ".[dev,spatial]"`.
+
+## publish.py
+
+Makes a release, from an up-to-date `main`: the data release named on the command line (unless it already exists), with the stores in [`fetched/`](../fetched/) as assets, then `v<version>`, with the version from `starsim_data/version.py` and the notes from its section of the changelog. Publishing that triggers [`publish.yml`](../.github/workflows/publish.yml), which publishes the package to PyPI. It first checks that every store in the manifest is downloaded from that data release and that `fetched/` holds the same bytes.
+
+```bash
+python scripts/publish.py data-2026.10 --dry-run  # check everything, create nothing
+python scripts/publish.py data-2026.10
+```
 
 ## Dependencies
 

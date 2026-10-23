@@ -4,7 +4,7 @@ guide-section: "The data"
 tags: [Reference, Spatial]
 ---
 
-Spatial data is provided at two levels of detail. The node table reduces each administrative unit to a position, an extent and an identifier, which is sufficient for most metapopulation models and is small enough to bundle. Polygon geometry and gridded population are considerably larger and are fetched on demand, behind an optional dependency group.
+Spatial data is provided at two levels of detail. The node table reduces each administrative unit to a position, an extent, a population and an identifier, and records which units share a border, which is sufficient for most metapopulation models and is small enough to bundle. Polygon geometry and gridded population are considerably larger and are fetched on demand, behind an optional dependency group.
 
 ## The node table
 
@@ -55,13 +55,19 @@ round(country), round(counties), round(100 * abs(country - counties) / country, 
 
 ### Population
 
-`population` is filled at level 0 only, from this package's own bundled WPP data, for a single reference year:
+`population` at level 0 is this package's own bundled WPP data, for a single reference year:
 
 ```{python}
 ssd.provenance('nodes').population_year
 ```
 
-Level 1 is left empty: subnational population comes from aggregating a gridded raster within each polygon, which is a download rather than a lookup. See [subnational population](#subnational-population) below.
+At level 1 it is WorldPop's 2020 1 km UN-adjusted raster summed within each unit. Working that out needs a download of about 1 GB, so the package's maintainers do it when they build the node table for a release (see [Building the data](building-the-data.qmd#the-node-table)), and the results ship with the package. You need no download and no geospatial libraries to use them:
+
+```{python}
+ssd.load_nodes('kenya', level=1).sort_values('population', ascending=False)[['name', 'population']].head(3)
+```
+
+Other years and finer levels are a download; see [subnational population](#subnational-population) below.
 
 ### Mixed sources
 
@@ -97,6 +103,17 @@ Together with the population column, this provides the inputs a gravity model re
 $$c_{ij} = k \, \frac{P_i^{a} P_j^{b}}{D_{ij}^{c}}$$
 
 the node table supplies $P_i$ and $P_j$ and `distances()` supplies $D_{ij}$. The formulation itself belongs in the model rather than in a data package, so it is not implemented here.
+
+## Borders
+
+`adjacency()` says which units share a border, as a square boolean matrix indexed like `distances()`. It is worked out from the polygons when the table is built, counting units within about 100 m of each other as touching (which absorbs the slivers between neighboring polygons), so it needs no geospatial libraries:
+
+```{python}
+a = ssd.adjacency('kenya', level=1)
+sorted(a.columns[a.loc['Kenya:Nairobi']])
+```
+
+It is what a model that moves people only between neighbors needs, and a way to check a distance-based coupling against the map.
 
 ## Optional dependencies
 
@@ -143,13 +160,18 @@ UNOCHA's 1–2 GB global geodatabase is not used as a fallback here; geoBoundari
 
 ## Subnational population
 
-`fetch_nodes()` returns the node table with `population` filled in, by downloading a WorldPop 1 km raster for the country and summing it within each unit:
+`fetch_nodes()` returns the node table with `population` filled in for any year from 2000 to 2030, by downloading a WorldPop 1 km raster for the country and summing it within each unit:
 
 ```python
-nodes = ssd.fetch_nodes('kenya', level=1)
+nodes = ssd.fetch_nodes('kenya', level=1, year=2025)
 ```
 
-The boundaries are fetched from whichever source the bundled node table used for that country, so the join is on `pcode` rather than on names.
+At a bundled level, the boundaries are fetched from whichever source the bundled node table used for that country, so the join is on `pcode` rather than on names. At a finer level, the table is built from the boundaries themselves, as the bundled one is, and carries its own borders:
+
+```python
+subcounties = ssd.fetch_nodes('kenya', level=2)        # Kenya's 290 sub-counties
+ssd.adjacency('kenya', level=2, nodes=subcounties)      # their borders, from the same polygons
+```
 
 The two component steps are also available separately, for cases where a raster other than population is of interest:
 
@@ -161,7 +183,7 @@ totals = ssd.aggregate_raster(raster, shapes, by='pcode')
 
 ::: {.callout-note}
 ## WorldPop and UN WPP totals differ
-WorldPop's constrained estimates are modelled rather than enumerated, and they do not reproduce the UN WPP national total for the same year. For Kenya in 2020 the aggregated total is approximately 1.2% below the WPP figure. Neither number is incorrect; they are estimating slightly different quantities by different methods.
+WorldPop's constrained estimates are modeled rather than enumerated, and they do not reproduce the UN WPP national total for the same year. For Kenya in 2020 the aggregated total is approximately 1.2% below the WPP figure. Neither number is incorrect; they are estimating slightly different quantities by different methods.
 
 Where a model requires the subnational figures to sum to the national one, `rescale_to_national()` performs that adjustment explicitly:
 
@@ -188,7 +210,7 @@ ssd.plot('kenya', which='nodes', level=1);
 `choropleth()` draws filled polygons, and requires the `[spatial]` extra:
 
 ```python
-ssd.choropleth('kenya', level=1)                    # coloured by fetched population
+ssd.choropleth('kenya', level=1)                    # colored by fetched population
 ssd.choropleth('kenya', level=1, shapes=my_frame, value='incidence')
 ```
 

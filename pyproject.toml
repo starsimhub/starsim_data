@@ -35,7 +35,7 @@ classifiers = [
 # they add anything to an install.
 dependencies = [
   "numpy>=1.24",
-  "sciris>=3.0",
+  "sciris>=3.5.2",
   "h5py>=3.0",
   "pandas>=2.0",
   "matplotlib>=3.5",
@@ -76,8 +76,9 @@ Repository = "https://github.com/starsimhub/starsim_data"
 include = ["starsim_data*"]
 
 [tool.setuptools.package-data]
-# Bundle the national-level HDF5 stores and location metadata inside the wheel.
-starsim_data = ["data/*.h5", "data/locations.csv"]
+# Bundle the national-level HDF5 stores and location metadata inside the wheel, and the
+# manifest of the stores that are fetched on demand (which live in fetched/, outside it).
+starsim_data = ["data/*.h5", "data/prem/*.h5", "data/locations.csv", "data/fetched.json"]
 
 [tool.setuptools.dynamic]
 version = {attr = "starsim_data.version.__version__"}

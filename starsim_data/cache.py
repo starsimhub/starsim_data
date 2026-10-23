@@ -19,21 +19,16 @@ ssd.clear_cache()    # delete it all
 ```
 """
 
-import hashlib
-import json
 import os
+import hashlib
 import platform
 import shutil
-from datetime import datetime, timezone
-from pathlib import Path
-
 import sciris as sc
 import starsim_data as ssd
 
-__all__ = ["cache_dir", "cache_info", "cache_provenance", "cached_download",
-           "clear_cache"]
+__all__ = ['cache_dir', 'cache_info', 'cache_provenance', 'cached_download', 'clear_cache']
 
-SIDECAR_SUFFIX = ".provenance.json"
+SIDECAR_SUFFIX = '.provenance.json'
 
 # Read in chunks rather than all at once: cached WPP files run to a few hundred MB.
 HASH_CHUNK = 1 << 20
@@ -41,14 +36,16 @@ HASH_CHUNK = 1 << 20
 
 def _default_cache_dir():
     """Return the platform-appropriate cache location, without creating it."""
+    home = sc.path('~').expanduser()
     system = platform.system()
-    if system == "Windows":
-        root = os.environ.get("LOCALAPPDATA") or Path.home() / "AppData" / "Local"
-        return Path(root) / "starsim_data" / "Cache"
-    if system == "Darwin":
-        return Path.home() / "Library" / "Caches" / "starsim_data"
-    root = os.environ.get("XDG_CACHE_HOME") or Path.home() / ".cache"
-    return Path(root) / "starsim_data"
+    if system == 'Windows':
+        root = os.environ.get('LOCALAPPDATA') or home / 'AppData' / 'Local'
+        return sc.path(root) / 'starsim_data' / 'Cache'
+    elif system == 'Darwin':
+        return home / 'Library' / 'Caches' / 'starsim_data'
+    else:
+        root = os.environ.get('XDG_CACHE_HOME') or home / '.cache'
+        return sc.path(root) / 'starsim_data'
 
 
 def cache_dir(subdir=None, create=False):
@@ -71,7 +68,10 @@ def cache_dir(subdir=None, create=False):
         >>> ssd.cache_dir().name
         'starsim_data'
     """
-    path = Path(ssd.options.cache_dir).expanduser() if ssd.options.cache_dir else _default_cache_dir()
+    if ssd.options.cache_dir:
+        path = sc.path(ssd.options.cache_dir).expanduser()
+    else:
+        path = _default_cache_dir()
     if subdir:
         path = path / subdir
     if create:
@@ -79,23 +79,33 @@ def cache_dir(subdir=None, create=False):
     return path
 
 
+def _sidecar(path):
+    """The path of a cached file's provenance sidecar."""
+    return sc.path(str(path) + SIDECAR_SUFFIX)
+
+
 def _sha256(path):
+    """The SHA-256 of a file, read in chunks."""
     digest = hashlib.sha256()
-    with open(path, "rb") as f:
-        for chunk in iter(lambda: f.read(HASH_CHUNK), b""):
+    with open(path, 'rb') as f:
+        chunk = f.read(HASH_CHUNK)
+        while chunk:
             digest.update(chunk)
+            chunk = f.read(HASH_CHUNK)
     return digest.hexdigest()
 
 
 def _write_sidecar(path, url):
     """Record where a cached file came from, alongside it."""
-    facts = dict(url=url,
-                 filename=path.name,
-                 downloaded=datetime.now(timezone.utc).isoformat(timespec="seconds"),
-                 bytes=path.stat().st_size,
-                 sha256=_sha256(path),
-                 package_version=ssd.__version__)
-    Path(str(path) + SIDECAR_SUFFIX).write_text(json.dumps(facts, indent=2), encoding="utf-8")
+    facts = dict(
+        url             = url,
+        filename        = path.name,
+        downloaded      = sc.now(utc=True).isoformat(timespec='seconds'),
+        bytes           = path.stat().st_size,
+        sha256          = _sha256(path),
+        package_version = ssd.__version__,
+    )
+    sc.savejson(_sidecar(path), facts, sanitizepath=False) # Don't let Sciris rename the file
     return facts
 
 
@@ -112,40 +122,40 @@ def cached_download(url, filename=None, subdir=None, refresh=False, verbose=None
     Returns:
         pathlib.Path: the path to the cached file.
     """
-    verbose = ssd.options.verbose if verbose is None else verbose
-    filename = filename or url.rstrip("/").split("/")[-1]
+    verbose = sc.ifelse(verbose, ssd.options.verbose)
+    filename = filename or url.rstrip('/').split('/')[-1]
     path = cache_dir(subdir, create=True) / filename
 
-    if path.is_file() and not refresh:
+    if path.is_file() and (not refresh):
         if verbose:
-            print(f"Using cached {path} ({sc.humanize_bytes(path.stat().st_size)})")
+            print(f'Using cached {path} ({sc.humanize_bytes(path.stat().st_size)})')
         return path
 
     if verbose:
-        print(f"Downloading {url}\n  -> {path}")
-    # convert=False keeps the response as bytes; the WPP files are gzipped CSVs and
-    # sciris would otherwise try to decode them as text.
-    sc.download(url, filename=str(path), convert=False, verbose=verbose)
+        print(f'Downloading {url}\n  -> {path}')
+    sc.download(url, filename=str(path), convert=False, verbose=verbose) # convert=False keeps the gzipped WPP files as bytes rather than decoding them as text
     _write_sidecar(path, url)
     return path
 
 
 def cache_provenance(path):
     """Return the recorded provenance for a cached file, or None if there is none."""
-    sidecar = Path(str(path) + SIDECAR_SUFFIX)
+    sidecar = _sidecar(path)
     if not sidecar.is_file():
         return None
-    return sc.objdict(json.loads(sidecar.read_text(encoding="utf-8")))
+    return sc.objdict(sc.loadjson(sidecar))
 
 
 def _cached_files():
-    """Yield every cached data file (i.e. excluding the provenance sidecars)."""
+    """Return every cached data file (i.e. excluding the provenance sidecars)."""
     root = cache_dir()
     if not root.is_dir():
-        return
-    for path in sorted(root.rglob("*")):
-        if path.is_file() and not path.name.endswith(SIDECAR_SUFFIX):
-            yield path
+        return []
+    files = []
+    for path in sorted(root.rglob('*')):
+        if path.is_file() and (not path.name.endswith(SIDECAR_SUFFIX)):
+            files.append(path)
+    return files
 
 
 def cache_info():
@@ -164,12 +174,14 @@ def cache_info():
     for path in _cached_files():
         prov = cache_provenance(path) or {}
         size = path.stat().st_size
-        rows.append(dict(file=str(path.relative_to(root)),
-                         size=sc.humanize_bytes(size),
-                         bytes=size,
-                         url=prov.get("url", ""),
-                         downloaded=prov.get("downloaded", "")))
-    return sc.dataframe(rows, columns=["file", "size", "bytes", "url", "downloaded"])
+        rows.append(dict(
+            file       = str(path.relative_to(root)),
+            size       = sc.humanize_bytes(size),
+            bytes      = size,
+            url        = prov.get('url', ''),
+            downloaded = prov.get('downloaded', ''),
+        ))
+    return sc.dataframe(rows, columns=['file', 'size', 'bytes', 'url', 'downloaded'])
 
 
 def clear_cache(pattern=None, verbose=None):
@@ -187,7 +199,7 @@ def clear_cache(pattern=None, verbose=None):
         >>> import starsim_data as ssd
         >>> ssd.clear_cache('wpp/*')  # doctest: +SKIP
     """
-    verbose = ssd.options.verbose if verbose is None else verbose
+    verbose = sc.ifelse(verbose, ssd.options.verbose)
     root = cache_dir()
     if not root.is_dir():
         return []
@@ -199,10 +211,10 @@ def clear_cache(pattern=None, verbose=None):
         removed = []
         for path in _cached_files():
             if path.relative_to(root).match(pattern):
-                Path(str(path) + SIDECAR_SUFFIX).unlink(missing_ok=True)
+                _sidecar(path).unlink(missing_ok=True)
                 path.unlink()
                 removed.append(str(path.relative_to(root)))
 
     if verbose:
-        print(f"Removed {len(removed)} cached file(s) from {root}")
+        print(f'Removed {len(removed)} cached file(s) from {root}')
     return removed

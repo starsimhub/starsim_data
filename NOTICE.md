@@ -4,6 +4,8 @@ This repository aggregates third-party demographic and contact-matrix datasets. 
 
 If you use these data, you must comply with the applicable upstream license and cite the corresponding paper.
 
+Of the contact matrices, only `prem2021` is bundled in the installed package. `prem2017`, `mistry2021` and `mistry2021_us` are distributed from this repository (in `fetched/`) and downloaded by `fetch()` on first use, as is `population_us`; they are redistributed under the same terms, below.
+
 ## Sources
 
 ### Demographics — UN World Population Prospects 2024 (CC BY 3.0 IGO)
@@ -19,8 +21,16 @@ If you use these data, you must comply with the applicable upstream license and 
 - **License:** Apache License 2.0 — full text in [licenses/LICENSE_MISTRY2021](licenses/LICENSE_MISTRY2021) ([upstream](https://github.com/mobs-lab/mixing-patterns/blob/main/LICENSE))
 - **Paper:** Mistry D, Litvinova M, Pastore y Piontti A, et al. *Inferring high-resolution human mixing patterns for disease modeling.* Nature Communications 12, 323 (2021). https://www.nature.com/articles/s41467-020-20544-y
 - **Format:** 85×85 matrices; single-year age groups (0–84, last group is 84+).
+- **`mistry2021_us`:** the same study's matrices for each US state and the District of Columbia, under the same license.
 
 The Apache-2.0 license requires that its copyright notice, this attribution, and any applicable NOTICE be preserved on redistribution.
+
+### `population_us` — US Census Bureau (public domain)
+
+- **Data source:** [US Census Bureau, Population Estimates Program](https://www.census.gov/programs-surveys/popest.html), Vintage 2023 ([API](https://api.census.gov/data/2023/pep/charv)), as compiled by [epydemix-data](https://github.com/epistorm/epydemix-data).
+- **License:** a work of the US federal government, in the public domain.
+- **Citation:** U.S. Census Bureau, Population Division. *Vintage 2023 Population Estimates, population by characteristics.*
+- **Format:** population of each US state and the District of Columbia in 2023, both sexes, by single year of age (0–84, last group is 84+).
 
 ### `prem2021` — Prem et al. 2021 (GPL-3.0)
 
@@ -36,14 +46,16 @@ The Apache-2.0 license requires that its copyright notice, this attribution, and
 - **Paper:** Prem K, Cook AR, Jit M. *Projecting social contact matrices in 152 countries using contact surveys and demographic data.* PLoS Computational Biology 13(9): e1005697 (2017). https://journals.plos.org/ploscompbiol/article?id=10.1371/journal.pcbi.1005697
 - **Format:** 16×16 matrices; 5-year age groups (0–4, 5–9, …, 75+).
 
-### Node table — UNOCHA COD-AB (CC BY 3.0 IGO) and geoBoundaries (CC BY 4.0)
+### Node table — UNOCHA COD-AB (CC BY 3.0 IGO), geoBoundaries (CC BY 4.0) and WorldPop (CC BY 4.0)
 
-The bundled `nodes.h5` (centroids, areas, p-codes and hierarchy for administrative levels 0 and 1) is **derived data**: it is computed from the boundary sources below, which are themselves not redistributed. Every row records which source it came from, in its `source` column.
+The bundled `nodes.h5` (centroids, areas, populations, p-codes and hierarchy for administrative levels 0 and 1) and `adjacency.h5` (which units share a border) are **derived data**: they are computed from the boundary sources below, and the level-1 populations from WorldPop's 2020 1 km UN-adjusted rasters summed within each unit; none of the sources is itself redistributed. Every row records which boundary source it came from, in its `source` column.
 
 - **UNOCHA COD-AB** — Common Operational Datasets, Administrative Boundaries, via the [laser-base/unocha](https://github.com/laser-base/unocha) mirror of the [UNOCHA Humanitarian Data Exchange](https://data.humdata.org/). License: Creative Commons Attribution 3.0 IGO. **Citation:** United Nations Office for the Coordination of Humanitarian Affairs (UNOCHA), *Common Operational Datasets — Administrative Boundaries (COD-AB).*
 - **geoBoundaries CGAZ v6.0.0** (gbOpen) — [geoboundaries.org](https://www.geoboundaries.org). License: Creative Commons Attribution 4.0. **Citation:** Runfola D, Anderson A, Baier H, et al. *geoBoundaries: A global database of political administrative boundaries.* PLoS ONE 15(4): e0231866 (2020). https://doi.org/10.1371/journal.pone.0231866
 
-Both licenses permit redistribution of derived works with attribution, which is what this section provides.
+- **WorldPop** — 1 km gridded population, [worldpop.org](https://www.worldpop.org), for the level-1 populations. License: Creative Commons Attribution 4.0. **Citation:** WorldPop (www.worldpop.org), School of Geography and Environmental Science, University of Southampton. https://dx.doi.org/10.5258/SOTON/WP00645
+
+All three licenses permit redistribution of derived works with attribution, which is what this section provides.
 
 ## Fetched, never redistributed
 

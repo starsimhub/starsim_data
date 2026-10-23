@@ -12,20 +12,18 @@ provenance cannot then be separated from the data it describes, and
 """
 
 from datetime import datetime, timezone
-from pathlib import Path
-
 import sciris as sc
 
-REPO = Path(__file__).resolve().parent.parent
+REPO = sc.thispath(__file__).parent
 
 
 def _version():
-    """Read the package version without importing the package."""
-    init = REPO / "starsim_data" / "__init__.py"
+    """ Read the package version without importing the package """
+    init = REPO / 'starsim_data' / '__init__.py'
     for line in init.read_text().splitlines():
-        if line.startswith("__version__"):
-            return line.split("=", 1)[1].strip().strip("\"'")
-    return "unknown"  # pragma: no cover
+        if line.startswith('__version__'):
+            return line.split('=', 1)[1].strip().strip("\"'")
+    return 'unknown'
 
 
 def stamp(dataset, builder, **facts):
@@ -42,10 +40,10 @@ def stamp(dataset, builder, **facts):
     """
     git = sc.gitinfo(str(REPO), die=False)
     return dict(
-        dataset=dataset,
+        dataset         = dataset,
         **facts,
-        built=datetime.now(timezone.utc).isoformat(timespec="seconds"),
-        builder=builder,
-        package_version=_version(),
-        git=git,
+        built           = datetime.now(timezone.utc).isoformat(timespec='seconds'),
+        builder         = builder,
+        package_version = _version(),
+        git             = git,
     )

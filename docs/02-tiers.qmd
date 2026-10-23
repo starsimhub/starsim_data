@@ -21,7 +21,7 @@ ssd.list_datasets(detailed=True)[['dataset', 'tier', 'levels', 'locations']]
 
 ## Tier 0: bundled
 
-The demographic series, the contact matrices, `locations.csv` and the node table are included in the wheel, amounting to roughly 14 MB. Installing a given version of the package therefore gives every user byte-identical data with no network access, which means the package works offline, its tests are deterministic, and citing a version fully specifies the data an analysis used.
+The demographic series, the default contact matrices (`prem2021`, and `prem2017` for the ten locations it lacks), `locations.csv` and the node table are included in the wheel, amounting to roughly 8 MB. Installing a given version of the package therefore gives every user byte-identical data with no network access, which means the package works offline, its tests are deterministic, and citing a version fully specifies the data an analysis used.
 
 ::: {.callout-important}
 ## `load()` does not access the network
@@ -38,6 +38,7 @@ ssd.load('kenya', which='life_table')
 Tier 1 holds the data that is too large to bundle:
 
 - Annual WPP series, complete life tables, and non-Medium projection variants, from 17 MB to 290 MB per file.
+- The full `prem2017` and `mistry2021` contact matrices, about 3 MB each, and the US states' (`mistry2021_us`, 5 MB) and their populations (`population_us`). A given version of the package fixes their contents exactly, as it does for the bundled data, and their locations and provenance are listed without downloading them.
 - Administrative boundaries with geometry, at tens of megabytes per country at admin level 2.
 - Gridded population rasters, at 1–40 MB per country-year.
 
@@ -56,7 +57,7 @@ The cache location follows `ssd.options.cache_dir`, or the `STARSIM_DATA_CACHE_D
 
 ## Which tier something is in
 
-Size, not subject. The same UN WPP 2024 release appears in both: decadal snapshots of four indicators occupy 3 MB and are bundled, while the complete annual life tables occupy 290 MB and are fetched.
+Size and use, not subject. The same UN WPP 2024 release appears in both: decadal snapshots of four indicators occupy 3 MB and are bundled, while the complete annual life tables occupy 290 MB and are fetched. Likewise, one contact source is bundled, the one a model should use unless it has a reason not to (see [Datasets](datasets.qmd#which-source)), and the others are fetched.
 
 ```{python}
 #| echo: false
@@ -68,6 +69,10 @@ pd.DataFrame([
          call="load_nodes(), distances()", tier=0, cost="instant"),
     dict(requirement="Annual rates, life tables, other variants",
          call="fetch()", tier=1, cost="17-290 MB, once"),
+    dict(requirement="The other contact matrices (prem2017, mistry2021)",
+         call="fetch()", tier=1, cost="3 MB each, once"),
+    dict(requirement="US states: contact matrices and populations",
+         call="fetch()", tier=1, cost="5 MB, once"),
     dict(requirement="Polygon geometry, for mapping or spatial joins",
          call="fetch_shapes()", tier=1, cost="1-50 MB per country"),
     dict(requirement="Subnational population estimates",

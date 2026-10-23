@@ -55,7 +55,7 @@ The result is a `sciris.dataframe`, which subclasses `pandas.DataFrame`, so ordi
 Contact matrices are returned as square frames whose rows and columns are indexed by the start age of each bin:
 
 ```{python}
-matrix = ssd.load('kenya', which='prem2017')
+matrix = ssd.load('kenya', which='prem2021')
 matrix.iloc[:5, :5]
 ```
 
@@ -67,7 +67,7 @@ matrix.loc[25, 30]   # daily contacts between the 25-29 and 30-34 bins
 
 ## Specifying locations
 
-The canonical name is not required. ISO codes, official names, common abbreviations, and French, Spanish or Portuguese names are all recognised, and accents, case and punctuation are ignored.
+The canonical name is not required. ISO codes, official names, common abbreviations, and French, Spanish or Portuguese names are all recognized, and accents, case and punctuation are ignored.
 
 ```{python}
 [ssd.resolve(name) for name in
@@ -109,10 +109,10 @@ ssd.plot('kenya', which='deaths', year=2050);
 
 ## Attribution
 
-Each dataset records its own source, licence and citation, stored alongside the data rather than kept separately:
+Each dataset records its own source, license and citation, stored alongside the data rather than kept separately:
 
 ```{python}
-prov = ssd.provenance('prem2017')
+prov = ssd.provenance('prem2021')
 {k: prov[k] for k in ['source', 'license', 'citation']}
 ```
 

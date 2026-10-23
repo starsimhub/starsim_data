@@ -16,7 +16,7 @@ pytest                               # the offline suite
 pytest -m "not network"              # what CI runs
 pytest -m network                    # also hits UN/WorldPop servers (a few hundred MB)
 pytest tests/test_load.py -k matrix  # one file, one pattern
-pytest tests/test_load.py::test_mistry_matrix_shape
+pytest tests/test_load.py::test_matrix
 
 great-docs build                     # -> great-docs/_site/ (needs Quarto)
 great-docs preview                   # live reload on localhost:3000
@@ -30,11 +30,12 @@ The `.h5` files in `starsim_data/data/` are **committed build artifacts**, gener
 
 ```bash
 python scripts/build_locations.py --check     # derived columns of locations.csv, from pycountry
-python scripts/build_hdf5.py --check          # contact matrices, from raw_data/contact_matrices/
+python scripts/build_hdf5.py --check          # prem2021.h5, prem/prem2017.h5 and fetched.json, from raw_data/contact_matrices/ (--fetched also rebuilds fetched/*.h5)
 python scripts/build_demographics.py --check  # demographics, from raw_data/demographics/
-python scripts/build_nodes.py --check         # node table; ~420 MB cold, [spatial] required
+python scripts/build_nodes.py --check         # node table; ~1.4 GB cold, [spatial] required
 python scripts/build_nodes.py --limit 5       # a quick subset while developing
 python scripts/download_wpp.py                # refresh raw_data/demographics/ (needs a token in scripts/.env)
+python scripts/download_epydemix.py           # refresh the US states in raw_data/ (then build_hdf5.py --fetched mistry2021_us population_us)
 ```
 
 `build_nodes.py` is excluded from the per-PR CI job because of its size; it has a `workflow_dispatch`-only job in `.github/workflows/tests.yml`.
@@ -54,7 +55,7 @@ Tier is a field on the dataset descriptor and `load()` enforces it: asking `load
 
 `registry.py` holds two tables, and nearly every extension goes through one of them rather than through an `if` branch:
 
-- `DATASETS` — name → `Dataset` descriptor (layout, tier, levels, licence, revisions, location count, store). Bundled descriptors are **discovered** by opening each `.h5` and reading its root attributes, so the stores are self-describing: adding a new contact source is dropping CSVs in `raw_data/` and re-running `build_hdf5.py`, with no code change.
+- `DATASETS` — name → `Dataset` descriptor (layout, tier, levels, license, revisions, location count, store). Bundled descriptors are **discovered** by opening each `.h5` and reading its root attributes, so the stores are self-describing: adding a new contact source is dropping CSVs in `raw_data/` and re-running `build_hdf5.py`. The contact sources that are fetched rather than bundled (`prem2017`, `mistry2021`, in `fetched/` outside the wheel) are described by the manifest `data/fetched.json`, which `build_hdf5.py` writes with each store's URL (a GitHub release asset), SHA-256, locations and provenance. The default contact matrices, `prem`, are `prem2021` plus the `prem2017` matrices for the ten locations it lacks (bundled in `data/prem/prem2017.h5`, a subfolder so discovery doesn't list it as its own dataset); discovery describes them from both stores, with a `loader` that reads whichever has the location.
 - `LAYOUTS` — layout name → the shaper that turns a stored array into a dataframe (`matrix`, `crude`, `mortality`, `population`, `nodes`).
 
 `load()` resolves the descriptor, picks the source for the revision, resolves the location scoped to that dataset, then hands off to the shaper with an `opts` dict carrying layout-specific arguments (`kind` for matrices, `level` for nodes). An argument a layout has no use for is **rejected, not ignored**. `register_dataset()`, `register_layout()` and `plotting.PLOTTERS` are the public hooks; a descriptor with a `loader` makes `load()` delegate entirely, which is how downstream code adds data this package doesn't ship.
@@ -69,7 +70,7 @@ Importing the package must stay side-effect free — no directories created, no 
 
 ### Invariants that are enforced as data, not as memory
 
-- **Provenance travels with the data.** `scripts/provenance.py` stamps source/URL/licence/citation/build details into each store at build time; `load()` and `fetch()` put the same record in `df.attrs['provenance']`. `tests/test_provenance.py` asserts the licences recorded in the stores match `NOTICE.md`.
+- **Provenance travels with the data.** `scripts/provenance.py` stamps source/URL/license/citation/build details into each store at build time; `load()` and `fetch()` put the same record in `df.attrs['provenance']`. `tests/test_provenance.py` asserts the licenses recorded in the stores match `NOTICE.md`.
 - **GADM is never redistributed.** Its `ShapeSource` sets `redistributable=False`, `fetch_shapes()` leaves it out of the UNOCHA→geoBoundaries fallback chain, and `build_nodes.py` refuses any source with that flag. Keep the constraint on the descriptor rather than in a comment or a conditional.
 - **Demographic stores are versioned by WPP revision**, as `demographics-<revision>.h5`. A new UN release is an additive rebuild, never an edit to data already in use.
 - **Namibia's ISO-2 code is the string `NA`.** Any CSV read must pass `keep_default_na=False` or use the `csv` module, or pandas turns Namibia into a missing value. There is a regression test for it in `tests/test_locations.py`.
@@ -77,7 +78,7 @@ Importing the package must stay side-effect free — no directories created, no 
 
 ### Licensing
 
-Code is MIT; each bundled dataset keeps its own upstream licence (GPL-3.0 for the Prem matrices, Apache-2.0 for `mistry2021`, CC BY 3.0 IGO for WPP). `NOTICE.md` is the operative attribution text and `licenses/` holds the full upstream texts. If you add or change a data source, update `NOTICE.md` — a test checks it against what the stores record.
+Code is MIT; each bundled dataset keeps its own upstream license (GPL-3.0 for the Prem matrices, Apache-2.0 for `mistry2021`, CC BY 3.0 IGO for WPP). `NOTICE.md` is the operative attribution text and `licenses/` holds the full upstream texts. If you add or change a data source, update `NOTICE.md` — a test checks it against what the stores record.
 
 ## Documentation
 
@@ -97,9 +98,9 @@ Docs are part of a change, not a follow-up to it. Before treating any change as 
 **When you add or remove a docs page:**
 
 1. Give it `title` and a `guide-section`, then **renumber siblings so the sections stay contiguous** in filename order — a new `The data` page means bumping every `Internals` page. Use `git mv`; site URLs strip the numeric prefix, so no links break.
-2. **Do not add navigation config to `great-docs.yml`.** A new page needs no entry there, by design — the sidebar is built from `guide-section` and the reference from the public API, so neither can fall out of step with the code. `test_docs.py::test_config_uses_native_navigation` fails if `sections` or a hand-written `reference.contents` shows up. Wanting to edit that file is usually a sign something else is wrong. The one real exception: introducing a *new* `guide-section` means adding it to `SECTIONS` in `tests/test_docs.py`, which defines both the allowed values and their order.
+2. **Do not add navigation config to `great-docs.yml`.** A new page needs no entry there, by design — the sidebar is built from `guide-section` and the reference from the public API, so neither can fall out of step with the code. `test_docs.py::test_config` fails if `sections` or a hand-written `reference.contents` shows up. Wanting to edit that file is usually a sign something else is wrong. The one real exception: introducing a *new* `guide-section` means adding it to `SECTIONS` in `tests/test_docs.py`, which defines both the allowed values and their order.
 3. Link it from at least one sibling page — otherwise it is reachable only from the sidebar.
-4. Update the hand-maintained places that count or list pages: the "N narrative pages" sentence in `CHANGELOG.md`, and the per-file table in `tests/README.md` when tests change. (That table is currently missing `test_docs.py`, `test_nodes.py` and `test_spatial.py` — prose duplicating a file listing goes stale exactly this way.)
+4. Update the hand-maintained places that count or list pages: the "N narrative pages" sentence in `CHANGELOG.md`, and the per-file table in `tests/README.md` when tests change.
 5. Run `pytest tests/test_docs.py`, then `great-docs build` if Quarto is available. The tests catch frontmatter, dead cross-links and accidental network use; only a real build catches a cell that raises.
 
 **When code changes:** the API reference regenerates itself, but prose does not. A new dataset, layout or source touches `docs/03-datasets.qmd` (schema), `docs/06-datasources.qmd` (coverage, licensing, limitations) and `NOTICE.md`; a new extension point touches `docs/08-architecture.qmd`. Docs cells execute against the package at build time, so a stale *example* fails docs CI — but a stale *sentence* will not, and nothing will catch it for you.

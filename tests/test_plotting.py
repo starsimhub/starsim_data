@@ -1,9 +1,14 @@
-"""Tests for the validation plots. The Agg backend is set in conftest.py."""
+"""
+Test the validation plots. The Agg backend is set in conftest.py.
+"""
 
 import matplotlib.pyplot as plt
+import sciris as sc
 import pytest
 
 import starsim_data as ssd
+
+sc.options(interactive=False) # Assume not running interactively
 
 
 @pytest.fixture(autouse=True)
@@ -12,88 +17,113 @@ def close_figures():
     plt.close("all")
 
 
-def _visible(fig):
+def visible(fig):
+    """ The axes of a figure that are shown """
     return [ax for ax in fig.axes if ax.get_visible()]
 
 
-def test_summary_draws_a_panel_per_dataset():
+def titled(fig):
+    """ The visible axes that have a title: a contact-matrix panel adds a colorbar axis, which does not """
+    return [ax for ax in visible(fig) if ax.get_title()]
+
+
+@sc.timer()
+def test_summary():
+    """ The summary draws a panel per dataset, and skips what the location lacks """
+    sc.heading("Testing the summary figure")
     fig = ssd.plot("kenya")
-    titles = [ax.get_title() for ax in _visible(fig)]
-    for name in ("population", "births", "deaths", "prem2017"):
+    titles = [ax.get_title() for ax in visible(fig)]
+    for name in ("population", "births", "deaths", "prem"):
         assert any(t.startswith(name) for t in titles), f"no {name} panel in {titles}"
 
+    # Kenya has no mistry2021; a summary should quietly omit it rather than fail
+    assert "Kenya" not in ssd.list_locations("mistry2021") # The premise of the next check
+    assert all("mistry2021" not in t for t in titles) # Omitted
 
-def test_summary_skips_datasets_the_location_lacks():
-    """Kenya has no mistry2021; a summary should quietly omit it rather than fail."""
-    assert "Kenya" not in ssd.list_locations("mistry2021")
-    fig = ssd.plot("Kenya")
-    assert all("mistry2021" not in ax.get_title() for ax in _visible(fig))
-
-
-@pytest.mark.parametrize("which", ["population", "births", "migration", "deaths", "prem2017"])
-def test_single_dataset_gives_one_panel(which):
-    fig = ssd.plot("kenya", which=which)
-    # A contact-matrix panel adds a colorbar axis, so count the ones with a title.
-    assert len([ax for ax in _visible(fig) if ax.get_title()]) == 1
+    # The summary is about demography and contacts; a one-point map adds nothing
+    assert all("nodes" not in ax.get_title() for ax in fig.axes) # No node map
+    return fig
 
 
-def test_several_datasets():
+@sc.timer()
+def test_single():
+    """ One panel per dataset asked for, and fig_kw is passed through """
+    sc.heading("Testing single-dataset plots")
+    for which in ["population", "births", "migration", "deaths", "prem2021"]:
+        fig = ssd.plot("kenya", which=which)
+        assert len(titled(fig)) == 1, f"Expected one panel for {which}"
+        plt.close(fig)
+
     fig = ssd.plot("kenya", which=["population", "deaths"])
-    assert len([ax for ax in _visible(fig) if ax.get_title()]) == 2
+    assert len(titled(fig)) == 2 # Two datasets, two panels
+
+    small = ssd.plot("kenya", which="births", fig_kw=dict(figsize=(3, 2)))
+    assert tuple(small.get_size_inches()) == (3, 2) # fig_kw reaches the figure
+    return fig
 
 
-def test_pyramid_has_both_sexes_and_is_centred():
+@sc.timer()
+def test_pyramid():
+    """ The population pyramid: both sexes, centred, and a sensible year """
+    sc.heading("Testing the population pyramid")
     fig = ssd.plot("kenya", which="population")
     ax = fig.axes[0]
-    assert {t.get_text() for t in ax.get_legend().get_texts()} == {"Female", "Male"}
+    assert {t.get_text() for t in ax.get_legend().get_texts()} == {"Female", "Male"} # Both sexes
     left, right = ax.get_xlim()
-    assert left < 0 < right           # females plotted negative, males positive
+    assert left < 0 < right # Females plotted negative, males positive
+    year = int(ax.get_title().split(", ")[-1])
+    assert year <= sc.now().year # The default year is an estimate, not a projection
 
-
-def test_default_year_is_not_a_projection():
-    """The default panel year should be an estimate, not a forecast."""
-    import datetime
-    fig = ssd.plot("kenya", which="population")
-    year = int(fig.axes[0].get_title().split(", ")[-1])
-    assert year <= datetime.date.today().year
-
-
-def test_year_can_be_overridden():
-    fig = ssd.plot("kenya", which="population", year=2100)
-    assert fig.axes[0].get_title().endswith("2100")
-
-
-def test_unavailable_year_is_reported():
-    with pytest.raises(ValueError, match="no population data for 1949"):
+    assert ssd.plot("kenya", which="population", year=2100).axes[0].get_title().endswith("2100") # The year can be overridden
+    assert ssd.plot("KEN", which="population").axes[0].get_title().startswith("Kenya") # The title uses the canonical location
+    with pytest.raises(ValueError, match="no population data for 1949"): # An unavailable year is reported
         ssd.plot("kenya", which="population", year=1949)
+    return fig
 
 
-def test_title_uses_the_canonical_location():
-    fig = ssd.plot("KEN", which="population")
-    assert fig.axes[0].get_title().startswith("Kenya")
+@sc.timer()
+def test_node_plot():
+    """ `plot(which='nodes')` is the map you can draw without the [spatial] extra """
+    sc.heading("Testing the node plot")
+    fig = ssd.plot("kenya", which="nodes", level=1)
+    ax = fig.axes[0]
+    assert "47 node(s)" in ax.get_title() # One point per county
+    assert ax.collections # Something actually got drawn
+
+    country = ssd.plot("kenya", which="nodes", level=0)
+    assert "1 node(s)" in country.axes[0].get_title() # Level 0 is the country
+    return fig
 
 
-def test_fig_kw_is_passed_through():
-    fig = ssd.plot("kenya", which="births", fig_kw=dict(figsize=(3, 2)))
-    assert tuple(fig.get_size_inches()) == (3, 2)
-
-
-def test_tier_2_datasets_are_not_plottable():
-    with pytest.raises(ValueError, match="cannot plot 'life_table'"):
+@sc.timer()
+def test_errors():
+    """ Datasets that cannot be plotted, and locations that do not exist, are reported """
+    sc.heading("Testing plotting errors")
+    with pytest.raises(ValueError, match="cannot plot 'life_table'"): # Tier-1 datasets are not plottable
         ssd.plot("kenya", which="life_table")
-
-
-def test_unknown_dataset_is_reported():
-    with pytest.raises(ValueError, match="cannot plot"):
+    with pytest.raises(ValueError, match="cannot plot"): # Nor are unknown ones
         ssd.plot("kenya", which="not_a_dataset")
 
-
-def test_explicitly_requested_missing_data_still_raises():
-    """Unlike a summary, naming a dataset the location lacks is an error."""
+    # Unlike a summary, naming a dataset the location lacks is an error
+    assert "Japan" not in ssd.list_locations("prem2021") # The premise of the next check
     with pytest.raises(KeyError):
-        ssd.plot("Kenya", which="mistry2021")
-
-
-def test_unknown_location_raises():
-    with pytest.raises(KeyError):
+        ssd.plot("Japan", which="prem2021")
+    with pytest.raises(KeyError): # Unknown location
         ssd.plot("Atlantis")
+
+
+if __name__ == "__main__":
+    do_plot = True
+    sc.options(interactive=do_plot)
+    T = sc.timer()
+
+    summary = test_summary()
+    single  = test_single()
+    pyramid = test_pyramid()
+    nodes   = test_node_plot()
+    test_errors()
+
+    T.toc()
+
+    if do_plot:
+        plt.show()

@@ -21,19 +21,26 @@ ssd.resolve('cote divoire')   # 'Cote_dIvoire'
 ssd.resolve('DRC')            # 'Democratic_Republic_of_the_Congo'
 ssd.location_info('KE').iso3  # 'KEN'
 ```
+
+A subnational unit is named by its country and its name, separated by a colon, as in
+the node table's `dot_name`: `'United States:Massachusetts'` and `'USA:massachusetts'`
+both resolve to `'United_States:Massachusetts'`. The country part is resolved as above;
+the unit's name has to match exactly, up to case, accents and punctuation.
 """
 
 import csv
 import unicodedata
-from functools import lru_cache
-from importlib import resources
-
+import functools as ft
 import sciris as sc
+import starsim_data as ssd
 
-__all__ = ["resolve", "location_info", "list_all_locations", "parse_level"]
+__all__ = ['resolve', 'location_info', 'list_all_locations', 'parse_level']
 
 # Columns whose values are matched directly, in addition to the `aliases` column.
-NAME_COLS = ("location", "iso_code", "iso3", "official_name")
+NAME_COLS = ('location', 'iso_code', 'iso3', 'official_name')
+
+# Separates a country from its subdivisions in a location key: 'United_States:Massachusetts'
+SEP = ':'
 
 # 0=country, 1=state/province, 2=district, ... (see parse_level). 5 is the finest
 # level any of the boundary sources in `starsim_data.shapes` publishes.
@@ -49,35 +56,64 @@ def normalize(name):
     Must stay in step with `normalize` in `scripts/build_locations.py`, which uses it
     to decide which aliases are distinct.
     """
-    decomposed = unicodedata.normalize("NFKD", str(name or "").strip())
-    stripped = "".join(c for c in decomposed if not unicodedata.combining(c))
-    cleaned = "".join(" " if c in "-_/" else c for c in stripped.casefold()
-                      if c.isalnum() or c in " -_/")
-    return "_".join(cleaned.split())
+    decomposed = unicodedata.normalize('NFKD', str(name or '').strip())
+    stripped = ''.join(c for c in decomposed if not unicodedata.combining(c))
+    cleaned = ''.join(' ' if c in '-_/' else c for c in stripped.casefold() if c.isalnum() or c in ' -_/')
+    return '_'.join(cleaned.split())
 
 
-@lru_cache(maxsize=1)
+def match_key(name):
+    """The match key of a location, normalizing each level of a subnational one separately."""
+    return SEP.join(normalize(part) for part in str(name).split(SEP))
+
+
+@ft.lru_cache(maxsize=1)
 def _table():
     """Load locations.csv, returning (info_by_location, canonical_by_match_key).
 
     Read with the `csv` module rather than pandas deliberately: pandas' default
     `na_values` turns Namibia's ISO-2 code, the string "NA", into NaN.
     """
-    path = resources.files("starsim_data") / "data" / "locations.csv"
+    path = sc.thispath(__file__) / 'data' / 'locations.csv'
     info, index = {}, {}
-    with path.open(newline="", encoding="utf-8") as f:
+    with open(path, newline='', encoding='utf-8') as f:
         for row in csv.DictReader(f):
-            location = row["location"]
-            row["aliases"] = [a for a in row.get("aliases", "").split("|") if a]
-            row["level"] = int(row["level"])
+            location = row['location']
+            row['aliases'] = [a for a in row.get('aliases', '').split('|') if a]
+            row['level'] = int(row['level'])
             info[location] = sc.objdict(row)
-            names = [row[col] for col in NAME_COLS if row.get(col)] + row["aliases"]
+            names = [row[col] for col in NAME_COLS if row.get(col)] + row['aliases']
             for name in names:
                 # First writer wins; the build script has already dropped any alias
                 # that is ambiguous across locations, so collisions here are benign
                 # (e.g. an official name identical to a canonical name).
                 index.setdefault(normalize(name), location)
     return info, index
+
+
+@ft.lru_cache(maxsize=None)
+def _units(country):
+    """The subnational units of a country in the node table, as `{match key: dot_name}`."""
+    try:
+        nodes = ssd.load_nodes(country, level=None)
+    except KeyError: # No boundaries for this country
+        return {}
+    return {match_key(name): name for name in nodes.dot_name if SEP in name}
+
+
+def _key(location):
+    """Return the match key of a location and its canonical name (None if unknown).
+
+    `'USA:new york'` -> `('united_states:new_york', 'United_States:New_York')`: the
+    country is resolved through the location table, the unit through the node table.
+    """
+    _, index = _table()
+    country, sep, unit = str(location).partition(SEP)
+    if not sep:
+        key = normalize(location)
+        return key, index.get(key)
+    key = match_key(f'{resolve(country)}{SEP}{unit}')
+    return key, _units(resolve(country)).get(key)
 
 
 def list_all_locations():
@@ -107,7 +143,11 @@ def location_info(location):
         'USA'
     """
     info, _ = _table()
-    return info[resolve(location)]
+    key = resolve(location)
+    if SEP in key:
+        country = key.split(SEP)[0]
+        raise KeyError(f'{key!r} is a subnational unit; location_info() describes countries, and load_nodes({country!r}) describes its units')
+    return info[key]
 
 
 def resolve(location, valid=None, dataset=None):
@@ -115,57 +155,89 @@ def resolve(location, valid=None, dataset=None):
 
     Args:
         location (str): location name, ISO-2/ISO-3 code, official name, or alias;
-            case-, accent- and punctuation-insensitive.
+            case-, accent- and punctuation-insensitive. A subnational unit is
+            `'<country>:<unit>'`, e.g. `'United States:Massachusetts'`.
         valid (collection): if given, the resolved key must be one of these (used to
             scope resolution to the locations actually present in a dataset).
         dataset (str): name of the dataset `valid` came from, for error messages only.
 
     Returns:
-        str: the canonical location key, e.g. `'United_States'`.
+        str: the canonical location key, e.g. `'United_States'` or
+        `'United_States:Massachusetts'`.
 
     Raises:
         KeyError: if the location is unknown, or is known but absent from `valid`.
             The message lists close matches where there are any.
     """
-    _, index = _table()
-    key = normalize(location)
-    canonical = index.get(key)
+    key, canonical = _key(location)
 
-    if valid is not None:
-        valid = list(valid)
-        if canonical is not None and canonical in valid:
-            return canonical
-        # A dataset may hold a key that predates the location table; match it directly
-        # rather than insisting every dataset key be registered.
-        direct = {normalize(v): v for v in valid}
-        if key in direct:
-            return direct[key]
+    if valid is None:
         if canonical is not None:
-            what = f"{location!r}"
-            if normalize(canonical) != key:
-                what += f" (resolved to {canonical!r})"
-            where = f" in {dataset!r}" if dataset else ""
-            hint = f"; see list_locations({dataset!r})" if dataset else ""
-            raise KeyError(f"location {what} is not available{where} "
-                           f"({len(valid)} locations{hint})")
-        raise KeyError(f"location {location!r} not found{_did_you_mean(location, valid)}")
+            return canonical
+        known = list_all_locations() if SEP not in key else _units(resolve(key.split(SEP)[0])).values()
+        raise KeyError(f'location {location!r} not found{_did_you_mean(location, known)}')
 
-    if canonical is not None:
+    valid = list(valid)
+    if canonical in valid:
         return canonical
-    raise KeyError(f"location {location!r} not found{_did_you_mean(location, list_all_locations())}")
+
+    # A dataset may hold a key that predates the location table; match it directly
+    # rather than insisting every dataset key be registered.
+    direct = {match_key(v): v for v in valid}
+    if key in direct:
+        return direct[key]
+    if canonical is None:
+        raise KeyError(f'location {location!r} not found{_did_you_mean(location, valid)}')
+
+    # The location is known, but not in this dataset: say so, and where else to find it
+    what  = f'{location!r}'
+    where = ''
+    hint  = ''
+    if match_key(canonical) != key:
+        what += f' (resolved to {canonical!r})'
+    if dataset:
+        where = f' in {dataset!r}'
+        hint  = f'; see list_locations({dataset!r})'
+    errormsg = f'location {what} is not available{where} ({len(valid)} locations{hint}){_elsewhere(canonical, dataset)}'
+    raise KeyError(errormsg)
 
 
-def _did_you_mean(location, candidates):
+def _elsewhere(location, dataset):
+    """Return a fragment naming the other datasets of the same layout that do have `location`, if any."""
+    info, _ = _table()
+    known = ssd.registry.datasets()
+    if dataset not in known:
+        return ''
+    layout = known[dataset].layout
+    names = info[location]['contact_sources'].split('|') if location in info else [] # The location table lists each country's contact sources
+    names += [name for name, ds in known.items() if location in ds.locations] # A fetched store lists its own
+    prem = known.get('prem')
+    others = [name for name in dict.fromkeys(names) if name and (name not in (dataset, 'prem')) and (name in known) and (known[name].layout == layout)]
+    if not others:
+        return ''
+
+    calls = []
+    if prem and (location in prem.locations) and (layout == prem.layout): # The default contact matrices have it too
+        calls.append(f'load({location!r})')
+    for name in others:
+        func = 'load' if known[name].tier == 0 else 'fetch'
+        calls.append(f'{func}({location!r}, which={name!r})')
+    return f"; it is in {sc.strjoin(calls, sep=' or ')}"
+
+
+def _did_you_mean(name, candidates):
     """Return a ' (did you mean ...)' fragment, or '' if nothing is close enough.
 
     Fuzzy matching is confined to this function: it shapes the error message and
-    never influences which location is returned.
+    never influences which location (or dataset) is returned.
     """
-    matches = sc.suggest(str(location), list(candidates), n=3, die=False)
+    candidates = list(candidates)
+    if not candidates: # sc.suggest() raises on an empty list
+        return ''
+    matches = sc.suggest(str(name), candidates, n=3, die=False)
     if not matches:
-        return ""
-    matches = sc.tolist(matches)
-    return f" (did you mean: {', '.join(matches)}?)"
+        return ''
+    return f' (did you mean: {sc.strjoin(sc.tolist(matches))}?)'
 
 
 def parse_level(level):
@@ -191,19 +263,18 @@ def parse_level(level):
         2
     """
     if isinstance(level, bool):  # bool is an int subclass; not a level
-        raise ValueError(f"invalid administrative level {level!r}")
+        raise ValueError(f'invalid administrative level {level!r}')
     if isinstance(level, int):
         number = level
     else:
         text = str(level).strip().lower()
-        for prefix in ("admin", "adm", "level", "l"):
+        for prefix in ('admin', 'adm', 'level', 'l'):
             if text.startswith(prefix):
                 text = text[len(prefix):]
                 break
         if not text.isdigit():
-            raise ValueError(f"could not parse administrative level from {level!r}; "
-                             f"expected e.g. 'admin1', 'ADM2' or 2")
+            raise ValueError(f"could not parse administrative level from {level!r}; expected e.g. 'admin1', 'ADM2' or 2")
         number = int(text)
-    if not 0 <= number <= MAX_LEVEL:
-        raise ValueError(f"administrative level {number} out of range (0 to {MAX_LEVEL})")
+    if not (0 <= number <= MAX_LEVEL):
+        raise ValueError(f'administrative level {number} out of range (0 to {MAX_LEVEL})')
     return number

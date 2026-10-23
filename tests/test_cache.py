@@ -1,138 +1,153 @@
-"""Tests for the download cache and settings. None of these touch the network."""
+"""
+Test the download cache and settings. None of these touch the network.
+"""
 
 import json
+import tempfile
 
+import sciris as sc
 import pytest
 
 import starsim_data as ssd
 
 
-@pytest.fixture
-def tmp_cache(tmp_path):
-    """Point the cache at a temp dir for the duration of one test."""
-    with ssd.options.context(cache_dir=str(tmp_path), verbose=False):
-        yield tmp_path
-
-
-def test_cache_dir_follows_the_option(tmp_cache):
-    assert ssd.cache_dir() == tmp_cache
-    assert ssd.cache_dir("wpp") == tmp_cache / "wpp"
-
-
-def test_cache_dir_does_not_create_by_default(tmp_path):
-    target = tmp_path / "does_not_exist_yet"
-    with ssd.options.context(cache_dir=str(target)):
-        assert not ssd.cache_dir().exists()      # asking where it is must be side-effect free
-        assert ssd.cache_dir(create=True).is_dir()
-
-
-def test_default_cache_dir_is_platform_appropriate():
-    with ssd.options.context(cache_dir=None):
-        path = ssd.cache_dir()
-    assert path.is_absolute()
-    assert path.name in ("starsim_data", "Cache")
-
-
-def test_env_var_is_read(monkeypatch):
-    """STARSIM_DATA_CACHE_DIR is read at import; reconstructing options picks it up."""
-    monkeypatch.setenv("STARSIM_DATA_CACHE_DIR", "/tmp/some_cache")
-    _, defaults = ssd.options.get_orig_options()
-    assert defaults.cache_dir == "/tmp/some_cache"
-
-
-def test_a_cached_file_is_returned_without_downloading(tmp_cache):
-    """A cache hit must not touch the network -- the URL here is deliberately bogus."""
-    (tmp_cache / "wpp").mkdir()
-    target = tmp_cache / "wpp" / "already_here.csv.gz"
-    target.write_bytes(b"pretend this is gzip")
-    got = ssd.cache.cached_download("https://no.such.host/already_here.csv.gz",
-                                    filename="already_here.csv.gz", subdir="wpp")
-    assert got == target
-    assert got.read_bytes() == b"pretend this is gzip"
-
-
-def _fake_entry(root, name, url="https://example.org/x.csv", size=3):
-    """Write a cache entry and its provenance sidecar by hand."""
+def make_entry(root, name, url="https://example.org/x.csv", size=3):
+    """ Write a cache entry and its provenance sidecar by hand """
     root.mkdir(parents=True, exist_ok=True)
     path = root / name
     path.write_bytes(b"x" * size)
     sidecar = root / (name + ssd.cache.SIDECAR_SUFFIX)
-    sidecar.write_text(json.dumps(dict(url=url, filename=name, bytes=size,
-                                       downloaded="2026-01-01T00:00:00+00:00")))
+    sidecar.write_text(json.dumps(dict(url=url, filename=name, bytes=size, downloaded="2026-01-01T00:00:00+00:00")))
     return path
 
 
-def test_cache_info_lists_entries(tmp_cache):
-    _fake_entry(tmp_cache / "wpp", "a.csv", url="https://example.org/a.csv")
-    _fake_entry(tmp_cache / "wpp", "b.csv", url="https://example.org/b.csv")
-    info = ssd.cache_info()
-    assert list(info.file) == ["wpp/a.csv", "wpp/b.csv"]      # sidecars are not listed
-    assert list(info.url) == ["https://example.org/a.csv", "https://example.org/b.csv"]
-    assert info.bytes.sum() == 6
+@sc.timer()
+def test_cache_dir(tmp_path):
+    """ The cache dir follows the option, is created only on request, and has a sensible default """
+    sc.heading("Testing the cache directory")
+    with ssd.options.context(cache_dir=str(tmp_path)):
+        assert ssd.cache_dir() == tmp_path # It follows the option
+        assert ssd.cache_dir("wpp") == tmp_path / "wpp" # Subdirectories go under it
+
+    target = tmp_path / "does_not_exist_yet"
+    with ssd.options.context(cache_dir=str(target)):
+        assert not ssd.cache_dir().exists() # Asking where it is must be side-effect free
+        assert ssd.cache_dir(create=True).is_dir() # Unless asked to create it
+
+    with ssd.options.context(cache_dir=None):
+        path = ssd.cache_dir()
+    assert path.is_absolute() # The platform default is absolute
+    assert path.name in ("starsim_data", "Cache") # And named for the package, or the platform's cache folder
+    return path
 
 
-def test_cache_info_is_empty_when_nothing_is_cached(tmp_cache):
-    info = ssd.cache_info()
-    assert len(info) == 0
-    assert "file" in info.columns          # still a usable frame
+@sc.timer()
+def test_env(monkeypatch):
+    """ STARSIM_DATA_CACHE_DIR is read at import; reconstructing options picks it up """
+    sc.heading("Testing the cache environment variable")
+    monkeypatch.setenv("STARSIM_DATA_CACHE_DIR", "/tmp/some_cache")
+    _, defaults = ssd.options.get_orig_options()
+    assert defaults.cache_dir == "/tmp/some_cache" # The environment sets the default
+    return defaults
 
 
-def test_cache_provenance_round_trip(tmp_cache):
-    path = _fake_entry(tmp_cache / "wpp", "a.csv")
-    assert ssd.cache_provenance(path).url == "https://example.org/x.csv"
+@sc.timer()
+def test_cache_hit(tmp_path):
+    """ A cache hit must not touch the network -- the URL here is deliberately bogus """
+    sc.heading("Testing a cache hit")
+    with ssd.options.context(cache_dir=str(tmp_path), verbose=False):
+        (tmp_path / "wpp").mkdir()
+        target = tmp_path / "wpp" / "already_here.csv.gz"
+        target.write_bytes(b"pretend this is gzip")
+        got = ssd.cache.cached_download("https://no.such.host/already_here.csv.gz", filename="already_here.csv.gz", subdir="wpp")
+    assert got == target # The cached file is returned
+    assert got.read_bytes() == b"pretend this is gzip" # Untouched
+    return got
 
 
-def test_cache_provenance_is_none_when_absent(tmp_cache):
-    path = tmp_cache / "orphan.csv"
-    path.write_bytes(b"x")
-    assert ssd.cache_provenance(path) is None
+@sc.timer()
+def test_cache_info(tmp_path):
+    """ cache_info() lists the entries, and cache_provenance() reads their sidecars """
+    sc.heading("Testing cache_info and cache_provenance")
+    with ssd.options.context(cache_dir=str(tmp_path), verbose=False):
+        empty = ssd.cache_info()
+        assert len(empty) == 0 # Nothing cached yet
+        assert "file" in empty.columns # Still a usable frame
+
+        a = make_entry(tmp_path / "wpp", "a.csv", url="https://example.org/a.csv")
+        make_entry(tmp_path / "wpp", "b.csv", url="https://example.org/b.csv")
+        info = ssd.cache_info()
+        assert list(info.file) == ["wpp/a.csv", "wpp/b.csv"] # Sidecars are not listed
+        assert list(info.url) == ["https://example.org/a.csv", "https://example.org/b.csv"] # Each with its URL
+        assert info.bytes.sum() == 6 # And its size
+
+        assert ssd.cache_provenance(a).url == "https://example.org/a.csv" # The sidecar round-trips
+        orphan = tmp_path / "orphan.csv"
+        orphan.write_bytes(b"x")
+        assert ssd.cache_provenance(orphan) is None # No sidecar, no provenance
+    return info
 
 
-def test_clear_cache_by_pattern(tmp_cache):
-    _fake_entry(tmp_cache / "wpp", "a.csv")
-    _fake_entry(tmp_cache / "other", "b.csv")
-    removed = ssd.clear_cache("wpp/*")
-    assert removed == ["wpp/a.csv"]
-    assert not (tmp_cache / "wpp" / "a.csv").exists()
-    assert not (tmp_cache / "wpp" / ("a.csv" + ssd.cache.SIDECAR_SUFFIX)).exists()
-    assert (tmp_cache / "other" / "b.csv").exists()          # untouched
+@sc.timer()
+def test_clear_cache(tmp_path):
+    """ clear_cache() removes what matches, with its sidecar, and leaves the rest """
+    sc.heading("Testing clear_cache")
+    some = tmp_path / "some"
+    with ssd.options.context(cache_dir=str(some), verbose=False):
+        make_entry(some / "wpp", "a.csv")
+        make_entry(some / "other", "b.csv")
+        removed = ssd.clear_cache("wpp/*")
+        assert removed == ["wpp/a.csv"] # Only what matches the pattern
+        assert not (some / "wpp" / "a.csv").exists() # The file is gone
+        assert not (some / "wpp" / ("a.csv" + ssd.cache.SIDECAR_SUFFIX)).exists() # And its sidecar
+        assert (some / "other" / "b.csv").exists() # The rest is untouched
 
+    everything = tmp_path / "everything"
+    with ssd.options.context(cache_dir=str(everything), verbose=False):
+        make_entry(everything / "wpp", "a.csv")
+        make_entry(everything / "other", "b.csv")
+        assert sorted(ssd.clear_cache()) == ["other/b.csv", "wpp/a.csv"] # No pattern removes everything
+        assert not everything.exists() # Including the directory
 
-def test_clear_cache_removes_everything(tmp_cache):
-    _fake_entry(tmp_cache / "wpp", "a.csv")
-    _fake_entry(tmp_cache / "other", "b.csv")
-    assert sorted(ssd.clear_cache()) == ["other/b.csv", "wpp/a.csv"]
-    assert not tmp_cache.exists()
-
-
-def test_clear_cache_on_a_missing_directory_is_a_no_op(tmp_path):
     with ssd.options.context(cache_dir=str(tmp_path / "nope"), verbose=False):
-        assert ssd.clear_cache() == []
+        assert ssd.clear_cache() == [] # A missing directory is a no-op
+    return removed
 
 
-# --- Settings ---------------------------------------------------------------------- #
-
-def test_options_set_and_reset():
-    cache_dir = ssd.options.cache_dir       # reset() would undo the session's isolation
+@sc.timer()
+def test_options():
+    """ Options can be set, reset, used as a context, and described """
+    sc.heading("Testing options")
+    cache_dir = ssd.options.cache_dir # reset() would undo the session's isolation
     ssd.options(verbose=False)
-    assert ssd.options.verbose is False
+    assert ssd.options.verbose is False # Set
     ssd.options.reset()
-    assert ssd.options.verbose is True
+    assert ssd.options.verbose is True # Reset
     ssd.options.cache_dir = cache_dir
 
-
-def test_options_context_restores():
     before = ssd.options.verbose
     with ssd.options.context(verbose=not before):
-        assert ssd.options.verbose is (not before)
-    assert ssd.options.verbose is before
+        assert ssd.options.verbose is (not before) # Changed inside the context
+    assert ssd.options.verbose is before # Restored after it
 
-
-def test_unknown_option_raises():
     with pytest.raises(KeyError, match="unknown option"):
         ssd.options(no_such_option=1)
 
-
-def test_options_help_returns_text():
     text = ssd.options.help(output=True)
-    assert "cache_dir" in text and "verbose" in text
+    assert "cache_dir" in text # The help describes each option
+    assert "verbose" in text
+    return text
+
+
+if __name__ == "__main__":
+    T = sc.timer()
+
+    path  = test_cache_dir(sc.path(tempfile.mkdtemp()))
+    with pytest.MonkeyPatch.context() as monkeypatch:
+        env = test_env(monkeypatch)
+    hit   = test_cache_hit(sc.path(tempfile.mkdtemp()))
+    info  = test_cache_info(sc.path(tempfile.mkdtemp()))
+    clear = test_clear_cache(sc.path(tempfile.mkdtemp()))
+    text  = test_options()
+
+    T.toc()

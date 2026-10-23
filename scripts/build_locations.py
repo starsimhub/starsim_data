@@ -33,67 +33,64 @@ import argparse
 import gettext
 import unicodedata
 from collections import defaultdict
-from pathlib import Path
-
 import pandas as pd
 import pycountry
+import sciris as sc
 
-REPO = Path(__file__).resolve().parent.parent
-LOCATIONS_CSV = REPO / "starsim_data" / "data" / "locations.csv"
+REPO = sc.thispath(__file__).parent
+LOCATIONS_CSV = REPO / 'starsim_data' / 'data' / 'locations.csv'
 
 # Columns this script owns. Everything else in the file is hand-maintained.
-DERIVED = ["iso3", "official_name", "aliases"]
+DERIVED = ['iso3', 'official_name', 'aliases']
 
 # Column order of the rewritten file: hand-maintained identity first, then derived
 # name-resolution columns, then the hand-maintained source metadata.
-COLUMN_ORDER = ["location", "level", "iso_code", "iso3", "official_name", "aliases",
-                "primary_contact_source", "contact_sources", "population_source"]
+COLUMN_ORDER = ['location', 'level', 'iso_code', 'iso3', 'official_name', 'aliases', 'primary_contact_source', 'contact_sources', 'population_source']
 
 # Translations to include as aliases. French follows the precedent set by laser-init
 # (whose French name table motivated this); Spanish and Portuguese cover the rest of
 # the languages common in the regions these data get used for.
-LANGUAGES = ["fr", "es", "pt"]
+LANGUAGES = ['fr', 'es', 'pt']
 
 # Abbreviations and informal names, keyed by ISO-2. These are below any sensible
 # edit-distance threshold, so they cannot be recovered by fuzzy matching (`sc.suggest`
 # returns None for "USA") and have to be listed explicitly.
 EXTRA_ALIASES = {
-    "AE": ["UAE"],
-    "CD": ["DRC", "DR Congo", "Congo-Kinshasa", "Congo DR", "Zaire"],
-    "CG": ["Congo-Brazzaville", "Republic of the Congo"],
-    "CI": ["Ivory Coast"],
-    "CZ": ["Czech Republic"],
-    "GB": ["UK", "Britain", "Great Britain"],
-    "KP": ["DPRK", "North Korea"],
-    "KR": ["ROK", "South Korea"],
-    "LA": ["Laos"],
-    "MM": ["Burma"],
-    "NL": ["Holland"],
-    "RU": ["Russia"],
-    "SY": ["Syria"],
-    "TR": ["Turkey"],
-    "TW": ["Taiwan"],
-    "TZ": ["Tanzania"],
-    "US": ["USA", "US", "America"],
-    "VA": ["Vatican", "Vatican City"],
-    "VE": ["Venezuela"],
-    "VN": ["Vietnam", "Viet Nam"],
+    'AE': ['UAE'],
+    'CD': ['DRC', 'DR Congo', 'Congo-Kinshasa', 'Congo DR', 'Zaire'],
+    'CG': ['Congo-Brazzaville', 'Republic of the Congo'],
+    'CI': ['Ivory Coast'],
+    'CZ': ['Czech Republic'],
+    'GB': ['UK', 'Britain', 'Great Britain'],
+    'KP': ['DPRK', 'North Korea'],
+    'KR': ['ROK', 'South Korea'],
+    'LA': ['Laos'],
+    'MM': ['Burma'],
+    'NL': ['Holland'],
+    'RU': ['Russia'],
+    'SY': ['Syria'],
+    'TR': ['Turkey'],
+    'TW': ['Taiwan'],
+    'TZ': ['Tanzania'],
+    'US': ['USA', 'US', 'America'],
+    'VA': ['Vatican', 'Vatican City'],
+    'VE': ['Venezuela'],
+    'VN': ['Vietnam', 'Viet Nam'],
 }
 
 
 def normalize(name):
-    """Collapse a location string to its match key.
+    """ Collapse a location string to its match key.
 
     Mirrors `starsim_data.locations.normalize` exactly -- the two must agree, since
     this script decides which aliases are distinct and the resolver decides which
     ones match. Kept duplicated rather than imported so the build script does not
     depend on the package being importable.
     """
-    decomposed = unicodedata.normalize("NFKD", str(name or "").strip())
-    stripped = "".join(c for c in decomposed if not unicodedata.combining(c))
-    cleaned = "".join(" " if c in "-_/" else c for c in stripped.casefold()
-                      if c.isalnum() or c in " -_/")
-    return "_".join(cleaned.split())
+    decomposed = unicodedata.normalize('NFKD', str(name or '').strip())
+    stripped = ''.join(c for c in decomposed if not unicodedata.combining(c))
+    cleaned = ''.join(' ' if c in '-_/' else c for c in stripped.casefold() if c.isalnum() or c in ' -_/')
+    return '_'.join(cleaned.split())
 
 
 def fields(country):
@@ -104,7 +101,7 @@ def fields(country):
     record to a dict once, here, keeps that in a single place and lets everything
     downstream use plain key access.
     """
-    keys = ("alpha_2", "alpha_3", "name", "common_name", "official_name")
+    keys = ('alpha_2', 'alpha_3', 'name', 'common_name', 'official_name')
     return {key: getattr(country, key, None) for key in keys}
 
 
@@ -113,18 +110,17 @@ def translators():
     out = {}
     for lang in LANGUAGES:
         try:
-            out[lang] = gettext.translation("iso3166-1", pycountry.LOCALES_DIR,
-                                            languages=[lang])
+            out[lang] = gettext.translation('iso3166-1', pycountry.LOCALES_DIR, languages=[lang])
         except FileNotFoundError:
-            print(f"  note: no {lang!r} translations in pycountry, skipping")
+            print(f'  note: no {lang!r} translations in pycountry, skipping')
     return out
 
 
 def candidate_aliases(country, trans):
     """Collect every alternative name for one country, in priority order."""
-    names = [country["name"], country["common_name"]]
-    names += EXTRA_ALIASES.get(country["alpha_2"], [])
-    names += [t.gettext(country["name"]) for t in trans.values()]
+    names = [country['name'], country['common_name']]
+    names += EXTRA_ALIASES.get(country['alpha_2'], [])
+    names += [t.gettext(country['name']) for t in trans.values()]
     return [name for name in names if name]
 
 
@@ -141,8 +137,7 @@ def read_locations(path=LOCATIONS_CSV):
 def build(check=False):
     df = read_locations()
     trans = translators()
-    print(f"Read {len(df)} locations from {LOCATIONS_CSV.name}; "
-          f"translations: {', '.join(trans) or 'none'}")
+    print(f"Read {len(df)} locations from {LOCATIONS_CSV.name}; translations: {', '.join(trans) or 'none'}")
 
     # Pass 1: gather candidate aliases per location, and index them by match key so
     # collisions across locations can be found before anything is written.
@@ -153,21 +148,20 @@ def build(check=False):
     for row in df.itertuples():
         record = pycountry.countries.get(alpha_2=str(row.iso_code).upper())
         if record is None:
-            unmatched.append(f"{row.location} ({row.iso_code})")
+            unmatched.append(f'{row.location} ({row.iso_code})')
             proposed[row.location] = (None, None, [])
             continue
         country = fields(record)
-        official = country["official_name"] or country["name"]
+        official = country['official_name'] or country['name']
         aliases = candidate_aliases(country, trans)
-        proposed[row.location] = (country["alpha_3"], official, aliases)
+        proposed[row.location] = (country['alpha_3'], official, aliases)
         # The canonical name, ISO codes and official name are matched by the resolver
         # from their own columns; index them here only to detect collisions.
-        for name in [row.location, country["alpha_2"], country["alpha_3"], official, *aliases]:
+        for name in [row.location, country['alpha_2'], country['alpha_3'], official, *aliases]:
             by_key[normalize(name)].add(row.location)
 
     if unmatched:
-        print(f"  WARNING: {len(unmatched)} location(s) not found in pycountry by ISO-2: "
-              f"{', '.join(unmatched)}")
+        print(f"  WARNING: {len(unmatched)} location(s) not found in pycountry by ISO-2: {', '.join(unmatched)}")
 
     # Pass 2: drop any alias that is ambiguous across locations.
     ambiguous = {k: sorted(v) for k, v in by_key.items() if len(v) > 1}
@@ -187,37 +181,35 @@ def build(check=False):
                 continue
             seen.add(key)
             kept.append(alias)
-        rows.append({"iso3": iso3 or "", "official_name": official or "",
-                     "aliases": "|".join(kept)})
+        rows.append(dict(iso3=iso3 or '', official_name=official or '', aliases='|'.join(kept)))
 
     derived = pd.DataFrame(rows, index=df.index)
     out = df.drop(columns=[c for c in DERIVED if c in df.columns]).join(derived)
     out = out[[c for c in COLUMN_ORDER if c in out.columns]]
 
-    n_aliases = sum(len(r["aliases"].split("|")) if r["aliases"] else 0 for r in rows)
-    missing_iso3 = sum(1 for r in rows if not r["iso3"])
-    print(f"  {n_aliases} aliases across {len(rows)} locations "
-          f"({n_aliases/len(rows):.1f} each); {missing_iso3} without an ISO-3 code")
+    n_aliases = sum(len(r['aliases'].split('|')) if r['aliases'] else 0 for r in rows)
+    missing_iso3 = sum(1 for r in rows if not r['iso3'])
+    print(f'  {n_aliases} aliases across {len(rows)} locations ({n_aliases/len(rows):.1f} each); {missing_iso3} without an ISO-3 code')
 
     if check:
         before = read_locations()
-        same = before.columns.equals(out.columns) and before.equals(out)
-        print("No changes." if same else "Would change locations.csv (run without --check).")
+        same = (before.columns.equals(out.columns)) and (before.equals(out)) # Same columns, in the same order, and same values
+        print('No changes.' if same else 'Would change locations.csv (run without --check).')
         return
 
     out.to_csv(LOCATIONS_CSV, index=False)
-    print(f"  wrote {LOCATIONS_CSV}")
-    print("Done.")
+    print(f'  wrote {LOCATIONS_CSV}')
+    print('Done.')
+    return
 
 
 def main():
-    parser = argparse.ArgumentParser(description=__doc__,
-                                     formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument("--check", action="store_true",
-                        help="report what would change without writing")
+    parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    parser.add_argument('--check', action='store_true', help='report what would change without writing')
     args = parser.parse_args()
     build(check=args.check)
+    return
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     main()

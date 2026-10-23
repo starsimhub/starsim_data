@@ -4,16 +4,16 @@ guide-section: "Internals"
 tags: [Reference, Reproducibility]
 ---
 
-The datasets distributed here are third-party data under a variety of licences, and the numbers a model produces depend on which version of which source was used. This page describes how that information is recorded, how to retrieve it, and what is required to make an analysis reproducible.
+The datasets distributed here are third-party data under a variety of licenses, and the numbers a model produces depend on which version of which source was used. This page describes how that information is recorded, how to retrieve it, and what is required to make an analysis reproducible.
 
 ## Attribution travels with the data
 
-Every bundled store records its source, URL, licence, citation, build timestamp, package version and git commit, written into the HDF5 file at build time.
+Every store records its source, URL, license, citation, build timestamp, package version and git commit, written into the HDF5 file at build time. For a store that is fetched rather than bundled, the manifest in the wheel carries a copy of the same record, so `provenance()` answers without downloading it; the frame `fetch()` returns adds where and when the file was downloaded.
 
 ```{python}
 import starsim_data as ssd
 
-ssd.provenance('prem2017')
+ssd.provenance('prem2021')
 ```
 
 The same record is attached to every frame returned by `load()`:
@@ -35,17 +35,17 @@ Provenance for every bundled dataset is available at once:
 sorted(ssd.provenance().keys())
 ```
 
-## Licences
+## Licenses
 
-The bundled datasets are not distributed under this package's MIT licence. Each retains the terms of its original authors.
+The bundled datasets are not distributed under this package's MIT license. Each retains the terms of its original authors.
 
 ```{python}
 ssd.list_datasets(detailed=True)[['dataset', 'tier', 'license']]
 ```
 
-`NOTICE.md` in the repository holds the full attribution text, and `licenses/` holds the upstream licence texts in full. The tests assert that the licence recorded in each store matches the one asserted in `NOTICE.md`, so the machine-readable and human-readable attributions cannot drift apart without a test failing.
+`NOTICE.md` in the repository holds the full attribution text, and `licenses/` holds the upstream license texts in full. The tests assert that the license recorded in each store matches the one asserted in `NOTICE.md`, so the machine-readable and human-readable attributions cannot drift apart without a test failing.
 
-One licence constrains the package as well as its users. GADM is non-commercial only, so nothing derived from it may be redistributed; the constraint is recorded on the source descriptor and checked by the build scripts:
+One license constrains the package as well as its users. GADM is non-commercial only, so nothing derived from it may be redistributed; the constraint is recorded on the source descriptor and checked by the build scripts:
 
 ```{python}
 ssd.shapes.SOURCES.gadm.redistributable
@@ -91,7 +91,7 @@ Four measures, in decreasing order of importance.
 
 ## Reproducibility of the package's own build
 
-The bundled `.h5` files are build artefacts committed to the repository, which creates the possibility that they drift from the sources they claim to be derived from. Continuous integration guards against this by rebuilding every store from `raw_data/` and re-running the test suite against the result.
+The bundled `.h5` files are build artifacts committed to the repository, which creates the possibility that they drift from the sources they claim to be derived from. Continuous integration guards against this by rebuilding every store from `raw_data/` and re-running the test suite against the result.
 
 ```bash
 python scripts/build_locations.py --check      # locations.csv derived columns
@@ -100,7 +100,7 @@ python scripts/build_demographics.py --check   # demographics
 python scripts/build_nodes.py --check          # node table
 ```
 
-The node-table build is excluded from the automatic check because its inputs are downloaded rather than held in `raw_data/`, and a cold rebuild requires roughly 420 MB. It runs as a separate, manually triggered workflow.
+The node-table build is excluded from the automatic check because its inputs are downloaded rather than held in `raw_data/`, and a cold rebuild downloads roughly 1.4 GB. It runs as a separate, manually triggered workflow.
 
 [Building the data](building-the-data.qmd) describes what each script does.
 

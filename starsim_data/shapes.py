@@ -41,15 +41,17 @@ here `fetch_shapes()` just returns the frame, and saving is `gdf.to_file(...)`.
 """
 
 import zipfile
-from dataclasses import dataclass
-
+import warnings
+import dataclasses as dc
+import numpy as np
+import zstandard
 import sciris as sc
 import starsim_data as ssd
 
-__all__ = ["fetch_shapes", "list_shape_sources"]
+__all__ = ['fetch_shapes', 'list_shape_sources', 'measure', 'borders']
 
 
-@dataclass(frozen=True)
+@dc.dataclass(frozen=True)
 class ShapeSource:
     """One administrative-boundary source, and the terms it comes on.
 
@@ -74,68 +76,61 @@ class ShapeSource:
     citation: str
     redistributable: bool = True
     universal: bool = False
-    note: str = ""
+    note: str = ''
 
 
-GEOBOUNDARIES_TAG = "v6.0.0"   # pinned: geoBoundaries' main branch moves under you
+GEOBOUNDARIES_TAG = 'v6.0.0' # Pinned: geoBoundaries' main branch moves under you
 
 SOURCES = sc.objdict(
-    unocha=ShapeSource(
-        name="unocha",
-        url=("https://github.com/laser-base/unocha/raw/refs/heads/main/data/"
-             "{iso3}/UNOCHA-{iso3}-ADM{level}.gpkg.zstd"),
-        filename="UNOCHA-{iso3}-ADM{level}.gpkg.zstd",
-        max_level=4,
-        license="CC BY 3.0 IGO",
-        source_url="https://github.com/laser-base/unocha",
-        citation="United Nations Office for the Coordination of Humanitarian Affairs "
-                 "(UNOCHA), Common Operational Datasets - Administrative Boundaries (COD-AB).",
-        note="Carries p-codes and dot_names. Covers roughly 110 countries, weighted "
-             "towards those with humanitarian operations."),
-    geoboundaries=ShapeSource(
-        name="geoboundaries",
-        url=("https://github.com/wmgeolab/geoBoundaries/raw/refs/tags/" + GEOBOUNDARIES_TAG +
-             "/releaseData/gbOpen/{iso3}/ADM{level}/geoBoundaries-{iso3}-ADM{level}-all.zip"),
-        filename="geoBoundaries-{iso3}-ADM{level}.zip",
-        max_level=5,
-        license="CC BY 4.0",
-        source_url="https://www.geoboundaries.org",
-        citation="Runfola D, Anderson A, Baier H, et al. (2020). geoBoundaries: A global "
-                 "database of political administrative boundaries. PLoS ONE 15(4): e0231866.",
-        universal=True,
-        note=f"Pinned to {GEOBOUNDARIES_TAG} for reproducibility. Identifiers are "
-             f"geoBoundaries shapeIDs, not p-codes."),
-    gadm=ShapeSource(
-        name="gadm",
-        url="https://geodata.ucdavis.edu/gadm/gadm4.1/gpkg/gadm41_{iso3}.gpkg",
-        filename="gadm41_{iso3}.gpkg",
-        max_level=5,
-        license="Non-commercial use only",
-        source_url="https://gadm.org",
-        citation="GADM: Database of Global Administrative Areas, version 4.1.",
-        redistributable=False,
-        universal=True,
-        note="NON-COMMERCIAL ONLY. Never reached by the automatic fallback, never "
-             "bundled, never redistributed -- fetch at runtime or not at all. One file "
-             "per country containing every level (~50 MB)."),
+    unocha = ShapeSource(
+        name       = 'unocha',
+        url        = 'https://github.com/laser-base/unocha/raw/refs/heads/main/data/{iso3}/UNOCHA-{iso3}-ADM{level}.gpkg.zstd',
+        filename   = 'UNOCHA-{iso3}-ADM{level}.gpkg.zstd',
+        max_level  = 4,
+        license    = 'CC BY 3.0 IGO',
+        source_url = 'https://github.com/laser-base/unocha',
+        citation   = 'United Nations Office for the Coordination of Humanitarian Affairs (UNOCHA), Common Operational Datasets - Administrative Boundaries (COD-AB).',
+        note       = 'Carries p-codes and dot_names. Covers roughly 110 countries, weighted towards those with humanitarian operations.',
+    ),
+    geoboundaries = ShapeSource(
+        name       = 'geoboundaries',
+        url        = f'https://github.com/wmgeolab/geoBoundaries/raw/refs/tags/{GEOBOUNDARIES_TAG}/releaseData/gbOpen/{{iso3}}/ADM{{level}}/geoBoundaries-{{iso3}}-ADM{{level}}-all.zip',
+        filename   = 'geoBoundaries-{iso3}-ADM{level}.zip',
+        max_level  = 5,
+        license    = 'CC BY 4.0',
+        source_url = 'https://www.geoboundaries.org',
+        citation   = 'Runfola D, Anderson A, Baier H, et al. (2020). geoBoundaries: A global database of political administrative boundaries. PLoS ONE 15(4): e0231866.',
+        universal  = True,
+        note       = f'Pinned to {GEOBOUNDARIES_TAG} for reproducibility. Identifiers are geoBoundaries shapeIDs, not p-codes.',
+    ),
+    gadm = ShapeSource(
+        name            = 'gadm',
+        url             = 'https://geodata.ucdavis.edu/gadm/gadm4.1/gpkg/gadm41_{iso3}.gpkg',
+        filename        = 'gadm41_{iso3}.gpkg',
+        max_level       = 5,
+        license         = 'Non-commercial use only',
+        source_url      = 'https://gadm.org',
+        citation        = 'GADM: Database of Global Administrative Areas, version 4.1.',
+        redistributable = False,
+        universal       = True,
+        note            = 'NON-COMMERCIAL ONLY. Never reached by the automatic fallback, never bundled, never redistributed -- fetch at runtime or not at all. One file per country containing every level (~50 MB).',
+    ),
 )
 
 # Tried in order when `source=None`. GADM is absent by design: see the module docstring.
-FALLBACK_CHAIN = ("unocha", "geoboundaries")
+FALLBACK_CHAIN = ('unocha', 'geoboundaries')
 
 # The columns every source is normalized onto, so that a caller does not have to know
 # which one answered.
-COLUMNS = ("nodeid", "location", "iso3", "level", "name", "pcode", "dot_name", "source",
-           "geometry")
+COLUMNS = ('nodeid', 'location', 'iso3', 'level', 'name', 'pcode', 'dot_name', 'source', 'geometry')
 
 
 def _require_spatial(what):
     """Import geopandas, or explain how to get it."""
     try:
-        import geopandas as gpd       # pylint: disable=import-outside-toplevel
+        import geopandas as gpd # Imported here since it is optional (the [spatial] extra), and `import starsim_data` must work without it
     except ImportError as e:
-        raise ImportError(f"{what} needs the optional geospatial dependencies; install "
-                          f"them with: pip install starsim_data[spatial]") from e
+        raise ImportError(f'{what} needs the optional geospatial dependencies; install them with: pip install starsim_data[spatial]') from e
     return gpd
 
 
@@ -151,21 +146,20 @@ def list_shape_sources():
         >>> bool(ssd.list_shape_sources().set_index('source').loc['gadm', 'redistributable'])
         False
     """
-    return sc.dataframe([dict(source=s.name, max_level=s.max_level, license=s.license,
-                              redistributable=s.redistributable, universal=s.universal,
-                              note=s.note) for s in SOURCES.values()])
+    rows = []
+    for s in SOURCES.values():
+        rows.append(dict(source=s.name, max_level=s.max_level, license=s.license, redistributable=s.redistributable, universal=s.universal, note=s.note))
+    return sc.dataframe(rows)
 
 
 def _read_unocha(path, iso3, level, gpd):
     """Read a zstd-compressed per-country GeoPackage from the UNOCHA mirror."""
-    import zstandard      # pylint: disable=import-outside-toplevel  # (arrives with sciris)
-
-    gpkg = path.with_suffix("")           # drop '.zstd'
+    gpkg = path.with_suffix('') # Drop '.zstd'
     if not gpkg.exists():
-        with path.open("rb") as fi, gpkg.open("wb") as fo:
+        with open(path, 'rb') as fi, open(gpkg, 'wb') as fo:
             zstandard.ZstdDecompressor().copy_stream(fi, fo)
-    gdf = gpd.read_file(gpkg, layer=f"UNOCHA-{iso3}-ADM{level}")
-    return gdf.rename(columns={f"adm{level}_name": "name", f"adm{level}_pcode": "pcode"})
+    gdf = gpd.read_file(gpkg, layer=f'UNOCHA-{iso3}-ADM{level}')
+    return gdf.rename(columns={f'adm{level}_name': 'name', f'adm{level}_pcode': 'pcode'})
 
 
 def _read_geoboundaries(path, iso3, level, gpd):
@@ -176,38 +170,40 @@ def _read_geoboundaries(path, iso3, level, gpd):
     quietly change any area or raster aggregation computed from it.
     """
     with zipfile.ZipFile(path) as z:
-        names = [n for n in z.namelist()
-                 if n.endswith(".geojson") and "simplified" not in n.lower()]
-        if not names:
-            raise FileNotFoundError(f"no unsimplified GeoJSON inside {path.name}: "
-                                    f"{z.namelist()}")
-    gdf = gpd.read_file(f"zip://{path}!{names[0]}")
-    return gdf.rename(columns={"shapeName": "name", "shapeID": "pcode"})
+        contents = z.namelist()
+    names = [n for n in contents if n.endswith('.geojson') and ('simplified' not in n.lower())]
+    if not names:
+        raise FileNotFoundError(f'no unsimplified GeoJSON inside {path.name}: {contents}')
+    gdf = gpd.read_file(f'zip://{path}!{names[0]}')
+    return gdf.rename(columns={'shapeName': 'name', 'shapeID': 'pcode'})
 
 
 def _read_gadm(path, iso3, level, gpd):
     """Read one level out of a GADM per-country GeoPackage (all levels in one file)."""
-    gdf = gpd.read_file(path, layer=f"ADM_ADM_{level}")
-    name_col = "COUNTRY" if level == 0 else f"NAME_{level}"
-    pcode_col = "GID_0" if level == 0 else f"GID_{level}"
-    return gdf.rename(columns={name_col: "name", pcode_col: "pcode"})
+    gdf = gpd.read_file(path, layer=f'ADM_ADM_{level}')
+    name_col  = 'COUNTRY' if level == 0 else f'NAME_{level}'
+    pcode_col = 'GID_0'   if level == 0 else f'GID_{level}'
+    return gdf.rename(columns={name_col: 'name', pcode_col: 'pcode'})
 
 
-READERS = dict(unocha=_read_unocha, geoboundaries=_read_geoboundaries, gadm=_read_gadm)
+READERS = dict(
+    unocha        = _read_unocha,
+    geoboundaries = _read_geoboundaries,
+    gadm          = _read_gadm,
+)
 
 
 def _normalize(gdf, location, iso3, level, source):
     """Trim a source's frame to the shared schema, matching the node table's spelling."""
     out = gdf.copy()
-    out["location"] = location
-    out["iso3"] = iso3
-    out["level"] = level
-    out["source"] = source
-    out["name"] = out["name"].astype(str)
-    out["pcode"] = out["pcode"].astype(str)
-    out["dot_name"] = [location if level == 0 else f"{location}:{ssd.node_name(n)}"
-                       for n in out["name"]]
-    out["nodeid"] = range(len(out))
+    out['location'] = location
+    out['iso3']     = iso3
+    out['level']    = level
+    out['source']   = source
+    out['name']     = out['name'].astype(str)
+    out['pcode']    = out['pcode'].astype(str)
+    out['dot_name'] = [location if level == 0 else f'{location}:{ssd.node_name(n)}' for n in out['name']]
+    out['nodeid']   = range(len(out))
     return out[[c for c in COLUMNS if c in out.columns]]
 
 
@@ -242,41 +238,93 @@ def fetch_shapes(location, level=1, source=None, refresh=False, verbose=None):
         >>> import starsim_data as ssd
         >>> gdf = ssd.fetch_shapes('kenya', level=1)   # doctest: +SKIP
     """
-    gpd = _require_spatial("fetch_shapes()")
-    verbose = ssd.options.verbose if verbose is None else verbose
+    gpd = _require_spatial('fetch_shapes()')
+    verbose = sc.ifelse(verbose, ssd.options.verbose)
     level = ssd.parse_level(level)
     key = ssd.resolve(location)
     iso3 = ssd.location_info(key).iso3
 
-    if source is not None and source not in SOURCES:
-        raise ValueError(f"unknown shape source {source!r}; available: {list(SOURCES)}")
+    if (source is not None) and (source not in SOURCES):
+        raise ValueError(f'unknown shape source {source!r}; available: {list(SOURCES)}')
     wanted = [source] if source else list(FALLBACK_CHAIN)
 
+    # Try each source in turn, returning the first that has this location at this level
     problems = []
     for name in wanted:
         spec = SOURCES[name]
         if level > spec.max_level:
-            problems.append(f"{name}: publishes up to level {spec.max_level}")
+            problems.append(f'{name}: publishes up to level {spec.max_level}')
             continue
-        if not spec.redistributable and verbose:
-            print(f"Note: {name} is licensed for {spec.license.lower()}; the data you "
-                  f"fetch must not be redistributed.")
+        if (not spec.redistributable) and verbose:
+            print(f'Note: {name} is licensed for {spec.license.lower()}; the data you fetch must not be redistributed.')
+        url      = spec.url.format(iso3=iso3, level=level)
+        filename = spec.filename.format(iso3=iso3, level=level)
         try:
-            path = ssd.cached_download(spec.url.format(iso3=iso3, level=level),
-                                       filename=spec.filename.format(iso3=iso3, level=level),
-                                       subdir="boundaries", refresh=refresh, verbose=verbose)
+            path = ssd.cached_download(url, filename=filename, subdir='boundaries', refresh=refresh, verbose=verbose)
             gdf = READERS[name](path, iso3, level, gpd)
-        except Exception as e:      # noqa: BLE001 -- any failure means try the next source
-            problems.append(f"{name}: {e}")
+        except Exception as e: # Any failure means try the next source
+            problems.append(f'{name}: {e}')
             continue
         out = _normalize(gdf, key, iso3, level, name)
-        out.attrs["provenance"] = sc.objdict(dataset="shapes", source=name, tier=1,
-                                             source_url=spec.source_url,
-                                             license=spec.license, citation=spec.citation,
-                                             redistributable=spec.redistributable,
-                                             location=key, iso3=iso3, level=level)
+        out.attrs['provenance'] = sc.objdict(
+            dataset         = 'shapes',
+            source          = name,
+            tier            = 1,
+            source_url      = spec.source_url,
+            license         = spec.license,
+            citation        = spec.citation,
+            redistributable = spec.redistributable,
+            location        = key,
+            iso3            = iso3,
+            level           = level,
+        )
         return out
 
-    detail = "; ".join(problems)
-    raise KeyError(f"no boundaries for {key} ({iso3}) at level {level} from "
-                   f"{wanted} ({detail})")
+    detail = '; '.join(problems)
+    raise KeyError(f'no boundaries for {key} ({iso3}) at level {level} from {wanted} ({detail})')
+
+
+# Centroids are taken in an equal-area projection and converted back: the centroid of a
+# polygon in raw degrees is pulled poleward and is simply the wrong point.
+EQUAL_AREA = 'ESRI:54009' # Mollweide
+TOUCH_TOLERANCE = 1e-3    # Degrees (~100 m): units closer than this share a border, which absorbs slivers between polygons
+
+
+def measure(gdf):
+    """
+    The centroid latitude and longitude, and the area in km², of each polygon.
+
+    Args:
+        gdf (GeoDataFrame): polygons in WGS84, e.g. from `fetch_shapes()`.
+
+    Returns:
+        tuple: arrays of latitudes, longitudes and areas, one entry per row.
+    """
+    from pyproj import Geod # Imported here since it is optional (it comes with the [spatial] extra)
+
+    geod = Geod(ellps='WGS84')
+    areas = np.array([abs(geod.geometry_area_perimeter(g)[0]) / 1e6 for g in gdf.geometry]) # Geodesic area, m² -> km²
+    centroids = gdf.to_crs(EQUAL_AREA).centroid.to_crs('EPSG:4326')
+    lat = centroids.y.to_numpy()
+    lon = centroids.x.to_numpy()
+    return lat, lon, areas
+
+
+def borders(gdf, tolerance=TOUCH_TOLERANCE):
+    """
+    The pairs of polygons that share a border.
+
+    Args:
+        gdf (GeoDataFrame): polygons in WGS84, e.g. from `fetch_shapes()`.
+        tolerance (float): polygons closer than this, in degrees, count as touching
+            (default about 100 m, which absorbs slivers between neighboring polygons).
+
+    Returns:
+        numpy.ndarray: `(n, 2)` row positions `(i, j)` with `i < j`.
+    """
+    with warnings.catch_warnings(): # A buffer in degrees is what is meant here, so geopandas' warning about it does not apply
+        warnings.simplefilter('ignore', UserWarning)
+        geoms = gdf.geometry.reset_index(drop=True).buffer(tolerance / 2)
+    i, j = geoms.sindex.query(geoms, predicate='intersects')
+    keep = i < j # Each pair once, and not a polygon with itself
+    return np.stack([i[keep], j[keep]], axis=1).astype(np.int32)

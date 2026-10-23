@@ -88,6 +88,11 @@ Thumbs.db
 # These are small (~MBs), built by scripts/build_hdf5.py, and committed so that
 # `pip install` is self-contained. Larger subnational tiers stay uncommitted.
 !starsim_data/data/*.h5
+!starsim_data/data/prem/*.h5
+
+# ...and the contact stores that are fetched on demand rather than bundled: committed
+# here, outside the package, and downloaded by fetch() from a pinned commit.
+!fetched/*.h5
 
 # UN WPP demographics source. The normalized CSVs (raw_data/demographics/wpp_*.csv)
 # and README are tracked as the demographic source of truth; only the bulky raw

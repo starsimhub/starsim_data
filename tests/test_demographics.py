@@ -1,4 +1,5 @@
-"""End-to-end test of the WPP demographics pipeline (build_demographics -> load).
+"""
+Test the WPP demographics pipeline end to end (build_demographics -> load).
 
 Uses tiny synthetic WPP-format CSVs so the build + load plumbing is verified without
 the real (large) UN files, and writes to a temp dir so the shipped package data is
@@ -6,25 +7,25 @@ untouched.
 """
 
 import sys
-from pathlib import Path
+import tempfile
 
 import numpy as np
 import pandas as pd
+import sciris as sc
 import pytest
 
 import starsim_data as ssd
 
-REPO = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(REPO / "scripts"))
-import build_demographics as bd  # noqa: E402
+sys.path.insert(0, str(sc.thispath(__file__).parent / "scripts"))
+import build_demographics as bd # Imported here since it is only importable once scripts/ is on the path
 
 YEARS = bd.YEARS
 AGES_MX = [0, 1, 5, 10]
 AGES_POP = ["0", "1", "2", "100+"]
 
 
-def _write_synthetic_wpp(wpp_dir):
-    """Create minimal indicators / life-table / population CSVs for Kenya (KE) & US."""
+def make_wpp(wpp_dir):
+    """ Create minimal indicators / life-table / population CSVs for Kenya (KE) & US """
     wpp_dir.mkdir(parents=True)
     isos = ["KE", "US"]
 
@@ -42,59 +43,56 @@ def _write_synthetic_wpp(wpp_dir):
     pd.DataFrame(pop).to_csv(wpp_dir / "population.csv", index=False)
 
 
-@pytest.fixture
-def built(tmp_path, monkeypatch):
-    """Build the four demographic stores into a temp dir and point the loader at it."""
+@sc.timer()
+def test_pipeline(tmp_path, monkeypatch):
+    """ Build the four demographic stores into a temp dir, point the loader at it, and read them back """
+    sc.heading("Testing the demographics pipeline")
     data_dir = tmp_path / "data"
     data_dir.mkdir()
     monkeypatch.setattr(bd, "OUT", data_dir)
     # The registry finds the bundled stores through data_dir() and caches what it finds,
-    # so point it at the temp dir and clear the cache on both sides of the test.
+    # so point it at the temp dir and clear the cache on both sides of the test
     monkeypatch.setattr(ssd.registry, "data_dir", lambda: data_dir)
-
-    _write_synthetic_wpp(tmp_path / "wpp")
+    make_wpp(tmp_path / "wpp")
     bd.build(tmp_path / "wpp")
     ssd.registry.refresh()
-    yield data_dir
-    ssd.registry.refresh()
+    try:
+        assert set(ssd.list_datasets(tier=0)) == {"births", "migration", "deaths", "population"} # All four stores are built
+
+        births = ssd.load("kenya", which="births")
+        assert list(births.columns) == ["Time", "CBR"] # Crude birth rate by year
+        assert len(births) == len(YEARS) # One row per year
+        assert births["Time"].tolist() == YEARS # The years built
+
+        migration = ssd.load("United_States", which="migration")
+        assert list(migration.columns) == ["Time", "CNMR"] # Crude net migration rate by year
+        assert len(migration) == len(YEARS) # One row per year
+
+        # Column names match ss.Deaths default metadata (data_cols year=Time, sex, age, value=mx)
+        deaths = ssd.load("Kenya", which="deaths")
+        assert list(deaths.columns) == ["Time", "Sex", "AgeGrpStart", "mx"] # Starsim-ready
+        assert set(deaths["Sex"]) == {"Female", "Male"} # "Total" dropped
+        assert set(deaths["AgeGrpStart"]) == set(AGES_MX) # Every age group
+        assert len(deaths) == len(YEARS) * 2 * len(AGES_MX) # Every year, sex and age
+        assert deaths["mx"].notna().all() # No gaps
+
+        # A known mx value: Kenya (i=0), any year, Female, age 5 -> 0.001*(5+1) + 0 = 0.006
+        row = deaths[(deaths.Time == YEARS[0]) & (deaths.Sex == "Female") & (deaths.AgeGrpStart == 5)]
+        assert np.isclose(row["mx"].iloc[0], 0.006) # Values survive the round trip
+
+        population = ssd.load("Kenya", which="population")
+        assert list(population.columns) == ["Time", "Sex", "AgeGrp", "Value"] # Starsim-ready
+        assert 100 in set(population["AgeGrp"]) # "100+" parsed to 100
+        assert set(population["Sex"]) == {"Female", "Male"} # Both sexes
+    finally:
+        ssd.registry.refresh() # Forget the temp stores; they are rediscovered lazily, after the patch is undone
+    return deaths
 
 
-def test_datasets_built(built):
-    assert set(ssd.list_datasets(tier=0)) == {"births", "migration", "deaths", "population"}
+if __name__ == "__main__":
+    T = sc.timer()
 
+    with pytest.MonkeyPatch.context() as monkeypatch:
+        deaths = test_pipeline(sc.path(tempfile.mkdtemp()), monkeypatch)
 
-def test_births_shape_and_columns(built):
-    df = ssd.load("kenya", which="births")
-    assert list(df.columns) == ["Time", "CBR"]
-    assert len(df) == len(YEARS)
-    assert df["Time"].tolist() == YEARS
-
-
-def test_migration_columns(built):
-    df = ssd.load("United_States", which="migration")
-    assert list(df.columns) == ["Time", "CNMR"]
-    assert len(df) == len(YEARS)
-
-
-def test_deaths_is_starsim_ready(built):
-    df = ssd.load("Kenya", which="deaths")
-    # Column names match ss.Deaths default metadata (data_cols year=Time, sex, age, value=mx).
-    assert list(df.columns) == ["Time", "Sex", "AgeGrpStart", "mx"]
-    assert set(df["Sex"]) == {"Female", "Male"}      # "Total" dropped
-    assert set(df["AgeGrpStart"]) == set(AGES_MX)
-    assert len(df) == len(YEARS) * 2 * len(AGES_MX)
-    assert df["mx"].notna().all()
-
-
-def test_population_single_age_and_plus_bin(built):
-    df = ssd.load("Kenya", which="population")
-    assert list(df.columns) == ["Time", "Sex", "AgeGrp", "Value"]
-    assert 100 in set(df["AgeGrp"])                  # "100+" parsed to 100
-    assert set(df["Sex"]) == {"Female", "Male"}
-
-
-def test_value_roundtrip(built):
-    # A known mx value: Kenya (i=0), any year, Female, age 5 -> 0.001*(5+1) + 0 = 0.006
-    df = ssd.load("Kenya", which="deaths")
-    row = df[(df.Time == YEARS[0]) & (df.Sex == "Female") & (df.AgeGrpStart == 5)]
-    assert np.isclose(row["mx"].iloc[0], 0.006)
+    T.toc()
