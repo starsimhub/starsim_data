@@ -8,7 +8,7 @@ Each store carries a root `spec` attribute recording its `layout`, so `load()` r
 
 - `prem2021.h5` — the bundled contact source, keyed by location with one `float32` matrix per contact setting: `/<Location>/<setting>`.
 - `prem/prem2017.h5` — the same, for the ten locations `prem2021` lacks, from `prem2017`. Together with `prem2021.h5` these are the default contact matrices, `load(which='prem')`. It is in a subfolder so that it is not discovered as a dataset of its own.
-- `fetched.json` — the manifest of the stores that are fetched rather than bundled (`prem2017`, `mistry2021`, and for the US states `mistry2021_us` and `population_us`): for each, its URL at a pinned commit, SHA-256, locations and provenance. Their stores, built the same way, are in [`fetched/`](../../fetched/) at the top of the repository, outside the package; `fetch()` downloads them.
+- `fetched.json` — the manifest of the stores that are fetched rather than bundled (`prem2017`, `mistry2021`, and for the US states `mistry2021_us` and `population_us`): for each, its URL (an asset of a GitHub release), SHA-256, locations and provenance. Their stores, built the same way, are in [`fetched/`](../../fetched/) at the top of the repository, outside the package; `fetch()` downloads them.
 
 **Demographic series** from UN WPP, all grouped in `demographics-<revision>.h5` (e.g. `demographics-2024.h5`), built by [`scripts/build_demographics.py`](../../scripts/build_demographics.py). One group per series, each with its own `spec`:
 

@@ -1,0 +1,5 @@
+# Keep the sdist to the package: the raw data, the fetched stores (release assets) and
+# the docs build are in the repository, not needed to install
+prune raw_data
+prune fetched
+prune great-docs

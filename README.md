@@ -218,7 +218,7 @@ Adding a page means dropping a `.qmd` file in `docs/` with a `title` and a `guid
 
 ## Building from source
 
-The bundled `.h5` files are generated from the human-readable sources in [`raw_data/`](raw_data/) by the scripts in [`scripts/`](scripts/). See those folders' READMEs to regenerate or update the data.
+The bundled `.h5` files are generated from the human-readable sources in [`raw_data/`](raw_data/) by the scripts in [`scripts/`](scripts/). See those folders' READMEs to regenerate or update the data. [CONTRIBUTING.md](CONTRIBUTING.md) has the steps for changing the data and making a release.
 
 ## License
 

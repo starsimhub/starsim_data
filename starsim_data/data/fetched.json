@@ -1,7 +1,7 @@
 {
  "mistry2021": {
   "store": "mistry2021.h5",
-  "url": "https://raw.githubusercontent.com/starsimhub/starsim_data/56cb6a5d1ec502d4308d748506f98054c107c8f6/starsim_data/data/mistry2021.h5",
+  "url": "https://github.com/starsimhub/starsim_data/releases/download/data-2026.10/mistry2021.h5",
   "sha256": "e4931dd299355200007c411b26c915e6046ef7ee7e75c0648c80098b88a10b47",
   "bytes": 3213099,
   "layout": "matrix",
@@ -68,7 +68,7 @@
  },
  "mistry2021_us": {
   "store": "mistry2021_us.h5",
-  "url": "https://raw.githubusercontent.com/starsimhub/starsim_data/main/fetched/mistry2021_us.h5",
+  "url": "https://github.com/starsimhub/starsim_data/releases/download/data-2026.10/mistry2021_us.h5",
   "sha256": "61be5790b9627b2d6cf8396a2bebbb80cc24c006e172bd99aa695e09a2929a14",
   "bytes": 5181052,
   "layout": "matrix",
@@ -150,7 +150,7 @@
  },
  "population_us": {
   "store": "population_us.h5",
-  "url": "https://raw.githubusercontent.com/starsimhub/starsim_data/main/fetched/population_us.h5",
+  "url": "https://github.com/starsimhub/starsim_data/releases/download/data-2026.10/population_us.h5",
   "sha256": "5cce6140e6ea430a9331dd990484de5709d37ff60171c4d3195f10c3dd5a55d8",
   "bytes": 196696,
   "layout": "population",
@@ -232,7 +232,7 @@
  },
  "prem2017": {
   "store": "prem2017.h5",
-  "url": "https://raw.githubusercontent.com/starsimhub/starsim_data/56cb6a5d1ec502d4308d748506f98054c107c8f6/starsim_data/data/prem2017.h5",
+  "url": "https://github.com/starsimhub/starsim_data/releases/download/data-2026.10/prem2017.h5",
   "sha256": "1ee4391566d291ae6c81723a4494d7bdd6558b9a1158fab118b298b4309555ab",
   "bytes": 3149040,
   "layout": "matrix",

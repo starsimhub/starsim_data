@@ -38,9 +38,9 @@ Reads the per-location CSVs in `raw_data/contact_matrices/` and writes one store
 
 Attribution for each source is held in a `SOURCES` table in the script, and the script warns if a source has no attribution recorded, so that adding a dataset without a license is noticed at build time rather than at review.
 
-`prem2021` is written into the package, together with the `prem2017` matrices for the ten locations `prem2021` lacks (`prem/prem2017.h5`), which the default contact matrices use. The full `prem2017` and `mistry2021`, and the US states' `mistry2021_us` and `population_us`, are kept in the repository's `fetched/` folder instead, outside the package, and `fetch()` downloads them from there. The package records exactly which version of each file it expects, so a given release always reads the same data.
+`prem2021` is written into the package, together with the `prem2017` matrices for the ten locations `prem2021` lacks (`prem/prem2017.h5`), which the default contact matrices use. The full `prem2017` and `mistry2021`, and the US states' `mistry2021_us` and `population_us`, are kept in the repository's `fetched/` folder instead, outside the package, and published as assets of a GitHub release, which is where `fetch()` downloads them from. The package records exactly which version of each file it expects, so a given release always reads the same data.
 
-These matrices are already published and won't change, so the script leaves the fetched files alone. Its `--fetched` option rebuilds them (or only those named, as in `--fetched population_us`), which is only needed to add a new fetched source: its file then has to be published on GitHub, and that commit recorded in the script's `PINNED` table.
+These matrices are already published and won't change, so the script leaves the fetched files alone. Its `--fetched` option rebuilds them (or only those named, as in `--fetched population_us`), which is only needed to add a new fetched source: its file is downloaded from a GitHub release, as an asset, so adding one means a new data release, named in the script's `RELEASE`.
 
 ## Demographics
 

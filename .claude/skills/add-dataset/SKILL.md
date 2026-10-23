@@ -38,7 +38,7 @@ Tell Cliff how big the download and the raw CSVs will be before running it. Raw 
 
 All fetched stores are listed in `scripts/build_hdf5.py`, which writes the manifest `starsim_data/data/fetched.json` from them. Add the new store there:
 
-- `PINNED[name] = dict(commit='main', path='fetched/<name>.h5')`. It stays `'main'` until the store is on `main` on GitHub; then Cliff sets the real commit (the build warns until then).
+- Add `name` to `FETCHED_SOURCES`, and bump `RELEASE` to a new `data-*` tag: the new store is downloaded from that GitHub release, which Cliff creates with `scripts/pypi_release.py` once the change is on `main`.
 - `SOURCES[name]`: `source`, `source_url`, `via` (if it came through another project), `license`, `citation`, `note`. This is written into the store as its provenance.
 - `DESCRIPTIONS[name]`: one line for `list_datasets()`.
 - Contact matrices need nothing more than their CSVs and an `AGE_WIDTH` entry: sources are discovered from the file names.
@@ -68,7 +68,7 @@ pytest tests/test_docs.py
 great-docs build    # if Quarto is available
 ```
 
-Then try it the way a user would, including the errors: a misspelled unit, a unit the dataset lacks, and an argument that doesn't apply (it must be rejected, not ignored). Don't commit; leave everything for Cliff, and say which `PINNED` commits need setting once the stores are on `main`.
+Then try it the way a user would, including the errors: a misspelled unit, a unit the dataset lacks, and an argument that doesn't apply (it must be rejected, not ignored). Don't commit; leave everything for Cliff, and remind Cliff to create the new data release once the change is on `main`.
 
 ## Worked sketch: Germany's districts (not built yet)
 

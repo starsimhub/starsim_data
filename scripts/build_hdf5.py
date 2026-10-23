@@ -27,17 +27,17 @@ the raw data changes; output is overwritten cleanly.
 `prem2021` is bundled, into `starsim_data/data/`, along with `prem/prem2017.h5`: the
 `prem2017` matrices for the locations `prem2021` lacks, which the default contact
 matrices use. The other sources are fetched on demand (tier 1): their stores live in
-`fetched/` in the repository, outside the wheel, and `fetch()` downloads each from
-GitHub at the commit pinned in `PINNED` below, checking it against the SHA-256 in the
-manifest `starsim_data/data/fetched.json`. The manifest is rewritten on every run, from
+`fetched/` in the repository, outside the wheel, and `fetch()` downloads each from the
+GitHub release named in `RELEASE` below, where it is an asset, checking it against the
+SHA-256 in the manifest `starsim_data/data/fetched.json`. The manifest is rewritten on every run, from
 the stores in `fetched/`.
 
 The existing matrices are published and won't change; this script records how they were
 built, and is how a new source would be added. A store is stamped with its build time, so
 rebuilding one changes its bytes: the fetched stores are rebuilt only with `--fetched`
 (given the names of the ones to rebuild, or none for all), which is only needed for a new
-fetched source. Its store then has to be on `main` on GitHub (make a pull request), and
-that commit set in `PINNED`.
+fetched source. The stores then need a new data release: set a new tag in `RELEASE`,
+and once that is on `main`, create the release with `scripts/pypi_release.py`.
 
 Usage:
 
@@ -73,16 +73,12 @@ BUNDLED = ['prem2021']
 BASE, FILL = 'prem2021', 'prem2017'
 FILL_PATH = OUT / 'prem' / f'{FILL}.h5'
 
-# Every fetched store, and where it is downloaded from: a commit on GitHub, and the
-# store's path at that commit. The bytes there must be those of the store in fetched/.
-# The manifest describes exactly these.
-URL = 'https://raw.githubusercontent.com/starsimhub/starsim_data/{commit}/{path}'
-PINNED = {
-    'prem2017':      dict(commit='56cb6a5d1ec502d4308d748506f98054c107c8f6', path='starsim_data/data/prem2017.h5'),
-    'mistry2021':    dict(commit='56cb6a5d1ec502d4308d748506f98054c107c8f6', path='starsim_data/data/mistry2021.h5'),
-    'mistry2021_us': dict(commit='main', path='fetched/mistry2021_us.h5'), # TODO: pin to the commit that puts these on main
-    'population_us': dict(commit='main', path='fetched/population_us.h5'),
-}
+# Every fetched store, and the GitHub release they are downloaded from, as assets
+# (rather than from raw.githubusercontent.com, which rate-limits CI heavily). The assets
+# must be the stores in fetched/; the manifest describes exactly these.
+FETCHED_SOURCES = ['prem2017', 'mistry2021', 'mistry2021_us', 'population_us']
+RELEASE = 'data-2026.10'
+URL = 'https://github.com/starsimhub/starsim_data/releases/download/{release}/{store}'
 DESCRIPTION = 'Age-structured contact matrix by setting'
 DESCRIPTIONS = {
     'mistry2021_us': 'Contact matrices by setting for each US state, Mistry et al. 2021',
@@ -245,17 +241,15 @@ def sha256(path):
 
 
 def write_manifest():
-    """ Describe each fetched store in `PINNED` (from its file in `fetched/`) in `data/fetched.json` """
+    """ Describe each store in `FETCHED_SOURCES` (from its file in `fetched/`) in `data/fetched.json` """
     manifest = {}
-    for source in sorted(PINNED):
+    for source in sorted(FETCHED_SOURCES):
         path = FETCHED / f'{source}.h5'
-        if PINNED[source]['commit'] == 'main':
-            print(f'  WARNING: {source!r} is not pinned to a commit yet; set one in PINNED once its store is on main')
         with h5py.File(path, 'r') as f:
             locations = sorted(f.keys())
             manifest[source] = dict(
                 store       = path.name,
-                url         = URL.format(**PINNED[source]),
+                url         = URL.format(release=RELEASE, store=path.name),
                 sha256      = sha256(path),
                 bytes       = path.stat().st_size,
                 layout      = json.loads(f.attrs['spec'])['layout'],
@@ -279,9 +273,9 @@ def main():
     FETCHED.mkdir(parents=True, exist_ok=True)
     sources = discover_sources()
     print(f'Found {len(sources)} dataset(s) in {CONTACT}: {sc.strjoin(sources)}')
-    unpinned = [source for source in sources if source not in BUNDLED + list(PINNED)]
-    if unpinned:
-        raise ValueError(f'{unpinned} are fetched but have no entry in PINNED; add them there (and pin a commit once their stores are on main on GitHub)')
+    unlisted = [source for source in sources if source not in BUNDLED + FETCHED_SOURCES]
+    if unlisted:
+        raise ValueError(f'{unlisted} are fetched but not in FETCHED_SOURCES; add them there (and set a new tag in RELEASE)')
     fetched = args.fetched
     if fetched == []: # --fetched on its own: all of them
         fetched = sources + ['population_us']
@@ -294,7 +288,7 @@ def main():
     build_fill(check=args.check)
     write_manifest()
     if fetched:
-        print('The fetched stores were rebuilt: get them onto main on GitHub (make a pull request), then set that commit in PINNED.')
+        print('The fetched stores were rebuilt: set a new tag in RELEASE, and create that release once this is on main.')
     print('Done.')
     return
 

@@ -10,6 +10,7 @@ All notable changes to `starsim_data` are recorded here. Versions follow [semant
 - **Finer levels on request.** `ssd.fetch_nodes('kenya', level=2)` builds the same table (centroids, areas, populations and borders) at any level, e.g. Kenya's 290 sub-counties.
 - **US states.** `ssd.fetch('United States:Massachusetts', which='mistry2021_us')` gives a state's contact matrices (Mistry et al. 2021), and `which='population_us'` its population by single year of age (US Census Bureau, 2023). A subnational unit is named `'<country>:<unit>'`, as in the node table.
 - `fetch()` takes `kind=` for the contact matrices, and rejects arguments that do not apply.
+- The fetched stores are downloaded from a GitHub release rather than from raw.githubusercontent.com, which rate-limits heavily.
 - Requires Sciris 3.5.2 or later.
 
 ## 1.0.0 (2026-08-08)
