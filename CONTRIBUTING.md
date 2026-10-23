@@ -36,8 +36,8 @@ The fetched stores (in [`fetched/`](fetched/), downloaded by `fetch()` rather th
    ```
 3. Run the release script with the data tag, the value of `RELEASE` in `scripts/build_hdf5.py`. Do a dry run first:
    ```bash
-   python scripts/pypi_release.py data-2026.10 --dry-run
-   python scripts/pypi_release.py data-2026.10
+   python scripts/publish.py data-2026.10 --dry-run
+   python scripts/publish.py data-2026.10
    ```
    It checks that you're on an up-to-date `main` with no uncommitted changes, that the stores in `fetched/` match the manifest, and that the changelog has the version's section. Then it creates two GitHub releases, each with its git tag (`git fetch --tags` to get them locally):
    - the data release, with the stores in `fetched/` attached, unless it already exists from an earlier version, in which case it checks the files are there;

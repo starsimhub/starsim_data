@@ -24,7 +24,7 @@ python scripts/build_hdf5.py --fetched    # also rebuild the stores in fetched/
 python scripts/build_hdf5.py --fetched population_us   # ...or only those named
 ```
 
-Run this whenever `raw_data/` changes. A new source is discovered automatically from its `<source>_contacts_<setting>.csv` files: add it to `BUNDLED`, or make it a fetched one. The existing sources are published and won't change; adding a fetched one means listing it in `FETCHED_SOURCES`, building it with `--fetched`, setting a new tag in `RELEASE`, and creating that release once the change is on `main`, with `pypi_release.py` (below).
+Run this whenever `raw_data/` changes. A new source is discovered automatically from its `<source>_contacts_<setting>.csv` files: add it to `BUNDLED`, or make it a fetched one. The existing sources are published and won't change; adding a fetched one means listing it in `FETCHED_SOURCES`, building it with `--fetched`, setting a new tag in `RELEASE`, and creating that release once the change is on `main`, with `publish.py` (below).
 
 It also builds `fetched/population_us.h5`, the US states' populations, from `raw_data/population_us.csv`, and writes each state's matrices under the location key `United_States:Massachusetts` (from the folder `United_States__Massachusetts`).
 
@@ -73,13 +73,13 @@ National population is read from this package's own bundled WPP data. Level-1 po
 
 Needs the `[spatial]` extra as well as `[dev]`: `pip install -e ".[dev,spatial]"`.
 
-## pypi_release.py
+## publish.py
 
 Makes a release, from an up-to-date `main`: the data release named on the command line (unless it already exists), with the stores in [`fetched/`](../fetched/) as assets, then `v<version>`, with the version from `starsim_data/version.py` and the notes from its section of the changelog. Publishing that triggers [`publish.yml`](../.github/workflows/publish.yml), which publishes the package to PyPI. It first checks that every store in the manifest is downloaded from that data release and that `fetched/` holds the same bytes.
 
 ```bash
-python scripts/pypi_release.py data-2026.10 --dry-run  # check everything, create nothing
-python scripts/pypi_release.py data-2026.10
+python scripts/publish.py data-2026.10 --dry-run  # check everything, create nothing
+python scripts/publish.py data-2026.10
 ```
 
 ## Dependencies

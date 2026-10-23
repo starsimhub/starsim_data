@@ -17,8 +17,8 @@ Each release also creates its git tag, on GitHub; `git fetch --tags` to get them
 Usage:
 
 ```bash
-python scripts/pypi_release.py data-2026.10 --dry-run   # check everything, create nothing
-python scripts/pypi_release.py data-2026.10
+python scripts/publish.py data-2026.10 --dry-run   # check everything, create nothing
+python scripts/publish.py data-2026.10
 ```
 """
 

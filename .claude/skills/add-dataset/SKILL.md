@@ -38,7 +38,7 @@ Tell Cliff how big the download and the raw CSVs will be before running it. Raw 
 
 All fetched stores are listed in `scripts/build_hdf5.py`, which writes the manifest `starsim_data/data/fetched.json` from them. Add the new store there:
 
-- Add `name` to `FETCHED_SOURCES`, and bump `RELEASE` to a new `data-*` tag: the new store is downloaded from that GitHub release, which Cliff creates with `scripts/pypi_release.py` once the change is on `main`.
+- Add `name` to `FETCHED_SOURCES`, and bump `RELEASE` to a new `data-*` tag: the new store is downloaded from that GitHub release, which Cliff creates with `scripts/publish.py` once the change is on `main`.
 - `SOURCES[name]`: `source`, `source_url`, `via` (if it came through another project), `license`, `citation`, `note`. This is written into the store as its provenance.
 - `DESCRIPTIONS[name]`: one line for `list_datasets()`.
 - Contact matrices need nothing more than their CSVs and an `AGE_WIDTH` entry: sources are discovered from the file names.

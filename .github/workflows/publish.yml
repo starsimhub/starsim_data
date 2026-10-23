@@ -2,7 +2,7 @@ name: Publish
 
 # Publishes the package to PyPI when a `v*` release is published (e.g. `v2.0.0`), by
 # trusted publishing (no token; set up once on pypi.org). Make the release with
-# `python scripts/pypi_release.py <data tag>`, which also creates the data release the
+# `python scripts/publish.py <data tag>`, which also creates the data release the
 # fetched stores are downloaded from. This refuses to publish a package whose fetched
 # stores can't be downloaded.
 

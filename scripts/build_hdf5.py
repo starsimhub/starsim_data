@@ -37,7 +37,7 @@ built, and is how a new source would be added. A store is stamped with its build
 rebuilding one changes its bytes: the fetched stores are rebuilt only with `--fetched`
 (given the names of the ones to rebuild, or none for all), which is only needed for a new
 fetched source. The stores then need a new data release: set a new tag in `RELEASE`,
-and once that is on `main`, create the release with `scripts/pypi_release.py`.
+and once that is on `main`, create the release with `scripts/publish.py`.
 
 Usage:
 
