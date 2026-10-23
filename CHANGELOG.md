@@ -2,7 +2,7 @@
 
 All notable changes to `starsim_data` are recorded here. Versions follow [semantic versioning](https://semver.org); the *data* is versioned too, so a change to a bundled dataset is a release, not an amendment.
 
-## 2.0.0 (2026-10-XX)
+## 2.0.0 (2026-10-22)
 
 - **Contact matrices for 187 locations by default.** `ssd.load('kenya')` returns the contact matrices of Prem et al. 2021 (`prem2021`), and for the ten locations that study left out (Japan, Australia, Haiti and seven others) those of Prem et al. 2017 (`prem2017`). Pass `which='prem2021'` for that study alone.
 - **A smaller package.** The other contact sources, `prem2017` and `mistry2021`, are downloaded the first time they are used, e.g. `ssd.fetch('france', which='mistry2021')`, rather than shipped with the package.
