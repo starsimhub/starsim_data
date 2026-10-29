@@ -77,6 +77,11 @@ funding:
 include_in_header:
   - file: ../docs/assets/starsim-theme.html
 
+# The changelog is CHANGELOG.md, included by docs/11-changelog.qmd, rather than the page
+# great-docs generates from GitHub Releases: the releases here are data assets, not notes.
+changelog:
+  enabled: false
+
 # `title` only: with no `contents` or `sections`, great-docs discovers the public API
 # itself and groups it by type, so there is no symbol list to keep in step with the code.
 reference:
