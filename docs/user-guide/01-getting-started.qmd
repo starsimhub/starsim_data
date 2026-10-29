@@ -42,10 +42,10 @@ The base installation requires `numpy`, `sciris`, `h5py`, `pandas` and `matplotl
 ```{python}
 import starsim_data as ssd
 
-ssd.list_datasets(detailed=True)[['dataset', 'description', 'tier', 'locations']]
+ssd.list_datasets(detailed=True)[['dataset', 'description', 'access', 'locations']]
 ```
 
-The `tier` column says where each dataset lives: tier 0 is bundled inside the wheel and reads without network access, tier 1 is downloaded on demand. See [Data tiers](user-guide/tiers.qmd).
+The `access` column says how you get each dataset. **Bundled** data is inside the package and reads instantly, with no network access. **Fetched** data is prepared by this package but kept out of it to save space; it is downloaded from the package's own releases the first time it is used. **Downloaded** data comes from its original publisher, such as the UN, and is also cached after the first use. [Bundled, fetched and downloaded data](user-guide/access.qmd) explains the difference.
 
 ## Loading a dataset
 
@@ -82,12 +82,7 @@ The canonical name is not required. ISO codes, official names, common abbreviati
 [ssd.resolve(name) for name in ["Côte d'Ivoire", 'cote divoire', 'Ivory Coast', 'CIV']]
 ```
 
-A name that does not match raises an error rather than resolving to the nearest candidate, though the error does suggest possibilities:
-
-```{python}
-#| error: true
-ssd.load('Keyna', which='deaths')
-```
+A name that does not match raises an error rather than resolving to the nearest candidate, though the error does suggest possibilities: `ssd.load('Keyna', which='deaths')` gives "location 'Keyna' not found (did you mean: Kenya, China, Ghana?)".
 
 The reasoning behind this division of labour — an exact table performs the resolution, and approximate matching only contributes to the error message — is discussed in [Locations](user-guide/locations.qmd).
 
@@ -153,10 +148,8 @@ ssd.fetch('kenya', which='life_table', years=2020)      # qx, lx, ex, and the re
 ssd.fetch('kenya', which='births', variant='High')      # a different projection variant
 ```
 
-These are the only calls on this page that access the network. [Data tiers](user-guide/tiers.qmd) covers the distinction.
+These are the only calls on this page that access the network. [Bundled, fetched and downloaded data](user-guide/access.qmd) covers the distinction.
 
 ## Further reading
 
-The sidebar lists every page in the guide. [Data tiers](user-guide/tiers.qmd) is the natural next one:
-it explains the distinction between the bundled data and the downloads, which the rest of
-the documentation assumes.
+The sidebar lists every page in the guide. [Bundled, fetched and downloaded data](user-guide/access.qmd) is the natural next one: it explains the distinction between the data inside the package and the data that is downloaded, which the rest of the documentation assumes.

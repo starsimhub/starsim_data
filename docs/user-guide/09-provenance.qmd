@@ -44,7 +44,7 @@ sorted(ssd.provenance().keys())
 The bundled datasets are not distributed under this package's MIT license. Each retains the terms of its original authors.
 
 ```{python}
-ssd.list_datasets(detailed=True)[['dataset', 'tier', 'license']]
+ssd.list_datasets(detailed=True)[['dataset', 'access', 'license']]
 ```
 
 `NOTICE.md` in the repository holds the full attribution text, and `licenses/` holds the upstream license texts in full. The tests assert that the license recorded in each store matches the one asserted in `NOTICE.md`, so the machine-readable and human-readable attributions cannot drift apart without a test failing.
@@ -85,11 +85,11 @@ df.attrs['provenance'].files[0]['sha256']
 
 Four measures, in decreasing order of importance.
 
-**Pin the package version.** Everything in tier 0 is byte-identical for a given version of the package, so pinning the version pins the demographic series, the contact matrices and the node table together. This is the single most effective step, and it requires nothing beyond a version specifier in a requirements file.
+**Pin the package version.** Everything bundled or fetched is byte-identical for a given version of the package, so pinning the version pins the demographic series, the contact matrices and the node table together. This is the single most effective step, and it requires nothing beyond a version specifier in a requirements file.
 
 **Pin the revision.** `load(..., revision=2024)` fixes the WPP release explicitly. Without it, `load()` uses the most recent bundled revision, which is convenient but means a future version of the package could change the data an existing script reads. Stores are added rather than replaced, so a pinned revision remains available.
 
-**Record what was fetched.** Anything fetched from upstream depends on when it was fetched, since the sources revise. `ssd.cache_info()` reports what a run actually used, with retrieval timestamps and checksums; saving that alongside the results makes the dependency explicit.
+**Record what was downloaded.** Anything downloaded from its original publisher depends on when it was downloaded, since the publishers revise their files. `ssd.cache_info()` reports what a run actually used, with retrieval timestamps and checksums; saving that alongside the results makes the dependency explicit.
 
 **Record the boundary source.** Two analyses of the same country using different boundary sources are not directly comparable, because the sources do not always agree on how a country is subdivided. The source is recorded per row in `nodes.source` and in the provenance of any fetched geometry.
 

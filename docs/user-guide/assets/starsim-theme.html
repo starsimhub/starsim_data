@@ -1,11 +1,53 @@
 <!--
-  Small style overrides so the site matches the rest of the Starsim documentation
+  Style overrides so the site looks like the rest of the Starsim documentation
   (https://docs.starsim.org). Pulled in by docs/great-docs.yml via include_in_header.
 
   Everything else about the site -- the sidebar, the navbar entries, the API reference --
-  is produced by great-docs itself and is deliberately not touched here.
+  is produced by great-docs and quartodoc, and is deliberately not touched here.
 -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Raleway:ital,wght@0,400;0,500;0,700;1,400&display=swap">
 <style>
+  /* Raleway throughout, as on the Starsim site (code keeps its monospace font). */
+  body, p, h1, h2, h3, h4, h5, h6, .navbar, .navbar-title, .sidebar, .nav-link, .menu-text,
+  #TOC, .table, .callout, .panel-tabset, .dropdown-menu {
+    font-family: "Raleway", "Montserrat", "Lato", "Open Sans", sans-serif !important;
+  }
+
+  /* Headings and navbar links as on the Starsim site: lighter headings, and blue links. */
+  h1, .title { font-weight: 600 !important; }
+  h2, h3, h4, h5, h6 { font-weight: 500 !important; }
+  .navbar-nav .nav-link {
+    font-weight: 400 !important;
+    color: rgb(31, 78, 182) !important;
+  }
+
+  /* The package name in the navbar as plain text, without great-docs' outlined box. */
+  .navbar-title {
+    border: none !important;
+    padding: 0 !important;
+    font-weight: 700 !important;
+  }
+  .navbar-title .version-badge {
+    font-family: inherit !important;
+    font-weight: 500;
+    font-size: 0.55em;
+    vertical-align: middle;
+  }
+
+  /* Sidebar: section headings in bold, and the current page in the theme's blue rather
+     than great-docs' orange and underline. */
+  .sidebar-item-section > .sidebar-item-container .menu-text {
+    font-weight: 700 !important;
+    color: var(--bs-body-color);
+  }
+  .sidebar-link.active,
+  .sidebar-link.active .menu-text {
+    color: var(--bs-primary) !important;
+    text-decoration: none !important;
+  }
+
   /* Matplotlib figures are emitted at their native pixel size, which for a multi-panel
      figure is wider than the content column. !important throughout this file because the
      theme stylesheet loads after it. */

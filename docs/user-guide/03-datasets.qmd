@@ -144,7 +144,7 @@ Pinning the revision is advisable in any analysis intended to be reproduced late
 
 ## Contact matrices
 
-Contact matrices give the average number of daily contacts between people in each pair of age bins. Three sources are available, each providing five contact settings, selected with the `kind` argument. One of them, `prem2021`, is bundled; the other two are fetched on first use (see [Tiers](tiers.qmd)). The default, `prem`, is `prem2021`, or `prem2017` for the ten locations `prem2021` lacks (see [Which source](#which-source)).
+Contact matrices give the average number of daily contacts between people in each pair of age bins. Three sources are available, each providing five contact settings, selected with the `kind` argument. One of them, `prem2021`, is bundled; the other two are fetched on first use (see [Bundled, fetched and downloaded data](access.qmd)). The default, `prem`, is `prem2021`, or `prem2017` for the ten locations `prem2021` lacks (see [Which source](#which-source)).
 
 ```{python}
 matrix = ssd.load('kenya')   # prem2021
@@ -160,15 +160,15 @@ matrix.loc[25, 30]
 ```{python}
 #| echo: false
 pd.DataFrame([
-    dict(source='prem', tier='0 (bundled)', shape='16x16', bins='5-year, 0-4 ... 75+',
+    dict(source='prem', access='bundled', shape='16x16', bins='5-year, 0-4 ... 75+',
          countries=187, study='prem2021, with prem2017 for the ten locations it lacks'),
-    dict(source='prem2021', tier='0 (bundled)', shape='16x16', bins='5-year, 0-4 ... 75+',
+    dict(source='prem2021', access='bundled', shape='16x16', bins='5-year, 0-4 ... 75+',
          countries=177, study='Prem et al. 2021'),
-    dict(source='prem2017', tier='1 (fetched)', shape='16x16', bins='5-year, 0-4 ... 75+',
+    dict(source='prem2017', access='fetched', shape='16x16', bins='5-year, 0-4 ... 75+',
          countries=152, study='Prem et al. 2017'),
-    dict(source='mistry2021', tier='1 (fetched)', shape='85x85', bins='single-year, 0 ... 84+',
+    dict(source='mistry2021', access='fetched', shape='85x85', bins='single-year, 0 ... 84+',
          countries=36, study='Mistry et al. 2021'),
-    dict(source='mistry2021_us', tier='1 (fetched)', shape='85x85', bins='single-year, 0 ... 84+',
+    dict(source='mistry2021_us', access='fetched', shape='85x85', bins='single-year, 0 ... 84+',
          countries='51 US states (with DC)', study='Mistry et al. 2021'),
 ])
 ```

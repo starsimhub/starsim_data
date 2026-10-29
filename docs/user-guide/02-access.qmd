@@ -1,0 +1,94 @@
+---
+title: "Bundled, fetched and downloaded data"
+guide-section: "Getting started"
+tags: [Concepts]
+authorship:
+  human: 10
+  ai: 90
+  note: Written by AI, based on an earlier version a human reviewed and partly rewrote
+---
+
+Every dataset in `starsim_data` is one of three kinds, and the function you call tells you which:
+
+| | Comes from | How you get it | Network | Same for everyone on a version? |
+|---|---|---|---|---|
+| **Bundled** | Inside the package | `load()`, `load_nodes()`, `distances()` | Never | Yes |
+| **Fetched** | This package's releases | `fetch()` | First use only | Yes |
+| **Downloaded** | The original publisher | `fetch()`, `fetch_shapes()`, `fetch_nodes()`, `fetch_raster()` | First use only | Unless the publisher changes the file |
+
+Fetched and downloaded data are both cached after the first use, so they need the network only once.
+
+The `access` column of `list_datasets()` says which kind each dataset is:
+
+```{python}
+import starsim_data as ssd
+
+ssd.list_datasets(detailed=True)[['dataset', 'access', 'levels', 'locations']]
+```
+
+## Bundled
+
+The demographic series (decadal, Medium variant), the default contact matrices (`prem2021`, and `prem2017` for the ten locations it lacks), the location table and the node table are inside the package, roughly 8 MB of it. Everyone who installs a given version has byte-identical data with no network access, so the package works offline, its tests are deterministic, and citing a version fully specifies the data an analysis used.
+
+`load()` only ever reads bundled data. Ask it for anything else, e.g. `ssd.load('kenya', which='life_table')`, and rather than downloading it, it raises an error that names the `fetch()` call to use instead.
+
+## Fetched
+
+Some data that this package prepares is too large to put inside it, or needed by too few users:
+
+- The full `prem2017` and `mistry2021` contact matrices, about 3 MB each.
+- The US states' contact matrices (`mistry2021_us`, 5 MB) and their populations by single year of age (`population_us`).
+
+These are built the same way as the bundled data and published as files alongside each release. `fetch()` downloads one the first time it is used, makes sure it is exactly the file that was published, and caches it. A given version of the package therefore fixes their contents exactly, as it does for the bundled data, and their locations and provenance can be listed without downloading anything.
+
+## Downloaded
+
+Everything else comes straight from the organization that publishes it:
+
+- Annual UN WPP series, complete life tables, other projection variants and summary indicators, from the UN's bulk files (17–290 MB each).
+- Administrative boundaries with geometry, from UNOCHA, geoBoundaries or GADM (tens of megabytes per country at admin level 2).
+- Gridded population rasters from WorldPop (1–40 MB per country-year), and the subnational populations `fetch_nodes()` computes from them.
+
+These are cached after the first use too, and each cached file records where and when it was retrieved. Since the files belong to their publishers, a publisher that revises one changes what a fresh download gives you; [Provenance and reproducibility](provenance.qmd) covers how to pin them.
+
+## The cache
+
+Fetched and downloaded files share one cache:
+
+```{python}
+ssd.cache_dir()
+```
+
+```python
+ssd.cache_info()      # what is cached, its source, and when it was retrieved
+ssd.clear_cache()     # or clear_cache('wpp/*')
+```
+
+The cache location follows `ssd.options.cache_dir`, or the `STARSIM_DATA_CACHE_DIR` environment variable, and otherwise defaults to a platform-appropriate directory. Nothing is created until something is cached, so importing the package does not touch the filesystem.
+
+## Which kind something is
+
+The split is by size and use, not subject. The same UN WPP 2024 release appears as both bundled and downloaded data: decadal snapshots of five series take 4 MB and are bundled, while the complete annual life tables take 290 MB and are downloaded. Likewise, one contact source is bundled, the one a model should use unless it has a reason not to (see [Datasets](datasets.qmd#which-source)), and the others are fetched.
+
+```{python}
+#| echo: false
+import pandas as pd
+pd.DataFrame([
+    dict(requirement="Age structure, mortality, births, fertility, contact matrices",
+         call="load()", access="bundled", cost="instant"),
+    dict(requirement="Positions, areas and separations of administrative units",
+         call="load_nodes(), distances()", access="bundled", cost="instant"),
+    dict(requirement="The other contact matrices (prem2017, mistry2021)",
+         call="fetch()", access="fetched", cost="3 MB each, once"),
+    dict(requirement="US states: contact matrices and populations",
+         call="fetch()", access="fetched", cost="5 MB, once"),
+    dict(requirement="Annual rates, life tables, other variants",
+         call="fetch()", access="downloaded", cost="17-290 MB, once"),
+    dict(requirement="Polygon geometry, for mapping or spatial joins",
+         call="fetch_shapes()", access="downloaded", cost="1-50 MB per country"),
+    dict(requirement="Subnational population estimates",
+         call="fetch_nodes()", access="downloaded", cost="1-40 MB per country"),
+])
+```
+
+An analysis confined to the first two rows needs no network access at all, and the data it uses is fully specified by a version number.

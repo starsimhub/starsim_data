@@ -106,7 +106,7 @@ For level-1 units, the script also sums WorldPop's 2020 raster within each unit 
 
 Roughly the sequence to follow:
 
-1. Put the human-readable source in `raw_data/`, if it is small enough to track. If it is not, it belongs in tier 1 and should be fetched rather than built.
+1. Put the human-readable source in `raw_data/`, if it is small enough to track. If it is not, it should be fetched or downloaded rather than bundled.
 2. Write a build script that produces an `.h5` store with a `spec` attribute naming its layout, and a `provenance` attribute produced by `scripts/provenance.py`.
 3. If the shape is unlike anything already present, add a layout shaper and register it; otherwise reuse an existing layout. See [Architecture](architecture.qmd).
 4. Add a one-line description to `registry.DESCRIPTIONS`.

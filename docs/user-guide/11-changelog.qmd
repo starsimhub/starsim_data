@@ -5,6 +5,16 @@ authorship:
   human: 0
   ai: 100
   note: Written by AI
+execute:
+  freeze: false # Re-read CHANGELOG.md on every build
 ---
 
-{{< include ../../../../CHANGELOG.md >}}
+```{python}
+#| echo: false
+#| output: asis
+# CHANGELOG.md, without its own "# Changelog" heading, which the page title already gives.
+# Pages run in docs/_quarto/default/user-guide/, the copy great-docs builds from.
+import pathlib
+text = pathlib.Path('../../../../CHANGELOG.md').read_text(encoding='utf-8')
+print(text.split('\n', 1)[1])
+```

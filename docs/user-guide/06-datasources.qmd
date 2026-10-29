@@ -16,16 +16,16 @@ The operative attribution and license text is in [NOTICE.md](https://github.com/
 
 ## What comes from where
 
-| Data | Source | Tier | How you get it |
+| Data | Source | Access | How you get it |
 |---|---|---|---|
-| Births, deaths, migration, population | UN WPP 2024 | 0 — bundled | `load()` |
-| Contact matrices | Prem 2017 / Prem 2021 / Mistry 2021 | 0 — bundled | `load()` |
-| Node table: centroids, areas, p-codes | UNOCHA COD-AB, geoBoundaries | 0 — bundled | `load_nodes()` |
-| Annual series, life tables, other variants | UN WPP 2024 bulk files | 2 — fetched | `fetch()` |
-| Administrative boundaries with geometry | UNOCHA, geoBoundaries, GADM | 2 — fetched | `fetch_shapes()` |
-| Gridded population | WorldPop | 2 — fetched | `fetch_raster()`, `fetch_nodes()` |
+| Births, deaths, migration, population | UN WPP 2024 | bundled | `load()` |
+| Contact matrices | Prem 2017 / Prem 2021 / Mistry 2021 | bundled (`prem`), fetched (the rest) | `load()` |
+| Node table: centroids, areas, p-codes | UNOCHA COD-AB, geoBoundaries | bundled | `load_nodes()` |
+| Annual series, life tables, other variants | UN WPP 2024 bulk files | downloaded | `fetch()` |
+| Administrative boundaries with geometry | UNOCHA, geoBoundaries, GADM | downloaded | `fetch_shapes()` |
+| Gridded population | WorldPop | downloaded | `fetch_raster()`, `fetch_nodes()` |
 
-Tier 0 is in the wheel: no network access, byte-identical for everyone on the same version. Tier 1 is downloaded on demand and cached. The split is by size rather than subject, which is why the same UN WPP release appears in both.
+Bundled data is inside the package: no network access, byte-identical for everyone on the same version. Fetched data is prepared by this package and downloaded from its releases on first use; downloaded data comes from its original publisher. Both are cached. The split is by size rather than subject, which is why the same UN WPP release is both bundled and downloaded; see [Bundled, fetched and downloaded data](access.qmd).
 
 ---
 
@@ -58,12 +58,12 @@ The standard national demographic series, covering all countries from 1950 to 21
 
 Three sources are available. `prem2021` is bundled; the other two are fetched on first use. They differ in age resolution and country coverage, and to a lesser extent in method. The default contact matrices are `prem2021`, or `prem2017` for the ten locations it lacks; see [Datasets](datasets.qmd#which-source).
 
-| Source | Tier | Matrix | Age bins | Countries | License |
+| Source | Access | Matrix | Age bins | Countries | License |
 |---|---|---|---|---|---|
-| `prem2021` | 0 (bundled) | 16×16 | 5-year, 0–75+ | 177 | GPL-3.0 |
-| `prem2017` | 1 (fetched) | 16×16 | 5-year, 0–75+ | 152 | GPL-3.0 |
-| `mistry2021` | 1 (fetched) | 85×85 | single-year, 0–84+ | 36 | Apache-2.0 |
-| `mistry2021_us` | 1 (fetched) | 85×85 | single-year, 0–84+ | 51 US states (with DC) | Apache-2.0 |
+| `prem2021` | bundled | 16×16 | 5-year, 0–75+ | 177 | GPL-3.0 |
+| `prem2017` | fetched | 16×16 | 5-year, 0–75+ | 152 | GPL-3.0 |
+| `mistry2021` | fetched | 85×85 | single-year, 0–84+ | 36 | Apache-2.0 |
+| `mistry2021_us` | fetched | 85×85 | single-year, 0–84+ | 51 US states (with DC) | Apache-2.0 |
 
 **Prem et al. 2017 and 2021** project contact patterns onto countries lacking their own survey, using household composition and demographic structure. The 2021 paper is an update covering more countries, with a revised method and a comparison against empirical data, and is generally preferable except when reproducing earlier work. Both provide the same five settings: `all`, `home`, `work`, `school` and `community`.
 
@@ -174,7 +174,7 @@ WorldPop's server is also slow, at roughly 0.3 MB/s, so the first request for a 
 
 Upstream sources change over time. Four measures keep an analysis reproducible in spite of that:
 
-1. **Pin the package version.** Everything in tier 0 is byte-identical for a given `starsim_data` version, so pinning the version pins the demographics, the contact matrices and the node table together.
+1. **Pin the package version.** Everything bundled is byte-identical for a given `starsim_data` version, so pinning the version pins the demographics, the contact matrices and the node table together.
 2. **Pin the revision, not just the version.** `load(..., revision=2024)` fixes the WPP release explicitly, so a future rebuild that adds WPP 2026 does not change data already in use.
 3. **Keep the provenance.** Every frame carries `.attrs['provenance']` — source, URL, license, citation, build timestamp and git SHA. Cached downloads get a sidecar with the URL, timestamp, size and SHA-256. Record it alongside your results; `ssd.cache_info()` shows what a run actually used.
 4. **Record the boundary source.** It is available in `nodes.source` and in the provenance of any fetched geometry. Two analyses of the same country using different boundary sources are not directly comparable, and the discrepancy is difficult to detect after the fact.

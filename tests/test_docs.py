@@ -97,19 +97,23 @@ def test_offline():
 @sc.timer()
 def test_config():
     """
-    The sidebar and the reference must stay great-docs' job rather than ours.
+    The sidebar stays great-docs' job, and the API reference lists every module.
 
-    If either needed configuring by hand it would need keeping in step with the code,
-    which is exactly what this arrangement exists to avoid.
+    The guide sidebar is built from each page's `guide-section`, so it needs no config to
+    keep in step. The API reference is written by quartodoc, one page per module, so the
+    module list is the one thing that has to match the code; this checks it does.
     """
     sc.heading("Testing the great-docs config")
     config = yaml.safe_load((REPO / "docs" / "great-docs.yml").read_text())
     assert config["user_guide"] == "user-guide" # The narrative pages live in docs/user-guide/
     assert config["homepage"] == "user_guide" # And the first is the landing page
     assert "sections" not in config, "sections would give each group its own sidebar"
-    # `title` is fine; `contents` or `sections` would mean listing symbols by hand
     reference = config.get("reference", {})
-    assert set(reference) <= {"title", "desc"}, "the API reference should be discovered, not listed"
+    assert set(reference) <= {"title", "desc"}, "great-docs' own reference is replaced by quartodoc's"
+    listed = [name for section in config["quartodoc"]["sections"] for name in section["contents"]]
+    modules = {path.stem for path in (REPO / "starsim_data").glob("*.py")} - {"__init__", "version"}
+    assert len(listed) == len(set(listed)), "a module is listed twice in the API reference"
+    assert set(listed) == modules, f"the API reference should list every module: missing {modules - set(listed)}, extra {set(listed) - modules}"
     return config
 
 

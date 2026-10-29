@@ -83,8 +83,8 @@ class Dataset:
     Attributes:
         name (str): the dataset name, as passed to `load(which=...)`.
         layout (str): how the values are stored; see `LAYOUTS`.
-        tier (int): 0 if the dataset is bundled in the wheel, 1 if it is fetched from
-            upstream and cached.
+        tier (int): 0 if the dataset is bundled in the wheel, 1 if it is fetched or
+            downloaded and cached (see `access` for which).
         levels (tuple): the administrative levels covered; `(0,)` for national data.
         sources (tuple): `Source` records, oldest revision first.
         license (str): the upstream data license, e.g. `'CC BY 3.0 IGO'`.
@@ -107,6 +107,18 @@ class Dataset:
     loader: object = dc.field(default=None, repr=False)
     locations: tuple = dc.field(default=(), repr=False)
     provenance: dict = dc.field(default_factory=dict, repr=False)
+
+    @property
+    def access(self):
+        """How the data is reached, in the terms the documentation uses.
+
+        `'bundled'` is inside the package and read by `load()`; `'fetched'` is a store this
+        package publishes, downloaded once and verified; `'downloaded'`
+        comes from its original publisher, such as the UN, and is cached.
+        """
+        if self.tier == 0:
+            return 'bundled'
+        return 'fetched' if any(s.url for s in self.sources) else 'downloaded'
 
     @property
     def level(self):

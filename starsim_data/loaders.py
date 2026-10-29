@@ -64,8 +64,8 @@ def list_datasets(detailed=False, tier=None):
 
     Args:
         detailed (bool): if True, return a dataframe of the registry -- name, layout,
-            tier, admin level, location count, license and revisions -- rather than
-            just the names.
+            access (bundled, fetched or downloaded), admin level, location count, license
+            and revisions -- rather than just the names.
         tier (int): restrict to one tier (0 bundled, 1 fetched).
 
     Returns:
@@ -85,7 +85,7 @@ def list_datasets(detailed=False, tier=None):
             dataset     = ds.name,
             description = ds.description,
             layout      = ds.layout,
-            tier        = ds.tier,
+            access      = ds.access,
             levels      = sc.strjoin(ds.levels),
             locations   = ds.n_locations,
             revisions   = sc.strjoin(ds.revisions),
@@ -269,7 +269,7 @@ def load(location, which='prem', kind='all', revision=None, level=None):
     if (level is not None) and (ds.layout != 'nodes'):
         raise ValueError(f'level={level!r} does not apply to {which!r}; only the node table is addressed by administrative level')
     if ds.tier > 0: # `load` never touches the network; say so rather than quietly downloading
-        raise ValueError(f'{which!r} is not bundled (tier {ds.tier}); use fetch({location!r}, which={which!r}) to download it')
+        raise ValueError(f'{which!r} is not bundled; use fetch({location!r}, which={which!r}) to download it')
     return _read(which, location, kind=kind, revision=revision, level=level)
 
 

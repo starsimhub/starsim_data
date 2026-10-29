@@ -29,7 +29,7 @@ pd.DataFrame([
 ])
 ```
 
-Import order matters, because two modules register themselves when they are imported: `loaders` adds its layout shapers and `fetching` adds its tier-2 datasets, both of which require `registry` to exist first. The order is fixed in `__init__.py`.
+Import order matters, because two modules register themselves when they are imported: `loaders` adds its layout shapers and `fetching` adds its tier-1 datasets, both of which require `registry` to exist first. The order is fixed in `__init__.py`.
 
 ## Import conventions
 
@@ -114,7 +114,7 @@ Demographic stores are named by revision, so a new UN release adds a file rather
 
 ## Tiers, in code
 
-The tier described in [Data tiers](tiers.qmd) is a field on the descriptor, and `load()` enforces it:
+Internally, whether a dataset is bundled is its *tier*, a field on the descriptor: 0 for bundled, 1 for fetched or downloaded (the descriptor's `access` property gives the words used in [Bundled, fetched and downloaded data](access.qmd)). `load()` enforces it:
 
 ```{python}
 #| error: true

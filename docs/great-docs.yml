@@ -87,7 +87,41 @@ pre_render: user-guide/assets/authorship.py
 changelog:
   enabled: false
 
-# `title` only: with no `contents` or `sections`, great-docs discovers the public API
-# itself and groups it by type, so there is no symbol list to keep in step with the code.
+# The API reference is written by quartodoc (the quartopydoc fork), as for Starsim, with
+# one page per module. Each page lists whatever its module defines, so the only thing to
+# keep in step with the code is the list of modules, which tests/test_docs.py checks.
 reference:
   title: API
+
+quartodoc:
+  package: starsim_data
+  title: API reference
+  style: pkgdown
+  dir: api
+  parser: google
+  render_interlinks: true
+  sections:
+    - title: Bundled data
+      desc: Read the data inside the package, with no network access.
+      contents:
+        - loaders
+        - locations
+        - nodes
+    - title: Fetched data
+      desc: Download, cache and process data that is too large to bundle.
+      contents:
+        - fetching
+        - shapes
+        - rasters
+        - cache
+    - title: Plotting
+      contents:
+        - plotting
+    - title: Extending and configuring
+      contents:
+        - registry
+        - settings
+
+# Style only great-docs' own widgets and the page layout, and leave the page content to
+# the cosmo theme and starsim-theme.html, as on the Starsim site.
+styles: widgets
