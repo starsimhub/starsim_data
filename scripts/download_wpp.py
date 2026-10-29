@@ -40,6 +40,7 @@ IND_CBR  = 55 # Crude birth rate
 IND_CNMR = 66 # Crude rate of net migration
 IND_MX   = 79 # Age-specific mortality rate m(x,n), 5-year abridged
 IND_POP  = 46 # Population by 5-year age groups and sex
+IND_ASFR = 17 # Fertility rates by age of mother, 5-year (births per 1,000 women)
 
 
 def read_token():
@@ -151,6 +152,15 @@ def main():
         wide = wide.rename(columns={'TimeLabel': 'Time', 'AgeStart': 'AgeGrp', 'Female': 'PopFemale', 'Male': 'PopMale'})
         wide.to_csv(pop_path, index=False)
         print(f'  -> wpp_population.csv ({len(wide)} rows)')
+
+    fert_path = WPP_OUT / 'wpp_fertility.csv'
+    if not skip(fert_path, args.skip_existing):
+        print('  age-specific fertility rate (ASFR, 5-year)...')
+        asfr = fetch(token, IND_ASFR, loc_ids)
+        asfr = asfr[['ISO2_code', 'TimeLabel', 'AgeStart', 'Value']]
+        asfr = asfr.rename(columns={'TimeLabel': 'Time', 'AgeStart': 'AgeGrpStart', 'Value': 'ASFR'})
+        asfr.to_csv(fert_path, index=False)
+        print(f'  -> wpp_fertility.csv ({len(asfr)} rows)')
 
     print('Done. Now run: python scripts/build_demographics.py --check')
     return

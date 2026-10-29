@@ -16,7 +16,7 @@ def test_datasets():
     assert set(datasets) == set(ssd.list_datasets()) # The registry and the listing agree
 
     df = ssd.list_datasets(detailed=True)
-    assert set(df.columns) == {"dataset", "description", "layout", "tier", "levels", "locations", "revisions", "license"} # The detailed listing is a frame
+    assert set(df.columns) == {"dataset", "description", "layout", "access", "levels", "locations", "revisions", "license"} # The detailed listing is a frame
     assert len(df) == len(ssd.list_datasets()) # With a row per dataset
 
     ssd.registry.refresh()
@@ -33,6 +33,10 @@ def test_tiers():
     assert "life_table" in ssd.list_datasets(tier=1) # Fetched
     assert "life_table" not in ssd.list_datasets(tier=0) # Not bundled
     assert "prem2021" in ssd.list_datasets(tier=0) # Bundled
+    access = {name: ds.access for name, ds in ssd.registry.datasets().items()}
+    assert access["prem2021"] == "bundled"
+    assert access["mistry2021"] == "fetched" # Published by this package
+    assert access["life_table"] == "downloaded" # From the UN
     assert "prem2017" in ssd.list_datasets(tier=1) # Fetched, not bundled
     with pytest.raises(ValueError, match="not bundled.*use fetch"): # load() never reaches for the network; it says so instead
         ssd.load("Kenya", which="life_table")

@@ -2,7 +2,17 @@
 
 All notable changes to `starsim_data` are recorded here. Versions follow [semantic versioning](https://semver.org); the *data* is versioned too, so a change to a bundled dataset is a release, not an amendment.
 
-## 2.0.0 (2026-10-22)
+## Version 2.1.0 (2026-10-29)
+
+- **Age-specific fertility rates.** `ssd.load('nigeria', which='fertility')` returns UN WPP 2024's fertility rates by 5-year age group of mother (`10–14` to `50–54`), as `[Time, AgeGrpStart, ASFR]`, in births per 1,000 women per year, for all 187 countries, bundled like `births` (decadal, 1950–2100, Medium variant). It is what `ss.Pregnancy` needs, where `births` (the crude rate) is what `ss.Births` needs. It adds about 0.1 MB to the download (0.65 MB installed).
+- `ssd.fetch('nigeria', which='fertility')` gives the same every year, or for another variant, from the UN's `WPP2024_Fertility_by_Age5.csv.gz` (83 MB, once).
+- `ssd.__version__` is the package's version; it said `0.4.0` in 2.0.0.
+- `ssd.list_datasets(detailed=True)` has an `access` column, saying whether each dataset is **bundled** (inside the package), **fetched** (published with this package's releases and downloaded once) or **downloaded** (from its original publisher, such as the UN), in place of the `tier` column. `Dataset.access` gives the same.
+- Each documentation page shows how much of it was written by a human and how much by AI.
+- The documentation looks more like Starsim's (Raleway, its colors and headings), its API reference is one page per module, written by quartodoc as Starsim's is, and "Data tiers" is now [Bundled, fetched and downloaded data](https://starsimhub.github.io/starsim_data/user-guide/access.html).
+- The documentation is built with Sciris' forks of great-docs and quartodoc (quartopydoc), installed with `pip install --group docs`, and its sources have moved to `docs/user-guide/`, with the configuration in `docs/great-docs.yml`.
+
+## Version 2.0.0 (2026-10-22)
 
 - **Contact matrices for 187 locations by default.** `ssd.load('kenya')` returns the contact matrices of Prem et al. 2021 (`prem2021`), and for the ten locations that study left out (Japan, Australia, Haiti and seven others) those of Prem et al. 2017 (`prem2017`). Pass `which='prem2021'` for that study alone.
 - **A smaller package.** The other contact sources, `prem2017` and `mistry2021`, are downloaded the first time they are used, e.g. `ssd.fetch('france', which='mistry2021')`, rather than shipped with the package.
@@ -13,7 +23,7 @@ All notable changes to `starsim_data` are recorded here. Versions follow [semant
 - The fetched stores are downloaded from a GitHub release rather than from raw.githubusercontent.com, which rate-limits heavily.
 - Requires Sciris 3.5.2 or later.
 
-## 1.0.0 (2026-08-08)
+## Version 1.0.0 (2026-08-08)
 
 Merged with the [laser-init](https://github.com/laser-base/laser-init) project with additional features for geospatial modeling, name resolution, etc.
 

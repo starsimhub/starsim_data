@@ -10,7 +10,7 @@ import pytest
 
 import starsim_data as ssd
 
-DEMOGRAPHIC = ["births", "deaths", "migration", "population"]
+DEMOGRAPHIC = ["births", "deaths", "migration", "population", "fertility"]
 
 
 @sc.timer()
@@ -67,11 +67,27 @@ def test_population():
     return p
 
 
+@sc.timer()
+def test_fertility():
+    """ Age-specific fertility is per 1,000 women, peaks in the twenties, and sums to the TFR """
+    sc.heading("Testing fertility")
+    f = ssd.load("Nigeria", which="fertility")
+    assert list(f.columns) == ["Time", "AgeGrpStart", "ASFR"] # Starsim-ready
+    assert sorted(set(f["AgeGrpStart"])) == list(range(10, 55, 5)) # Ages of mother 10-14 to 50-54
+    assert (f["ASFR"] >= 0).all() and f["ASFR"].notna().all() # Present and non-negative
+    f2020 = f[f.Time == 2020].set_index("AgeGrpStart")["ASFR"]
+    assert f2020.idxmax() in (20, 25, 30) # Peaks in the twenties
+    tfr = 5 * f2020.sum() / 1000 # Five years in each group, per 1,000 women
+    assert 4 < tfr < 6 # Nigeria's 2020 TFR is about 5
+    return f
+
+
 if __name__ == "__main__":
     T = sc.timer()
 
     births = test_births()
     deaths = test_deaths()
     pop    = test_population()
+    fert   = test_fertility()
 
     T.toc()

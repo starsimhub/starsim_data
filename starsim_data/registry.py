@@ -11,9 +11,9 @@ manifest `data/fetched.json`, which `scripts/build_hdf5.py` writes. Anything els
 added with `register_dataset()`.
 
 `LAYOUTS` maps a layout name to the function that turns a stored array into a dataframe
-(`matrix`, `crude`, `mortality`, `population`, `nodes`). This replaces dispatching on
-`spec['layout']` through an if-chain, and means a new data family is a new shaper plus a
-registry entry rather than another branch inside `load()`.
+(`matrix`, `crude`, `mortality`, `population`, `fertility`, `nodes`). This replaces
+dispatching on `spec['layout']` through an if-chain, and means a new data family is a new
+shaper plus a registry entry rather than another branch inside `load()`.
 
 Both tables have a public registration hook, which is the point: `laser-init`'s registry
 is module-level dict literals with no way to extend them, which its own integration
@@ -53,6 +53,7 @@ DESCRIPTIONS = {
     'deaths': 'Age/sex mortality rate m(x), 5-year abridged, UN WPP',
     'migration': 'Crude net-migration rate (per 1,000), UN WPP',
     'population': 'Population by 5-year age group and sex (persons), UN WPP',
+    'fertility': 'Age-specific fertility rate (births per 1,000 women), 5-year, UN WPP',
     'nodes': 'Administrative units: centroids, areas, p-codes and hierarchy',
     'adjacency': 'Administrative units that share a border, as pairs of nodeids',
     'prem': 'Contact matrices by setting: prem2021, with prem2017 for the locations it lacks',
@@ -82,8 +83,8 @@ class Dataset:
     Attributes:
         name (str): the dataset name, as passed to `load(which=...)`.
         layout (str): how the values are stored; see `LAYOUTS`.
-        tier (int): 0 if the dataset is bundled in the wheel, 1 if it is fetched from
-            upstream and cached.
+        tier (int): 0 if the dataset is bundled in the wheel, 1 if it is fetched or
+            downloaded and cached (see `access` for which).
         levels (tuple): the administrative levels covered; `(0,)` for national data.
         sources (tuple): `Source` records, oldest revision first.
         license (str): the upstream data license, e.g. `'CC BY 3.0 IGO'`.
@@ -106,6 +107,18 @@ class Dataset:
     loader: object = dc.field(default=None, repr=False)
     locations: tuple = dc.field(default=(), repr=False)
     provenance: dict = dc.field(default_factory=dict, repr=False)
+
+    @property
+    def access(self):
+        """How the data is reached, in the terms the documentation uses.
+
+        `'bundled'` is inside the package and read by `load()`; `'fetched'` is a store this
+        package publishes, downloaded once and verified; `'downloaded'`
+        comes from its original publisher, such as the UN, and is cached.
+        """
+        if self.tier == 0:
+            return 'bundled'
+        return 'fetched' if any(s.url for s in self.sources) else 'downloaded'
 
     @property
     def level(self):

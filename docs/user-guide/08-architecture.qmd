@@ -2,6 +2,10 @@
 title: "Architecture"
 guide-section: "Internals"
 tags: [Architecture, Internals]
+authorship:
+  human: 5
+  ai: 95
+  note: Written by AI, lightly edited by a human
 ---
 
 This page describes how the package is organized internally: what the modules do, how a call to `load()` is dispatched, how data is stored on disk, and where the extension points are. It is intended for people modifying the package or adding data to it, rather than for people using it.
@@ -25,7 +29,7 @@ pd.DataFrame([
 ])
 ```
 
-Import order matters, because two modules register themselves when they are imported: `loaders` adds its layout shapers and `fetching` adds its tier-2 datasets, both of which require `registry` to exist first. The order is fixed in `__init__.py`.
+Import order matters, because two modules register themselves when they are imported: `loaders` adds its layout shapers and `fetching` adds its tier-1 datasets, both of which require `registry` to exist first. The order is fixed in `__init__.py`.
 
 ## Import conventions
 
@@ -95,8 +99,8 @@ pd.DataFrame([
          structure='/<Location>/<setting> → a square float32 array'),
     dict(file='fetched.json', layout='—',
          structure='the stores that are fetched: URL, SHA-256, locations and provenance'),
-    dict(file='demographics-<revision>.h5', layout='crude, mortality, population',
-         structure='/<series>/<Location> → a (year[, sex, age]) array'),
+    dict(file='demographics-<revision>.h5', layout='crude, mortality, population, fertility',
+         structure='/<series>/<Location> → a (year[, sex][, age]) array'),
     dict(file='population_us.h5 (fetched)', layout='population',
          structure='/<Country:Unit> → a (year, sex, age) array'),
     dict(file='nodes.h5', layout='nodes',
@@ -110,7 +114,7 @@ Demographic stores are named by revision, so a new UN release adds a file rather
 
 ## Tiers, in code
 
-The tier described in [Data tiers](tiers.qmd) is a field on the descriptor, and `load()` enforces it:
+Internally, whether a dataset is bundled is its *tier*, a field on the descriptor: 0 for bundled, 1 for fetched or downloaded (the descriptor's `access` property gives the words used in [Bundled, fetched and downloaded data](access.qmd)). `load()` enforces it:
 
 ```{python}
 #| error: true

@@ -1,0 +1,127 @@
+# Great Docs configuration for starsim_data.
+# https://posit-dev.github.io/great-docs/user-guide/configuration.html
+#
+# Build with:   great-docs build       (output in docs/_site/, gitignored)
+# Preview with: great-docs preview
+#
+# This file is in docs/, and paths in it are relative to docs/. The narrative pages and
+# their assets live in docs/user-guide/. The README is not used for the site -- it remains
+# the front door on GitHub and PyPI -- because the first User Guide page is the landing
+# page instead (see `homepage` below).
+
+parser: google
+
+# starsim_data's modules do `import starsim_data as ssd` (Starsim's convention), which
+# reads as a cyclic alias to the dynamic introspector. Static analysis handles it fine.
+dynamic: false
+
+# One User Guide rather than navbar sections, and the first page of it as the landing
+# page. This is what lets the same grouped sidebar appear on every page including the
+# landing page, with no custom navigation code: great-docs offers either navbar sections
+# or a sidebar on the landing page, and the sidebar is the more useful of the two.
+# Pages are ordered by filename prefix and grouped by their `guide-section` frontmatter.
+#
+# One consequence to know about: the landing page renders at the site root while its
+# siblings render under user-guide/, so cross-page links in 01-getting-started.qmd
+# carry a `user-guide/` prefix. Every other page links to plain siblings.
+user_guide: user-guide
+homepage: user_guide
+
+site_url: "https://starsimhub.github.io/starsim_data/"
+
+# Match the Starsim documentation (https://docs.starsim.org): cosmo, with the page's own
+# headings expanded in the margin rather than collapsed.
+site:
+  theme: cosmo
+  toc: true
+  toc-expand: true
+  toc-depth: 4
+
+# The Starsim icon plus this package's own name, rather than the full Starsim wordmark:
+# this belongs to the Starsim family, but it is not Starsim. The icons are cropped from
+# user-guide/assets/logo.png, the wordmark the other Starsim sites use.
+logo:
+  light: user-guide/assets/icon.png
+  dark: user-guide/assets/icon-dark.png
+  show_title: true
+display_name: Starsim Data
+
+# The landing page is a guide page, so it opens with its own heading rather than a hero
+# block. (It also avoids a bug in great-docs 0.16.0, whose `homepage: user_guide` hero
+# emits an invalid raw-HTML fence that makes the whole page render as literal text.)
+hero: false
+favicon: user-guide/assets/favicon.ico
+
+jupyter: python3
+
+authors:
+  - name: Starsim Development Team
+    role: Author
+    email: info@starsim.org
+    homepage: https://starsim.org
+  - name: Cliff Kerr
+    role: Author
+  - name: Romesh Abeysuriya
+    role: Author
+  - name: Robyn Stuart
+    role: Author
+
+funding:
+  name: "Gates Foundation"
+  roles:
+    - funder
+  homepage: https://www.gatesfoundation.org
+
+# A few small style overrides great-docs has no setting for: figure scaling, navbar
+# centering, the authorship badge, and the Starsim footer.
+include_in_header:
+  - file: user-guide/assets/starsim-theme.html
+
+# Each page's `authorship` frontmatter is shown as a badge at the top right, as on the
+# Starsim site. great-docs has no setting for a Quarto filter, so this script adds
+# user-guide/assets/authorship.lua to the generated _quarto.yml before rendering.
+pre_render: user-guide/assets/authorship.py
+
+# The changelog is CHANGELOG.md, included by 11-changelog.qmd, rather than the page
+# great-docs generates from GitHub Releases: the releases here are data assets, not notes.
+changelog:
+  enabled: false
+
+# The API reference is written by quartodoc (the quartopydoc fork), as for Starsim, with
+# one page per module. Each page lists whatever its module defines, so the only thing to
+# keep in step with the code is the list of modules, which tests/test_docs.py checks.
+reference:
+  title: API
+
+quartodoc:
+  package: starsim_data
+  title: API reference
+  style: pkgdown
+  dir: api
+  parser: google
+  render_interlinks: true
+  sections:
+    - title: Bundled data
+      desc: Read the data inside the package, with no network access.
+      contents:
+        - loaders
+        - locations
+        - nodes
+    - title: Fetched data
+      desc: Download, cache and process data that is too large to bundle.
+      contents:
+        - fetching
+        - shapes
+        - rasters
+        - cache
+    - title: Plotting
+      contents:
+        - plotting
+    - title: Extending and configuring
+      contents:
+        - registry
+        - settings
+
+# Style only great-docs' own widgets and the page layout, and leave the page content to
+# the cosmo theme and starsim-theme.html, as on the Starsim site.
+styles: widgets

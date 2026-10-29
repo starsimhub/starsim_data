@@ -19,8 +19,8 @@ REPO = sc.thispath(__file__).parent
 
 def _version():
     """ Read the package version without importing the package """
-    init = REPO / 'starsim_data' / '__init__.py'
-    for line in init.read_text().splitlines():
+    path = REPO / 'starsim_data' / 'version.py'
+    for line in path.read_text().splitlines():
         if line.startswith('__version__'):
             return line.split('=', 1)[1].strip().strip("\"'")
     return 'unknown'

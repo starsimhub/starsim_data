@@ -2,6 +2,10 @@
 title: "Locations"
 guide-section: "The data"
 tags: [Reference, Concepts]
+authorship:
+  human: 5
+  ai: 95
+  note: Written by AI, lightly edited by a human
 ---
 
 Datasets are keyed by a canonical name — `Kenya`, `United_States`, `Cote_dIvoire` — but users write country names in many other ways. This page describes how an arbitrary string is mapped onto a canonical key, and why the mapping is arranged as it is.

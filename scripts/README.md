@@ -48,13 +48,13 @@ python scripts/download_wpp.py --skip-existing  # only fetch missing series
 
 ## build_demographics.py
 
-Builds `demographics-<revision>.h5` (a group per series: `births`, `migration`, `deaths`, `population`) from the WPP CSVs in [`raw_data/demographics/`](../raw_data/demographics/) (produced by `download_wpp.py`, or downloaded manually), then:
+Builds `demographics-<revision>.h5` (a group per series: `births`, `migration`, `deaths`, `population`, `fertility`) from the WPP CSVs in [`raw_data/demographics/`](../raw_data/demographics/) (produced by `download_wpp.py`, or downloaded manually), then:
 
 ```bash
 python scripts/build_demographics.py --check
 ```
 
-It classifies each WPP CSV by its columns (so exact filenames don't matter), filters to the package's countries and to decadal years 1950–2100, and writes tidy stores keyed by location. Birth and migration are crude national rates; deaths are age/sex-specific mortality (`mx`, 5-year abridged bins); population is by 5-year age groups and sex (absolute persons).
+It classifies each WPP CSV by its columns (so exact filenames don't matter), filters to the package's countries and to decadal years 1950–2100, and writes tidy stores keyed by location. Birth and migration are crude national rates; deaths are age/sex-specific mortality (`mx`, 5-year abridged bins); population is by 5-year age groups and sex (absolute persons); fertility is the age-specific rate (`ASFR`, 5-year age groups of mother).
 
 ## build_nodes.py
 

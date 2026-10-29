@@ -20,13 +20,13 @@ Each file ends with an `if __name__ == "__main__":` block that calls every test 
 | `test_demographics.py` | The build pipeline end to end, from synthetic WPP CSVs through `build_demographics.py` to `load` |
 | `test_demographics_data.py` | Sanity checks on the real bundled demographics (plausible rates, coverage, units) |
 | `test_provenance.py` | Every bundled store is attributable, licenses match `NOTICE.md`, provenance on loaded frames, revision pinning |
-| `test_registry.py` | Dataset descriptors, tiers, sources, layout dispatch, and the registration hooks |
+| `test_registry.py` | Dataset descriptors, tiers and access (bundled, fetched or downloaded), sources, layout dispatch, and the registration hooks |
 | `test_cache.py` | The download cache and `options` — no network: cache hits, sidecars, clearing, settings |
 | `test_fetching.py` | `fetch()`: year parsing and file selection offline, plus `network`-marked tests that check fetched data against the bundled data |
 | `test_nodes.py` | The bundled node table (schema, names, geography, populations), `distances()` and `adjacency()` — all offline |
 | `test_spatial.py` | The `[spatial]` tier: boundary sources and the GADM constraint, WorldPop product selection, and `network`-marked tests of `fetch_shapes()`, `fetch_nodes()` (including our windowed raster sum against rastertoolkit's) and `choropleth()`; skips without geopandas |
 | `test_plotting.py` | The summary figure, single-dataset panels, the population pyramid, the offline node plot, and the error paths |
-| `test_docs.py` | The docs sources: page frontmatter and section order, cross-page links, executed cells staying offline, and great-docs' native navigation |
+| `test_docs.py` | The docs sources: page frontmatter and section order, cross-page links, executed cells staying offline, great-docs' native navigation, and the API reference listing every module |
 
 ## Markers
 

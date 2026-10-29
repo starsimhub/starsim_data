@@ -22,10 +22,11 @@ import build_demographics as bd # Imported here since it is only importable once
 YEARS = bd.YEARS
 AGES_MX = [0, 1, 5, 10]
 AGES_POP = ["0", "1", "2", "100+"]
+AGES_FERT = [15, 20, 45]
 
 
 def make_wpp(wpp_dir):
-    """ Create minimal indicators / life-table / population CSVs for Kenya (KE) & US """
+    """ Create minimal indicators / life-table / population / fertility CSVs for Kenya (KE) & US """
     wpp_dir.mkdir(parents=True)
     isos = ["KE", "US"]
 
@@ -42,10 +43,14 @@ def make_wpp(wpp_dir):
            for iso in isos for y in YEARS for j, a in enumerate(AGES_POP)]
     pd.DataFrame(pop).to_csv(wpp_dir / "population.csv", index=False)
 
+    fert = [dict(ISO2_code=iso, Time=y, AgeGrpStart=a, ASFR=100.0 + a + i)
+            for i, iso in enumerate(isos) for y in YEARS for a in AGES_FERT]
+    pd.DataFrame(fert).to_csv(wpp_dir / "fertility.csv", index=False)
+
 
 @sc.timer()
 def test_pipeline(tmp_path, monkeypatch):
-    """ Build the four demographic stores into a temp dir, point the loader at it, and read them back """
+    """ Build the five demographic series into a temp dir, point the loader at it, and read them back """
     sc.heading("Testing the demographics pipeline")
     data_dir = tmp_path / "data"
     data_dir.mkdir()
@@ -57,7 +62,7 @@ def test_pipeline(tmp_path, monkeypatch):
     bd.build(tmp_path / "wpp")
     ssd.registry.refresh()
     try:
-        assert set(ssd.list_datasets(tier=0)) == {"births", "migration", "deaths", "population"} # All four stores are built
+        assert set(ssd.list_datasets(tier=0)) == {"births", "migration", "deaths", "population", "fertility"} # All five series are built
 
         births = ssd.load("kenya", which="births")
         assert list(births.columns) == ["Time", "CBR"] # Crude birth rate by year
@@ -84,6 +89,11 @@ def test_pipeline(tmp_path, monkeypatch):
         assert list(population.columns) == ["Time", "Sex", "AgeGrp", "Value"] # Starsim-ready
         assert 100 in set(population["AgeGrp"]) # "100+" parsed to 100
         assert set(population["Sex"]) == {"Female", "Male"} # Both sexes
+
+        fertility = ssd.load("United_States", which="fertility")
+        assert list(fertility.columns) == ["Time", "AgeGrpStart", "ASFR"] # Starsim-ready
+        assert len(fertility) == len(YEARS) * len(AGES_FERT) # Every year and age
+        assert np.isclose(fertility.ASFR.iloc[1], 100 + 20 + 1) # US (i=1), the first year, age 20
     finally:
         ssd.registry.refresh() # Forget the temp stores; they are rediscovered lazily, after the patch is undone
     return deaths

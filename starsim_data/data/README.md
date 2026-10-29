@@ -15,6 +15,7 @@ Each store carries a root `spec` attribute recording its `layout`, so `load()` r
 - `/births`, `/migration` (`layout='crude'`) — one value per year (CBR, CNMR), per location.
 - `/deaths` (`layout='mortality'`) — age/sex mortality rate `mx`, a `(year, sex, age)` array per location.
 - `/population` (`layout='population'`) — population by 5-year age groups and sex (absolute persons), `(year, sex, age)` per location.
+- `/fertility` (`layout='fertility'`) — age-specific fertility rate `ASFR` (births per 1,000 women), a `(year, age)` array per location.
 
 **Node table** (`layout='nodes'`), built from UNOCHA COD-AB and geoBoundaries by [`scripts/build_nodes.py`](../../scripts/build_nodes.py):
 

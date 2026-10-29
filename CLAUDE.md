@@ -4,12 +4,13 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this is
 
-`starsim_data` distributes UN WPP demographics, contact matrices, and administrative geography for [Starsim](https://starsim.org) models. It returns dataframes and nothing else — no model code, no simulation logic. See `docs/07-related-projects.qmd` for where that line is drawn and why.
+`starsim_data` distributes UN WPP demographics, contact matrices, and administrative geography for [Starsim](https://starsim.org) models. It returns dataframes and nothing else — no model code, no simulation logic. See `docs/user-guide/07-related-projects.qmd` for where that line is drawn and why.
 
 ## Commands
 
 ```bash
-pip install -e ".[dev]"              # runtime + pytest + pycountry + great-docs
+pip install -e ".[dev]"              # runtime + pytest + pycountry
+pip install --group docs             # the Sciris forks of great-docs and quartodoc (quartopydoc)
 pip install -e ".[dev,spatial]"      # also geopandas/pyogrio/rastertoolkit, needed by build_nodes.py
 
 pytest                               # the offline suite
@@ -18,7 +19,8 @@ pytest -m network                    # also hits UN/WorldPop servers (a few hund
 pytest tests/test_load.py -k matrix  # one file, one pattern
 pytest tests/test_load.py::test_matrix
 
-great-docs build                     # -> great-docs/_site/ (needs Quarto)
+great-docs build                     # -> docs/_site/ (needs Quarto)
+docs/render                          # the same, rendering pages in parallel (needs the Sciris forks of great-docs and Quarto)
 great-docs preview                   # live reload on localhost:3000
 ```
 
@@ -56,7 +58,7 @@ Tier is a field on the dataset descriptor and `load()` enforces it: asking `load
 `registry.py` holds two tables, and nearly every extension goes through one of them rather than through an `if` branch:
 
 - `DATASETS` — name → `Dataset` descriptor (layout, tier, levels, license, revisions, location count, store). Bundled descriptors are **discovered** by opening each `.h5` and reading its root attributes, so the stores are self-describing: adding a new contact source is dropping CSVs in `raw_data/` and re-running `build_hdf5.py`. The contact sources that are fetched rather than bundled (`prem2017`, `mistry2021`, in `fetched/` outside the wheel) are described by the manifest `data/fetched.json`, which `build_hdf5.py` writes with each store's URL (a GitHub release asset), SHA-256, locations and provenance. The default contact matrices, `prem`, are `prem2021` plus the `prem2017` matrices for the ten locations it lacks (bundled in `data/prem/prem2017.h5`, a subfolder so discovery doesn't list it as its own dataset); discovery describes them from both stores, with a `loader` that reads whichever has the location.
-- `LAYOUTS` — layout name → the shaper that turns a stored array into a dataframe (`matrix`, `crude`, `mortality`, `population`, `nodes`).
+- `LAYOUTS` — layout name → the shaper that turns a stored array into a dataframe (`matrix`, `crude`, `mortality`, `population`, `fertility`, `nodes`).
 
 `load()` resolves the descriptor, picks the source for the revision, resolves the location scoped to that dataset, then hands off to the shaper with an `opts` dict carrying layout-specific arguments (`kind` for matrices, `level` for nodes). An argument a layout has no use for is **rejected, not ignored**. `register_dataset()`, `register_layout()` and `plotting.PLOTTERS` are the public hooks; a descriptor with a `loader` makes `load()` delegate entirely, which is how downstream code adds data this package doesn't ship.
 
@@ -82,14 +84,14 @@ Code is MIT; each bundled dataset keeps its own upstream license (GPL-3.0 for th
 
 ## Documentation
 
-Narrative pages are `.qmd` files in `docs/`, built by [great-docs](https://posit-dev.github.io/great-docs/). There is no navigation or API-reference config to maintain: the sidebar comes from each page's `guide-section` frontmatter and the reference is discovered from the public API. Rules `tests/test_docs.py` enforces:
+Narrative pages are `.qmd` files in `docs/user-guide/`, built by [Sciris' fork of great-docs](https://github.com/sciris/great-docs), with [quartopydoc](https://pypi.org/project/quartopydoc/) in place of quartodoc; use these rather than the upstream versions. Both are in the `docs` dependency group in `pyproject.toml` (a group rather than an extra because PyPI rejects URL dependencies in a published package's metadata). There is no navigation config to maintain: the sidebar comes from each page's `guide-section` frontmatter. The API reference is written by quartopydoc, from the `quartodoc:` block in `docs/great-docs.yml`, as one page per module; the module list is the only part to keep in step, and `test_config` fails if a module is missing from it. Styling that makes the site look like the Starsim docs (Raleway, the navbar title, bold sidebar sections) is in `docs/user-guide/assets/starsim-theme.html`, with `styles: widgets` leaving page content to the cosmo theme. Rules `tests/test_docs.py` enforces:
 
 - Every page needs `title` and a `guide-section` from `Getting started` / `The data` / `Internals`, and sections must stay **contiguous in filename order** — inserting a page in an earlier section means renumbering the later ones.
-- Renumbering is safe: site URLs strip the numeric prefix (`docs/09-provenance.qmd` → `user-guide/provenance.html`), so cross-page links are written as bare `provenance.qmd`.
+- Renumbering is safe: site URLs strip the numeric prefix (`docs/user-guide/09-provenance.qmd` → `user-guide/provenance.html`), so cross-page links are written as bare `provenance.qmd`.
 - Only the landing page (`01-getting-started.qmd`) prefixes links with `user-guide/`.
 - Executed `{python}` cells must not fetch anything; write downloading examples as static ` ```python ` blocks.
 
-`docs/08-architecture.qmd` is the long-form version of the Architecture section above, and stays in step with the code by executing against it.
+`docs/user-guide/08-architecture.qmd` is the long-form version of the Architecture section above, and stays in step with the code by executing against it.
 
 ### Keeping the docs in step
 
@@ -98,11 +100,11 @@ Docs are part of a change, not a follow-up to it. Before treating any change as 
 **When you add or remove a docs page:**
 
 1. Give it `title` and a `guide-section`, then **renumber siblings so the sections stay contiguous** in filename order — a new `The data` page means bumping every `Internals` page. Use `git mv`; site URLs strip the numeric prefix, so no links break.
-2. **Do not add navigation config to `great-docs.yml`.** A new page needs no entry there, by design — the sidebar is built from `guide-section` and the reference from the public API, so neither can fall out of step with the code. `test_docs.py::test_config` fails if `sections` or a hand-written `reference.contents` shows up. Wanting to edit that file is usually a sign something else is wrong. The one real exception: introducing a *new* `guide-section` means adding it to `SECTIONS` in `tests/test_docs.py`, which defines both the allowed values and their order.
+2. **Do not add navigation config to `docs/great-docs.yml`.** A new page needs no entry there, by design — the sidebar is built from `guide-section`, so it can't fall out of step with the code. `test_docs.py::test_config` fails if `sections` or a `reference.contents` shows up. A new *module* is the one thing that needs an entry, in the `quartodoc:` sections. Wanting to edit that file is usually a sign something else is wrong. The one real exception: introducing a *new* `guide-section` means adding it to `SECTIONS` in `tests/test_docs.py`, which defines both the allowed values and their order.
 3. Link it from at least one sibling page — otherwise it is reachable only from the sidebar.
 4. Update the hand-maintained places that count or list pages: the "N narrative pages" sentence in `CHANGELOG.md`, and the per-file table in `tests/README.md` when tests change.
 5. Run `pytest tests/test_docs.py`, then `great-docs build` if Quarto is available. The tests catch frontmatter, dead cross-links and accidental network use; only a real build catches a cell that raises.
 
-**When code changes:** the API reference regenerates itself, but prose does not. A new dataset, layout or source touches `docs/03-datasets.qmd` (schema), `docs/06-datasources.qmd` (coverage, licensing, limitations) and `NOTICE.md`; a new extension point touches `docs/08-architecture.qmd`. Docs cells execute against the package at build time, so a stale *example* fails docs CI — but a stale *sentence* will not, and nothing will catch it for you.
+**When code changes:** the API reference regenerates itself, but prose does not. A new dataset, layout or source touches `docs/user-guide/03-datasets.qmd` (schema), `docs/user-guide/06-datasources.qmd` (coverage, licensing, limitations) and `NOTICE.md`; a new extension point touches `docs/user-guide/08-architecture.qmd`. Docs cells execute against the package at build time, so a stale *example* fails docs CI — but a stale *sentence* will not, and nothing will catch it for you.
 
 README links to the built site are `https://starsimhub.github.io/starsim_data/user-guide/<name>.html`.

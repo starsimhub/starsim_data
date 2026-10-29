@@ -1,6 +1,0 @@
----
-title: "Changelog"
-guide-section: "Internals"
----
-
-{{< include ../../CHANGELOG.md >}}
