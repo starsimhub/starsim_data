@@ -1,0 +1,16 @@
+#!/usr/bin/env bash
+# Render the full site with great-docs, executing and rendering pages in parallel and keeping going
+# if a page fails. Needs Sciris' forks of great-docs (for --quarto-args) and Quarto (for --jobs and
+# --keep-going). Arguments are passed to "great-docs build" (e.g. ./render --no-refresh).
+set -euo pipefail # Fail fast if needed
+
+JOBS=${JOBS:-$(( $(nproc) / 2 ))} # Number of pages to process at once
+
+SECONDS=0
+cd "$(dirname "$0")/.."
+
+# Do the render!
+great-docs build --quarto-args "--jobs $JOBS --keep-going" "$@"
+
+echo -e "Done: docs built in ${SECONDS} s"
+echo -e "Index: $(pwd)/docs/_site/index.html"

@@ -20,6 +20,7 @@ pytest tests/test_load.py -k matrix  # one file, one pattern
 pytest tests/test_load.py::test_matrix
 
 great-docs build                     # -> docs/_site/ (needs Quarto)
+docs/render                          # the same, rendering pages in parallel (needs the Sciris forks of great-docs and Quarto)
 great-docs preview                   # live reload on localhost:3000
 ```
 
