@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this is
 
-`starsim_data` distributes UN WPP demographics, contact matrices, and administrative geography for [Starsim](https://starsim.org) models. It returns dataframes and nothing else — no model code, no simulation logic. See `docs/07-related-projects.qmd` for where that line is drawn and why.
+`starsim_data` distributes UN WPP demographics, contact matrices, and administrative geography for [Starsim](https://starsim.org) models. It returns dataframes and nothing else — no model code, no simulation logic. See `docs/user-guide/07-related-projects.qmd` for where that line is drawn and why.
 
 ## Commands
 
@@ -19,7 +19,7 @@ pytest -m network                    # also hits UN/WorldPop servers (a few hund
 pytest tests/test_load.py -k matrix  # one file, one pattern
 pytest tests/test_load.py::test_matrix
 
-great-docs build                     # -> great-docs/_site/ (needs Quarto)
+great-docs build                     # -> docs/_site/ (needs Quarto)
 great-docs preview                   # live reload on localhost:3000
 ```
 
@@ -83,14 +83,14 @@ Code is MIT; each bundled dataset keeps its own upstream license (GPL-3.0 for th
 
 ## Documentation
 
-Narrative pages are `.qmd` files in `docs/`, built by [Sciris' fork of great-docs](https://github.com/sciris/great-docs), with [quartopydoc](https://pypi.org/project/quartopydoc/) in place of quartodoc; use these rather than the upstream versions. Both are in the `docs` dependency group in `pyproject.toml` (a group rather than an extra because PyPI rejects URL dependencies in a published package's metadata). There is no navigation or API-reference config to maintain: the sidebar comes from each page's `guide-section` frontmatter and the reference is discovered from the public API. Rules `tests/test_docs.py` enforces:
+Narrative pages are `.qmd` files in `docs/user-guide/`, built by [Sciris' fork of great-docs](https://github.com/sciris/great-docs), with [quartopydoc](https://pypi.org/project/quartopydoc/) in place of quartodoc; use these rather than the upstream versions. Both are in the `docs` dependency group in `pyproject.toml` (a group rather than an extra because PyPI rejects URL dependencies in a published package's metadata). There is no navigation or API-reference config to maintain: the sidebar comes from each page's `guide-section` frontmatter and the reference is discovered from the public API. Rules `tests/test_docs.py` enforces:
 
 - Every page needs `title` and a `guide-section` from `Getting started` / `The data` / `Internals`, and sections must stay **contiguous in filename order** — inserting a page in an earlier section means renumbering the later ones.
-- Renumbering is safe: site URLs strip the numeric prefix (`docs/09-provenance.qmd` → `user-guide/provenance.html`), so cross-page links are written as bare `provenance.qmd`.
+- Renumbering is safe: site URLs strip the numeric prefix (`docs/user-guide/09-provenance.qmd` → `user-guide/provenance.html`), so cross-page links are written as bare `provenance.qmd`.
 - Only the landing page (`01-getting-started.qmd`) prefixes links with `user-guide/`.
 - Executed `{python}` cells must not fetch anything; write downloading examples as static ` ```python ` blocks.
 
-`docs/08-architecture.qmd` is the long-form version of the Architecture section above, and stays in step with the code by executing against it.
+`docs/user-guide/08-architecture.qmd` is the long-form version of the Architecture section above, and stays in step with the code by executing against it.
 
 ### Keeping the docs in step
 
@@ -99,11 +99,11 @@ Docs are part of a change, not a follow-up to it. Before treating any change as 
 **When you add or remove a docs page:**
 
 1. Give it `title` and a `guide-section`, then **renumber siblings so the sections stay contiguous** in filename order — a new `The data` page means bumping every `Internals` page. Use `git mv`; site URLs strip the numeric prefix, so no links break.
-2. **Do not add navigation config to `great-docs.yml`.** A new page needs no entry there, by design — the sidebar is built from `guide-section` and the reference from the public API, so neither can fall out of step with the code. `test_docs.py::test_config` fails if `sections` or a hand-written `reference.contents` shows up. Wanting to edit that file is usually a sign something else is wrong. The one real exception: introducing a *new* `guide-section` means adding it to `SECTIONS` in `tests/test_docs.py`, which defines both the allowed values and their order.
+2. **Do not add navigation config to `docs/great-docs.yml`.** A new page needs no entry there, by design — the sidebar is built from `guide-section` and the reference from the public API, so neither can fall out of step with the code. `test_docs.py::test_config` fails if `sections` or a hand-written `reference.contents` shows up. Wanting to edit that file is usually a sign something else is wrong. The one real exception: introducing a *new* `guide-section` means adding it to `SECTIONS` in `tests/test_docs.py`, which defines both the allowed values and their order.
 3. Link it from at least one sibling page — otherwise it is reachable only from the sidebar.
 4. Update the hand-maintained places that count or list pages: the "N narrative pages" sentence in `CHANGELOG.md`, and the per-file table in `tests/README.md` when tests change.
 5. Run `pytest tests/test_docs.py`, then `great-docs build` if Quarto is available. The tests catch frontmatter, dead cross-links and accidental network use; only a real build catches a cell that raises.
 
-**When code changes:** the API reference regenerates itself, but prose does not. A new dataset, layout or source touches `docs/03-datasets.qmd` (schema), `docs/06-datasources.qmd` (coverage, licensing, limitations) and `NOTICE.md`; a new extension point touches `docs/08-architecture.qmd`. Docs cells execute against the package at build time, so a stale *example* fails docs CI — but a stale *sentence* will not, and nothing will catch it for you.
+**When code changes:** the API reference regenerates itself, but prose does not. A new dataset, layout or source touches `docs/user-guide/03-datasets.qmd` (schema), `docs/user-guide/06-datasources.qmd` (coverage, licensing, limitations) and `NOTICE.md`; a new extension point touches `docs/user-guide/08-architecture.qmd`. Docs cells execute against the package at build time, so a stale *example* fails docs CI — but a stale *sentence* will not, and nothing will catch it for you.
 
 README links to the built site are `https://starsimhub.github.io/starsim_data/user-guide/<name>.html`.

@@ -3,8 +3,8 @@ Register authorship.lua as a Quarto filter. Run by great-docs before rendering.
 
 great-docs writes _quarto.yml itself and has no setting for adding a filter, but Quarto
 reads the project config again after its pre-render scripts have run, so adding the
-filter here applies it to every page. great-docs copies docs/ to user-guide/ in the build
-directory, which is where the filter is found.
+filter here applies it to every page. The path is relative to the build directory, where
+great-docs puts a copy of docs/user-guide/.
 """
 
 import pathlib

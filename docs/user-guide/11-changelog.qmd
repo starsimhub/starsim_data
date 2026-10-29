@@ -7,4 +7,4 @@ authorship:
   note: Written by AI
 ---
 
-{{< include ../../CHANGELOG.md >}}
+{{< include ../../../../CHANGELOG.md >}}

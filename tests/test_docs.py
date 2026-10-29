@@ -17,7 +17,7 @@ import sciris as sc
 import yaml
 
 REPO = sc.thispath(__file__).parent
-DOCS = REPO / "docs"
+DOCS = REPO / "docs" / "user-guide"
 
 # The sidebar groups, in the order the pages' filename prefixes put them in.
 SECTIONS = ["Getting started", "The data", "Internals"]
@@ -103,8 +103,8 @@ def test_config():
     which is exactly what this arrangement exists to avoid.
     """
     sc.heading("Testing the great-docs config")
-    config = yaml.safe_load((REPO / "great-docs.yml").read_text())
-    assert config["user_guide"] == "docs" # The narrative pages live in docs/
+    config = yaml.safe_load((REPO / "docs" / "great-docs.yml").read_text())
+    assert config["user_guide"] == "user-guide" # The narrative pages live in docs/user-guide/
     assert config["homepage"] == "user_guide" # And the first is the landing page
     assert "sections" not in config, "sections would give each group its own sidebar"
     # `title` is fine; `contents` or `sections` would mean listing symbols by hand

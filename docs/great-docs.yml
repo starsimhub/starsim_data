@@ -1,12 +1,13 @@
 # Great Docs configuration for starsim_data.
 # https://posit-dev.github.io/great-docs/user-guide/configuration.html
 #
-# Build with:   great-docs build       (output in great-docs/_site/, gitignored)
+# Build with:   great-docs build       (output in docs/_site/, gitignored)
 # Preview with: great-docs preview
 #
-# Narrative pages live in docs/. The README is not used for the site -- it remains the
-# front door on GitHub and PyPI -- because the first User Guide page is the landing page
-# instead (see `homepage` below).
+# This file is in docs/, and paths in it are relative to docs/. The narrative pages and
+# their assets live in docs/user-guide/. The README is not used for the site -- it remains
+# the front door on GitHub and PyPI -- because the first User Guide page is the landing
+# page instead (see `homepage` below).
 
 parser: google
 
@@ -21,9 +22,9 @@ dynamic: false
 # Pages are ordered by filename prefix and grouped by their `guide-section` frontmatter.
 #
 # One consequence to know about: the landing page renders at the site root while its
-# siblings render under user-guide/, so cross-page links in docs/01-getting-started.qmd
+# siblings render under user-guide/, so cross-page links in 01-getting-started.qmd
 # carry a `user-guide/` prefix. Every other page links to plain siblings.
-user_guide: docs
+user_guide: user-guide
 homepage: user_guide
 
 site_url: "https://starsimhub.github.io/starsim_data/"
@@ -38,10 +39,10 @@ site:
 
 # The Starsim icon plus this package's own name, rather than the full Starsim wordmark:
 # this belongs to the Starsim family, but it is not Starsim. The icons are cropped from
-# docs/assets/logo.png, the wordmark the other Starsim sites use.
+# user-guide/assets/logo.png, the wordmark the other Starsim sites use.
 logo:
-  light: docs/assets/icon.png
-  dark: docs/assets/icon-dark.png
+  light: user-guide/assets/icon.png
+  dark: user-guide/assets/icon-dark.png
   show_title: true
 display_name: Starsim Data
 
@@ -49,7 +50,7 @@ display_name: Starsim Data
 # block. (It also avoids a bug in great-docs 0.16.0, whose `homepage: user_guide` hero
 # emits an invalid raw-HTML fence that makes the whole page render as literal text.)
 hero: false
-favicon: docs/assets/favicon.ico
+favicon: user-guide/assets/favicon.ico
 
 jupyter: python3
 
@@ -74,14 +75,14 @@ funding:
 # A few small style overrides great-docs has no setting for: figure scaling, navbar
 # centering, the authorship badge, and the Starsim footer.
 include_in_header:
-  - file: docs/assets/starsim-theme.html
+  - file: user-guide/assets/starsim-theme.html
 
 # Each page's `authorship` frontmatter is shown as a badge at the top right, as on the
 # Starsim site. great-docs has no setting for a Quarto filter, so this script adds
-# docs/assets/authorship.lua to the generated _quarto.yml before rendering.
-pre_render: docs/assets/authorship.py
+# user-guide/assets/authorship.lua to the generated _quarto.yml before rendering.
+pre_render: user-guide/assets/authorship.py
 
-# The changelog is CHANGELOG.md, included by docs/11-changelog.qmd, rather than the page
+# The changelog is CHANGELOG.md, included by 11-changelog.qmd, rather than the page
 # great-docs generates from GitHub Releases: the releases here are data assets, not notes.
 changelog:
   enabled: false

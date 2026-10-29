@@ -13,7 +13,7 @@ pytest -m "not network"     # the offline suite, as CI runs it
 
 ## Changing code
 
-Make the change on a branch, with a test if it fixes or adds something, and update the prose it affects: the API reference regenerates itself, but the pages in `docs/` don't. A new dataset or source also touches `docs/03-datasets.qmd`, `docs/06-datasources.qmd` and `NOTICE.md` (a test checks the licenses there against the data).
+Make the change on a branch, with a test if it fixes or adds something, and update the prose it affects: the API reference regenerates itself, but the pages in `docs/user-guide/` don't. A new dataset or source also touches `docs/user-guide/03-datasets.qmd`, `docs/user-guide/06-datasources.qmd` and `NOTICE.md` (a test checks the licenses there against the data).
 
 ## Changing data
 
