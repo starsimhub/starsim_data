@@ -44,7 +44,7 @@ The standard national demographic series, covering all countries from 1950 to 21
 
 **Limitations.** The data is national only; province-level rates cannot be derived from it. Projections are scenarios rather than predictions. Estimates change between revisions, sometimes substantially, since a new census can revise a country's recorded history — which is why this package versions the data by revision (`load(..., revision=2024)`) rather than replacing it in place.
 
-**Two access routes.** The bundled store is built at release time from the WPP Data Portal API, filtered to decadal years and to this package's countries, and then frozen; this is what `load()` reads, at roughly 3 MB and without network access. `fetch()` instead reads the UN's public bulk CSVs, which provide annual resolution, complete life tables and other variants at the cost of a 17–290 MB download. The Data Portal API requires a free Bearer token whereas the bulk files do not, which is why `fetch()` uses the latter and only the build scripts use the former.
+**Two access routes.** The bundled store is built at release time from the WPP Data Portal API, filtered to decadal years and to this package's countries, and then frozen; this is what `load()` reads, at roughly 4 MB and without network access. `fetch()` instead reads the UN's public bulk CSVs, which provide annual resolution, complete life tables and other variants at the cost of a 17–290 MB download. The Data Portal API requires a free Bearer token whereas the bulk files do not, which is why `fetch()` uses the latter and only the build scripts use the former.
 
 **A hazard worth knowing about.** Namibia's ISO-2 code is the string `NA`, which pandas interprets as a missing value unless `keep_default_na=False` is passed. Every reader in this package disables that coercion, and there is a regression test for it; anyone processing WPP CSVs independently should be aware of the same problem.
 
@@ -182,7 +182,7 @@ Upstream sources change over time. Four measures keep an analysis reproducible i
 These are not included, and are listed here so you know where else to look:
 
 - **Subnational demographics.** WPP provides none. National statistical offices, DHS and IPUMS are the usual alternatives.
-- **Age-specific fertility and migration.** WPP publishes crude national rates only for these.
+- **Age-specific migration.** WPP publishes the crude national rate only.
 - **Other population rasters** — LandScan, GHSL, GRID3, Meta HRSL. WorldPop was chosen for openness and global consistency; the others are better for particular questions.
 - **OpenStreetMap and Natural Earth boundaries.** OpenStreetMap is community-maintained and of excellent quality in some places and unreliable in others; Natural Earth is simplified for cartography rather than for analysis.
 - **Health-system, mobility and climate data.** Out of scope for this package.

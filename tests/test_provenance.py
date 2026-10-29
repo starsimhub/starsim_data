@@ -95,7 +95,7 @@ def test_namibia():
     ISO-2-keyed lookup downstream.
     """
     sc.heading("Testing Namibia's demographic data")
-    for which in ["births", "deaths", "migration", "population"]:
+    for which in ["births", "deaths", "migration", "population", "fertility"]:
         assert "Namibia" in ssd.list_locations(which), f"Expected Namibia in {which}"
 
 

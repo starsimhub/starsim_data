@@ -1,10 +1,10 @@
 # raw_data/demographics — UN World Population Prospects source files
 
-This folder holds the **UN WPP source CSVs** used to build `starsim_data/data/demographics-<revision>.h5` (which groups the births, deaths, migration, and population series). The three normalized CSVs (`wpp_indicators.csv`, `wpp_lifetable.csv`, `wpp_population.csv`) are the tracked demographic source of truth, parallel to `../contact_matrices/`; only the bulky raw bulk downloads (`.xlsx`/`.gz`/`.zip`) are git-ignored scratch. Regenerate the CSVs with the download script below, or drop in bulk files manually — either way they are a citable, versioned UN release, so re-fetching a given revision reproduces the data.
+This folder holds the **UN WPP source CSVs** used to build `starsim_data/data/demographics-<revision>.h5` (which groups the births, deaths, migration, population, and fertility series). The four normalized CSVs (`wpp_indicators.csv`, `wpp_lifetable.csv`, `wpp_population.csv`, `wpp_fertility.csv`) are the tracked demographic source of truth, parallel to `../contact_matrices/`; only the bulky raw bulk downloads (`.xlsx`/`.gz`/`.zip`) are git-ignored scratch. Regenerate the CSVs with the download script below, or drop in bulk files manually — either way they are a citable, versioned UN release, so re-fetching a given revision reproduces the data.
 
 ## Option A (recommended): download via the API
 
-`scripts/download_wpp.py` pulls exactly the indicators this package needs, for its countries, at decadal years 1950–2100, and writes three normalized CSVs here (`wpp_indicators.csv`, `wpp_lifetable.csv`, `wpp_population.csv`).
+`scripts/download_wpp.py` pulls exactly the indicators this package needs, for its countries, at decadal years 1950–2100, and writes four normalized CSVs here (`wpp_indicators.csv`, `wpp_lifetable.csv`, `wpp_population.csv`, `wpp_fertility.csv`).
 
 It needs a **Bearer token** in `scripts/.env` (register free at the [UN WPP Data Portal](https://population.un.org/dataportal) — the data endpoints require it, though the indicator/location metadata endpoints are open). The `.env` file is git-ignored. Then:
 
@@ -24,11 +24,12 @@ Alternatively, download these from the [WPP download page](https://population.un
 | **Demographic Indicators** (comprehensive) | `/births` (CBR), `/migration` (CNMR) | `ISO2_code`, `Time`, `CBR`, `CNMR` |
 | **Abridged Life Table** (estimates + projection halves) | `/deaths` | `ISO2_code`, `Time`, `Sex`, `AgeGrpStart`, `mx` |
 | **Population by 5-year age groups and sex** | `/population` | `ISO2_code`, `Time`, `AgeGrp` (or `AgeGrpStart`), `PopMale`, `PopFemale` |
+| **Fertility by 5-year age groups of mother** (`WPP2024_Fertility_by_Age5.csv.gz`, which has every variant; keep the Medium rows) | `/fertility` | `ISO2_code`, `Time`, `AgeGrpStart`, `ASFR` |
 
 ## Notes
 
 - Only **Female** and **Male** are kept (WPP's "Total"/"Both sexes" rows are dropped), matching Starsim's `ss.Deaths` sex conventions.
-- Birth and net-migration rates are **crude national rates** (no age dimension) — this is all UN WPP provides for them, and it matches what `ss.Births`/`ss.Pregnancy` consume.
+- Birth and net-migration rates are **crude national rates** (no age dimension), which is what `ss.Births` consumes; births by age of mother are the **age-specific fertility rates** (ASFR, births per 1,000 women, 5-year groups `10–14` to `50–54`), which is what `ss.Pregnancy` consumes.
 - Deaths use the **abridged** age bins (`0, 1–4, 5–9, …, 100+`); population uses **5-year** groups (`0–4, 5–9, …, 100+`).
 - Population counts are **absolute persons** (verified: Kenya 2020 ≈ 52.2M, India 2020 ≈ 1.4B).
 - Region aggregates ("Americas", etc.) that share a country's ISO2 code are excluded (the download script drops any WPP location without coordinates).

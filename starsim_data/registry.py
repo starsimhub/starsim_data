@@ -11,9 +11,9 @@ manifest `data/fetched.json`, which `scripts/build_hdf5.py` writes. Anything els
 added with `register_dataset()`.
 
 `LAYOUTS` maps a layout name to the function that turns a stored array into a dataframe
-(`matrix`, `crude`, `mortality`, `population`, `nodes`). This replaces dispatching on
-`spec['layout']` through an if-chain, and means a new data family is a new shaper plus a
-registry entry rather than another branch inside `load()`.
+(`matrix`, `crude`, `mortality`, `population`, `fertility`, `nodes`). This replaces
+dispatching on `spec['layout']` through an if-chain, and means a new data family is a new
+shaper plus a registry entry rather than another branch inside `load()`.
 
 Both tables have a public registration hook, which is the point: `laser-init`'s registry
 is module-level dict literals with no way to extend them, which its own integration
@@ -53,6 +53,7 @@ DESCRIPTIONS = {
     'deaths': 'Age/sex mortality rate m(x), 5-year abridged, UN WPP',
     'migration': 'Crude net-migration rate (per 1,000), UN WPP',
     'population': 'Population by 5-year age group and sex (persons), UN WPP',
+    'fertility': 'Age-specific fertility rate (births per 1,000 women), 5-year, UN WPP',
     'nodes': 'Administrative units: centroids, areas, p-codes and hierarchy',
     'adjacency': 'Administrative units that share a border, as pairs of nodeids',
     'prem': 'Contact matrices by setting: prem2021, with prem2017 for the locations it lacks',

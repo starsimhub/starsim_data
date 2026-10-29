@@ -22,7 +22,7 @@ def test_fetchable():
     """ The fetchable series are listed and registered as tier 1, and a typo gets suggestions """
     sc.heading("Testing the fetchable series")
     fetchable = ssd.list_fetchable()
-    for name in ("births", "deaths", "migration", "population", "life_table", "indicators"):
+    for name in ("births", "deaths", "migration", "population", "fertility", "life_table", "indicators"):
         assert name in fetchable, f"Expected {name} to be fetchable"
     for name in ("life_table", "indicators"):
         assert ssd.registry.dataset(name).tier == 1, f"Expected fetch-only {name} to be tier 1"
@@ -71,6 +71,8 @@ def test_files():
     other = ssd.fetching.FILES["indicators"].urls("2024", "High", None)
     assert "Medium" in list(medium)[0] # The Medium variant has its own file
     assert "OtherVariants" in list(other)[0] # The rest share one
+    fertility = ssd.fetching.FILES["fertility"]
+    assert fertility.urls("2024", "Medium", None) == fertility.urls("2024", "High", None) # Every variant is in one file
 
     with pytest.raises(ValueError, match="Medium variant only"): # The UN publishes no non-Medium life table
         ssd.fetch("Kenya", which="deaths", variant="High")
@@ -146,6 +148,21 @@ def test_fetch_population():
 
 @pytest.mark.network
 @sc.timer()
+def test_fetch_fertility():
+    """ The fetched age-specific fertility rates match the bundled ones """
+    sc.heading("Testing fetching fertility")
+    fetched = ssd.fetch("nigeria", which="fertility", years=2020, verbose=False)
+    bundled = ssd.load("Nigeria", which="fertility")
+    bundled = bundled[bundled.Time == 2020]
+    assert list(fetched.columns) == ["Time", "AgeGrpStart", "ASFR"] # The bundled schema
+    merged = fetched.merge(bundled, on=["Time", "AgeGrpStart"], suffixes=("_f", "_b"))
+    assert len(merged) == len(bundled) # Every bundled row has a match
+    assert np.allclose(merged.ASFR_f, merged.ASFR_b) # The same values
+    return merged
+
+
+@pytest.mark.network
+@sc.timer()
 def test_fetch_indicators():
     """ The indicators file is the point: CDR, TFR, LEx and IMR are not bundled anywhere """
     sc.heading("Testing fetching indicators")
@@ -206,6 +223,7 @@ if __name__ == "__main__":
         variant    = test_fetch_variant()
         migration  = test_fetch_migration()
         population = test_fetch_population()
+        fertility  = test_fetch_fertility()
         indicators = test_fetch_indicators()
         deaths     = test_fetch_deaths()
         life_table = test_fetch_life_table()

@@ -12,7 +12,7 @@ are two families of dataset, and `load` returns the natural shape for each:
   `prem`, is `prem2021`, or `prem2017` for the ten locations `prem2021` lacks (which
   are bundled, in `prem/prem2017.h5`).
 - Demographic time series from UN WPP -- grouped in `demographics-<revision>.h5`, one
-  group per series (`births`, `deaths`, `migration`, `population`). `load` returns a
+  group per series (`births`, `deaths`, `migration`, `population`, `fertility`). `load` returns a
   tidy frame with WPP-native column names, so e.g. `deaths` drops straight into
   `ss.Deaths(death_rate=...)`.
 
@@ -189,6 +189,18 @@ def _shape_year_sex_age(group, key, spec, opts):
     return df
 
 
+def _shape_year_age(group, key, spec, opts):
+    """A (year, age) array, melted into a tidy dataframe, e.g. age-specific fertility."""
+    arr = np.asarray(group[key][:], dtype=np.float32)
+    ny, na = arr.shape
+    df = sc.dataframe({
+        'Time':            np.repeat(spec['years'], na),
+        spec['age_col']:   np.tile(spec['ages'], ny),
+        spec['value_col']: arr.reshape(-1),
+    })
+    return df
+
+
 def _shape_nodes(group, key, spec, opts):
     """The node table for one location: one row per administrative unit."""
     arr = group[key][:]
@@ -209,6 +221,7 @@ ssd.registry.register_layout('matrix',     _shape_matrix)
 ssd.registry.register_layout('crude',      _shape_crude)
 ssd.registry.register_layout('mortality',  _shape_year_sex_age)
 ssd.registry.register_layout('population', _shape_year_sex_age)
+ssd.registry.register_layout('fertility',  _shape_year_age)
 ssd.registry.register_layout('nodes',      _shape_nodes)
 
 
@@ -222,7 +235,7 @@ def load(location, which='prem', kind='all', revision=None, level=None):
         which (str): dataset -- the contact matrices (`'prem'`, the default, which
             is `'prem2021'` or, for the ten locations it lacks, `'prem2017'`; or
             `'prem2021'` itself), or a demographic series (`'births'`, `'deaths'`,
-            `'migration'`, `'population'`). See `list_datasets()`; all of `'prem2017'`
+            `'migration'`, `'population'`, `'fertility'`). See `list_datasets()`; all of `'prem2017'`
             and `'mistry2021'` are fetched with `fetch()`.
         kind (str): for contact-matrix datasets only, the contact setting -- one of
             `'all'`, `'home'`, `'work'`, `'school'`, `'community'`. Ignored otherwise.
@@ -238,7 +251,8 @@ def load(location, which='prem', kind='all', revision=None, level=None):
         matrix whose rows and columns are indexed by the start age of each bin (e.g.
         `0, 5, ..., 75`). For demographic series, a tidy frame -- `births`/`migration`
         have columns `[Time, CBR]`/`[Time, CNMR]`; `deaths` has
-        `[Time, Sex, AgeGrpStart, mx]`; `population` has `[Time, Sex, AgeGrp, Value]`.
+        `[Time, Sex, AgeGrpStart, mx]`; `population` has `[Time, Sex, AgeGrp, Value]`;
+        `fertility` has `[Time, AgeGrpStart, ASFR]`.
 
     Raises:
         ValueError: if `which`, `kind` or `revision` is not recognized.

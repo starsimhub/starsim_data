@@ -18,7 +18,7 @@ Portal API requires one; these files do not). The downloads are large, from 17 M
 the indicator file to 145 MB per half of the abridged life table, so they are cached and
 reused; see `cache_info()` and `clear_cache()`.
 
-For the four series that are also bundled, `fetch` returns exactly the schema `load`
+For the five series that are also bundled, `fetch` returns exactly the schema `load`
 returns, so the two are interchangeable apart from resolution. `life_table` and
 `indicators` have no bundled counterpart and return the upstream shape.
 
@@ -83,16 +83,20 @@ class BulkFile:
     stem: str                 # e.g. 'Demographic_Indicators'
     split: bool = False       # published as two halves, by year
     has_variants: bool = True # whether a non-Medium edition is published
+    by_variant: bool = True   # published as Medium and OtherVariants files, rather than one file of every variant
     approx_mb: int = 0        # per file, for the size warning
 
     def urls(self, revision, variant, years):
         """Return `{filename: url}` for the file(s) covering `years`.
 
-        The UN publishes one file per variant group, so anything other than Medium comes
-        out of the (much larger) combined OtherVariants file and is filtered on read.
+        The UN publishes most files one per variant group, so anything other than Medium
+        comes out of the (much larger) combined OtherVariants file and is filtered on
+        read; a file with every variant in it is filtered the same way.
         """
-        tag = DEFAULT_VARIANT if variant == DEFAULT_VARIANT else 'OtherVariants'
-        prefix = f'WPP{revision}_{self.stem}_{tag}'
+        prefix = f'WPP{revision}_{self.stem}'
+        if self.by_variant:
+            tag = DEFAULT_VARIANT if variant == DEFAULT_VARIANT else 'OtherVariants'
+            prefix += f'_{tag}'
         if not self.split:
             names = [f'{prefix}.csv.gz']
         else:
@@ -111,6 +115,7 @@ FILES = {
     'indicators': BulkFile('Demographic_Indicators',   approx_mb=17),
     'population': BulkFile('PopulationByAge5GroupSex', approx_mb=30),
     'life_table': BulkFile('Life_Table_Abridged',      approx_mb=145, split=True, has_variants=False),
+    'fertility':  BulkFile('Fertility_by_Age5',        approx_mb=83, by_variant=False),
 }
 
 
@@ -118,14 +123,14 @@ FILES = {
 class Series:
     """One fetchable series: which bulk file it comes from and how to shape it."""
     file: str
-    shape: str             # 'crude' | 'long' | 'population' | 'wide'
+    shape: str             # 'crude' | 'long' | 'population' | 'fertility' | 'wide'
     value_cols: tuple = ()
     index_cols: tuple = ()
     sexes: tuple = ()      # which Sex values to keep; () keeps all
     description: str = ''
 
 
-# The four bundled series return exactly what `load()` returns, at annual resolution;
+# The five bundled series return exactly what `load()` returns, at annual resolution;
 # `life_table` and `indicators` are fetch-only and return the upstream shape.
 SERIES = {
     'births': Series('indicators', 'crude', value_cols=('CBR',),
@@ -138,6 +143,8 @@ SERIES = {
     'population': Series('population', 'population', value_cols=('PopFemale', 'PopMale'),
                          index_cols=('AgeGrpStart',),
                          description='Population by 5-year age group and sex (persons), annual'),
+    'fertility': Series('fertility', 'fertility', value_cols=('ASFR',), index_cols=('AgeGrpStart',),
+                        description='Age-specific fertility rate (births per 1,000 women), 5-year, annual'),
     'life_table': Series('life_table', 'long', value_cols=tuple(LIFE_TABLE_GLOSSARY),
                          index_cols=('AgeGrpStart',),
                          description='Complete abridged life table (mx, qx, lx, ex, ...), annual'),
@@ -268,6 +275,8 @@ def _shape(df, series, which):
         out['Value'] = out['Value'] * 1000
         out = out.rename(columns={'AgeGrpStart': 'AgeGrp'})
         out = out[['Time', 'Sex', 'AgeGrp', 'Value']].sort_values(['Time', 'Sex', 'AgeGrp'])
+    elif series.shape == 'fertility': # By age of mother, so no Sex column
+        out = df[['Time', 'AgeGrpStart', *series.value_cols]].sort_values(['Time', 'AgeGrpStart'])
     elif series.shape == 'long':
         out = df[df['Sex'].isin(series.sexes)] if series.sexes else df
         out = out[['Time', 'Sex', 'AgeGrpStart', *series.value_cols]]
@@ -300,8 +309,8 @@ def fetch(location, which='deaths', years=None, variant=DEFAULT_VARIANT, revisio
     Args:
         location (str): location name, ISO-2/ISO-3 code, official name or alias, exactly
             as for `load()`. A US state is `'United States:Massachusetts'`; see `resolve()`.
-        which (str): `'births'`, `'deaths'`, `'migration'`, `'population'` (the bundled
-            series, at annual resolution), `'life_table'` (the complete abridged life
+        which (str): `'births'`, `'deaths'`, `'migration'`, `'population'`,
+            `'fertility'` (the bundled series, at annual resolution), `'life_table'` (the complete abridged life
             table), `'indicators'` (every WPP indicator), or a contact source that is
             not bundled (`'prem2017'`, `'mistry2021'`, and `'mistry2021_us'` for the US
             states), or `'population_us'` (the population of each US state by single
@@ -318,7 +327,7 @@ def fetch(location, which='deaths', years=None, variant=DEFAULT_VARIANT, revisio
         kind (str): for a contact source only, the contact setting, as for `load()`.
 
     Returns:
-        sciris.dataframe: for the four bundled series and the contact sources, exactly
+        sciris.dataframe: for the five bundled series and the contact sources, exactly
         the schema `load()` returns; `population_us` has that of `population`, for the
         one year 2023 and `Sex` `'Both sexes'`. For `life_table`, `[Time, Sex, AgeGrpStart, mx, qx, px, lx, dx, Lx, Sx,
         Tx, ex, ax]` with a glossary in `.attrs['columns']`. For `indicators`, `Time`

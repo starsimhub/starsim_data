@@ -3,7 +3,7 @@ starsim_data: national-level demographic data and contact matrices for disease
 modeling with Starsim.
 
 This package bundles UN World Population Prospects demographics (births, deaths,
-migration, population) and a trimmed, reorganized subset of the contact-matrix data
+migration, population, fertility) and a trimmed, reorganized subset of the contact-matrix data
 from epydemix-data (https://github.com/epistorm/epydemix-data), national-level (level
 0) only. See NOTICE.md for per-source data licenses and attributions.
 
@@ -28,13 +28,12 @@ tables, other projection variants, the full `prem2017` and `mistry2021` contact 
 `options`. `plot()` draws the data for a quick check before it goes into a model.
 """
 
-__version__ = '0.4.0'
-
 # This is the one module that uses `from` imports, to assemble the public namespace.
 # Everywhere else in the package, follow Starsim's convention: `import starsim_data as
 # ssd` and reach things as `ssd.load`, `ssd.registry.datasets()` and so on. The order
 # below matters, because a few modules register themselves on import: `registry` has to
 # exist before `loaders` adds its layouts, and before `fetching` adds its datasets.
+from .version import __version__, __versiondate__, __license__
 from .settings import options
 from . import registry
 from .registry import register_dataset, register_layout

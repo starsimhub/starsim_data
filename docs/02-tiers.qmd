@@ -57,13 +57,13 @@ The cache location follows `ssd.options.cache_dir`, or the `STARSIM_DATA_CACHE_D
 
 ## Which tier something is in
 
-Size and use, not subject. The same UN WPP 2024 release appears in both: decadal snapshots of four indicators occupy 3 MB and are bundled, while the complete annual life tables occupy 290 MB and are fetched. Likewise, one contact source is bundled, the one a model should use unless it has a reason not to (see [Datasets](datasets.qmd#which-source)), and the others are fetched.
+Size and use, not subject. The same UN WPP 2024 release appears in both: decadal snapshots of five series occupy 4 MB and are bundled, while the complete annual life tables occupy 290 MB and are fetched. Likewise, one contact source is bundled, the one a model should use unless it has a reason not to (see [Datasets](datasets.qmd#which-source)), and the others are fetched.
 
 ```{python}
 #| echo: false
 import pandas as pd
 pd.DataFrame([
-    dict(requirement="Age structure, mortality, births, contact matrices",
+    dict(requirement="Age structure, mortality, births, fertility, contact matrices",
          call="load()", tier=0, cost="instant"),
     dict(requirement="Positions, areas and separations of administrative units",
          call="load_nodes(), distances()", tier=0, cost="instant"),

@@ -35,7 +35,7 @@ There are two families of data. `ssd.load()` returns a [Sciris](https://sciris.o
 
 ## 1. Demographics (UN World Population Prospects 2024)
 
-Sourced from the [UN WPP 2024](https://population.un.org/wpp/), Medium variant, for all 187 countries every 10 years from 1950 to 2100 (16 time points). Grouped in `demographics-2024.h5`, exposed as four datasets whose `load()` result is a [Starsim](https://starsim.org)-ready dataframe with UN-native column names:
+Sourced from the [UN WPP 2024](https://population.un.org/wpp/), Medium variant, for all 187 countries every 10 years from 1950 to 2100 (16 time points). Grouped in `demographics-2024.h5`, exposed as five datasets whose `load()` result is a [Starsim](https://starsim.org)-ready dataframe with UN-native column names:
 
 | `which=` | What it is | Age resolution | Columns returned |
 |---|---|---|---|
@@ -43,8 +43,9 @@ Sourced from the [UN WPP 2024](https://population.un.org/wpp/), Medium variant, 
 | `deaths` | Age/sex mortality rate `m(x)` | 5-year abridged (`0, 1–4, 5–9, …, 100+`) | `[Time, Sex, AgeGrpStart, mx]` |
 | `migration` | Crude net-migration rate (per 1,000) | none (national) | `[Time, CNMR]` |
 | `population` | Population counts (absolute persons) | 5-year (`0–4, 5–9, …, 100+`) | `[Time, Sex, AgeGrp, Value]` |
+| `fertility` | Age-specific fertility rate (births per 1,000 women) | 5-year age of mother (`10–14, …, 50–54`) | `[Time, AgeGrpStart, ASFR]` |
 
-These drop straight into Starsim: `deaths` matches `ss.Deaths`'s expected columns, `births` feeds `ss.Births`/`ss.Pregnancy`, and `population` gives age–sex pyramids for initialization.
+These drop straight into Starsim: `deaths` matches `ss.Deaths`'s expected columns, `births` feeds `ss.Births`, `fertility` feeds `ss.Pregnancy`, and `population` gives age–sex pyramids for initialization.
 
 **Not bundled:**
 
@@ -52,7 +53,7 @@ These drop straight into Starsim: `deaths` matches `ss.Deaths`'s expected column
 - ⬇️ Life tables (`qx`, `lx`, `ex`, …) and the other WPP indicators (CDR, TFR, LEx, IMR, …) — available via [`fetch()`](#data-that-isnt-bundled).
 - ⬇️ Non-Medium projection variants (High, Low, Constant fertility, …) — available via [`fetch()`](#data-that-isnt-bundled), except for life tables, which the UN publishes for Medium only.
 - ❌ Subnational demographics (states, provinces, counties).
-- ❌ Age-specific fertility (births are the crude rate only) or age-specific migration (crude rate only) — the UN provides no age breakdown for these.
+- ❌ Age-specific migration (crude rate only) — the UN provides no age breakdown for it.
 - ❌ "Both sexes"/"Total" rows: Female + Male only.
 
 Demographic data is versioned by UN WPP revision. `load()` reads the newest bundled revision; pass `revision=` to pin an older one, and see `ssd.list_revisions()` for what's available. A new WPP release therefore adds a store rather than changing data already in use.
@@ -144,7 +145,7 @@ Settings are read from the environment but acted on lazily, so importing the pac
 
 ## Geographies
 
-Demographics and contact matrices are national (level 0): 187 countries, every one with all four demographic series, and contact-matrix coverage varying by source (36–177). Canonical keys use `_` for spaces (e.g. `United_States`, `Sierra_Leone`), but you can pass any recognized name, code or alias — see the resolution rules above. The bundled `locations.csv` lists each country's ISO 3166-1 alpha-2 and alpha-3 codes, official name, aliases and available contact sources; `ssd.location_info(location)` returns a row of it.
+Demographics and contact matrices are national (level 0): 187 countries, every one with all five demographic series, and contact-matrix coverage varying by source (36–177). Canonical keys use `_` for spaces (e.g. `United_States`, `Sierra_Leone`), but you can pass any recognized name, code or alias — see the resolution rules above. The bundled `locations.csv` lists each country's ISO 3166-1 alpha-2 and alpha-3 codes, official name, aliases and available contact sources; `ssd.location_info(location)` returns a row of it.
 
 ### The node table
 

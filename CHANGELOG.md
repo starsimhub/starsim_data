@@ -2,6 +2,12 @@
 
 All notable changes to `starsim_data` are recorded here. Versions follow [semantic versioning](https://semver.org); the *data* is versioned too, so a change to a bundled dataset is a release, not an amendment.
 
+## 2.1.0 (2026-10-29)
+
+- **Age-specific fertility rates.** `ssd.load('nigeria', which='fertility')` returns UN WPP 2024's fertility rates by 5-year age group of mother (`10–14` to `50–54`), as `[Time, AgeGrpStart, ASFR]`, in births per 1,000 women per year, for all 187 countries, bundled like `births` (decadal, 1950–2100, Medium variant). It is what `ss.Pregnancy` needs, where `births` (the crude rate) is what `ss.Births` needs. It adds about 0.1 MB to the download (0.65 MB installed).
+- `ssd.fetch('nigeria', which='fertility')` gives the same every year, or for another variant, from the UN's `WPP2024_Fertility_by_Age5.csv.gz` (83 MB, once).
+- `ssd.__version__` is the package's version; it said `0.4.0` in 2.0.0.
+
 ## 2.0.0 (2026-10-22)
 
 - **Contact matrices for 187 locations by default.** `ssd.load('kenya')` returns the contact matrices of Prem et al. 2021 (`prem2021`), and for the ten locations that study left out (Japan, Australia, Haiti and seven others) those of Prem et al. 2017 (`prem2017`). Pass `which='prem2021'` for that study alone.

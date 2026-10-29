@@ -11,6 +11,7 @@ group per series (each carrying its own `spec` describing its layout):
 - `/migration`  -- crude net-migration rate (CNMR), one value per year.
 - `/deaths`     -- age/sex-specific mortality rate (mx), 5-year abridged bins.
 - `/population` -- population by 5-year age groups and sex (absolute persons).
+- `/fertility`  -- age-specific fertility rate (ASFR, births per 1,000 women), 5-year bins.
 
 Input files are classified by their columns, not their names, so whichever exact WPP
 files you download will be routed correctly as long as they contain the expected
@@ -46,7 +47,7 @@ DEFAULT_REVISION = '2024' # UN WPP revision; output is demographics-<rev>.h5
 
 # Value columns to coerce to numeric after reading with NA coercion disabled. Age
 # columns are excluded on purpose: `AgeGrp` holds strings such as "100+".
-NUMERIC_COLS = ('Time', 'CBR', 'CNMR', 'mx', 'PopMale', 'PopFemale')
+NUMERIC_COLS = ('Time', 'CBR', 'CNMR', 'mx', 'PopMale', 'PopFemale', 'ASFR')
 
 H5OPTS = dict(compression='gzip', compression_opts=9, shuffle=True)
 
@@ -57,7 +58,7 @@ SOURCE = dict(
     license    = 'CC BY 3.0 IGO',
     citation   = 'United Nations, Department of Economic and Social Affairs, Population Division (2024). World Population Prospects 2024.',
     variant    = 'Medium',
-    note       = 'Decadal snapshots 1950-2100. Births/migration are crude national rates; deaths are age/sex mortality (mx, 5-year abridged); population is by 5-year age groups and sex (absolute persons). Female and Male only.',
+    note       = 'Decadal snapshots 1950-2100. Births/migration are crude national rates; deaths are age/sex mortality (mx, 5-year abridged); population is by 5-year age groups and sex (absolute persons); fertility is the age-specific rate (ASFR, births per 1,000 women, 5-year age groups of mother). Female and Male only.',
 )
 
 
@@ -87,6 +88,8 @@ def classify(cols):
     has_age = ('AgeGrp' in cols) or ('AgeGrpStart' in cols)
     if ({'Time', 'PopMale', 'PopFemale'} <= cols) and has_age:
         return 'population'
+    if {'Time', 'AgeGrpStart', 'ASFR'} <= cols:
+        return 'fertility'
     return None
 
 
@@ -101,7 +104,7 @@ def _iso_col(cols):
 def _load_by_type(wpp_dir):
     """Read every WPP CSV in `wpp_dir`, grouped by file type, filtered to our locations/years."""
     name_map = iso2_to_name()
-    grouped = {'indicators': [], 'lifetable': [], 'population': []}
+    grouped = {'indicators': [], 'lifetable': [], 'population': [], 'fertility': []}
     files = sorted(wpp_dir.glob('*.csv')) + sorted(wpp_dir.glob('*.csv.gz'))
     if not files:
         raise SystemExit(f'No CSV files found in {wpp_dir} -- see {wpp_dir}/README.md')
@@ -117,6 +120,8 @@ def _load_by_type(wpp_dir):
             cols = [iso, 'Time', 'CBR', 'CNMR']
         elif kind == 'lifetable':
             cols = [iso, 'Time', 'Sex', 'AgeGrpStart', 'mx']
+        elif kind == 'fertility':
+            cols = [iso, 'Time', 'AgeGrpStart', 'ASFR']
         else:
             age = 'AgeGrp' if 'AgeGrp' in header else 'AgeGrpStart'
             cols = [iso, 'Time', age, 'PopMale', 'PopFemale']
@@ -169,6 +174,23 @@ def write_year_sex_age(root, series, df, value_col, age_col, layout):
     return
 
 
+def write_year_age(root, series, df, value_col, age_col, layout):
+    """Write a (year, age) array per location (fertility) as a group."""
+    ages = sorted(df[age_col].unique())
+    idx_cols = ['Time', age_col]
+    grp = root.create_group(series)
+    spec = dict(layout=layout, years=YEARS, ages=[int(a) for a in ages], age_col=age_col, value_col=value_col)
+    grp.attrs['spec'] = json.dumps(spec)
+    full = pd.MultiIndex.from_product([YEARS, ages], names=idx_cols)
+    for location, sub in df.groupby('location'):
+        s = sub.set_index(idx_cols)[value_col]
+        s = s[~s.index.duplicated()].reindex(full)
+        arr = s.to_numpy(np.float32).reshape(len(YEARS), len(ages))
+        grp.create_dataset(location, data=arr, **H5OPTS)
+    print(f'  /{series}: {len(grp)} locations')
+    return
+
+
 def report_missing(f):
     """Warn about locations in locations.csv that got no data in any series.
 
@@ -208,6 +230,8 @@ def build(wpp_dir, revision=DEFAULT_REVISION, check=False):
             long['Sex'] = long['Sex'].map({'PopFemale': 'Female', 'PopMale': 'Male'})
             long = long.rename(columns={age_col: 'AgeGrp'})
             write_year_sex_age(f, 'population', long, 'Value', 'AgeGrp', 'population')
+        if 'fertility' in data:
+            write_year_age(f, 'fertility', data['fertility'], 'ASFR', 'AgeGrpStart', 'fertility')
         prov = stamp(f'demographics-{revision}', 'scripts/build_demographics.py', revision=revision, series=sorted(f), **SOURCE)
         f.attrs['provenance'] = json.dumps(prov)
         report_missing(f)
@@ -219,7 +243,7 @@ def build(wpp_dir, revision=DEFAULT_REVISION, check=False):
         # The registry caches what it discovers in the data directory, so make it look
         # again -- otherwise this would check whatever was there before the rebuild.
         ssd.registry.refresh()
-        for which in ('births', 'migration', 'deaths', 'population'):
+        for which in ('births', 'migration', 'deaths', 'population', 'fertility'):
             if which in ssd.list_datasets():
                 loc = ssd.list_locations(which)[0]
                 df = ssd.load(loc, which=which)

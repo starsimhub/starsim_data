@@ -50,7 +50,7 @@ Two steps. The first retrieves the data:
 python scripts/download_wpp.py
 ```
 
-This queries the UN WPP Data Portal API for the four indicators the package uses, filters to decadal years and to the package's countries, and writes three normalized CSVs into `raw_data/demographics/`. It requires a free Bearer token in `scripts/.env`, which is git-ignored; the API's metadata endpoints are open but its data endpoints are not.
+This queries the UN WPP Data Portal API for the indicators the package uses, filters to decadal years and to the package's countries, and writes four normalized CSVs into `raw_data/demographics/`. It requires a free Bearer token in `scripts/.env`, which is git-ignored; the API's metadata endpoints are open but its data endpoints are not.
 
 The CSVs are tracked in git, so the second step needs no token and no network:
 

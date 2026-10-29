@@ -16,13 +16,13 @@ Licenses are omitted here for width; they are listed in [Provenance](provenance.
 
 ## Demographics
 
-Four series are taken from UN World Population Prospects 2024, Medium variant. They are grouped in a single store and versioned by WPP revision, and consist of decadal snapshots from 1950 to 2100, giving sixteen time points. All 187 countries have all four series.
+Five series are taken from UN World Population Prospects 2024, Medium variant. They are grouped in a single store and versioned by WPP revision, and consist of decadal snapshots from 1950 to 2100, giving sixteen time points. All 187 countries have all five series.
 
 The column names follow the UN's own conventions, so the frames can be passed to Starsim's demographic modules without renaming anything.
 
 ### `births` and `migration`
 
-Both are national rates with one value per year and no age dimension, since the UN publishes no age breakdown for either.
+Both are national rates with one value per year and no age dimension. The UN publishes no age breakdown for migration; births by age of mother are the `fertility` series, below.
 
 ```{python}
 births = ssd.load('kenya', which='births')
@@ -97,6 +97,30 @@ The national total provides a check on the units:
 
 ```{python}
 f"{population[population.Time == 2020].Value.sum() / 1e6:.1f}M"
+```
+
+### `fertility`
+
+Age-specific fertility rates, by 5-year age group of the mother (`10–14`, …, `50–54`). There is no `Sex` column, since the rates are per woman.
+
+```{python}
+fertility = ssd.load('kenya', which='fertility')
+fertility.head()
+```
+
+```{python}
+#| echo: false
+pd.DataFrame([
+    dict(column='Time', dtype='int64', units='calendar year', note=''),
+    dict(column='AgeGrpStart', dtype='int64', units='years', note='start of the bin: 10, 15, ..., 50'),
+    dict(column='ASFR', dtype='float32', units='births per 1,000 women per year', note='the age-specific fertility rate'),
+])
+```
+
+Summed over the age groups, times five years per group and divided by 1,000, it gives the total fertility rate:
+
+```{python}
+f"{5 * fertility[fertility.Time == 2020].ASFR.sum() / 1000:.2f}"
 ```
 
 ### Revisions
@@ -236,7 +260,7 @@ pd.DataFrame([
 
 ## Beyond the bundle
 
-For the four bundled series, `fetch()` returns the same schema at annual resolution, and for the contact sources that are not bundled (`prem2017`, `mistry2021` and `mistry2021_us`) the same frame `load()` returns for `prem2021`. It also provides two datasets with no bundled counterpart:
+For the five bundled series, `fetch()` returns the same schema at annual resolution, and for the contact sources that are not bundled (`prem2017`, `mistry2021` and `mistry2021_us`) the same frame `load()` returns for `prem2021`. It also provides two datasets with no bundled counterpart:
 
 ```{python}
 ssd.list_fetchable()
@@ -249,7 +273,7 @@ ssd.fetch('kenya', which='deaths', years=(2000, 2025))
 | Returns | Columns |
 |---|---|
 | `births`, `migration` | as bundled, but every year |
-| `deaths`, `population` | as bundled, but every year |
+| `deaths`, `population`, `fertility` | as bundled, but every year |
 | `life_table` | `Time, Sex, AgeGrpStart, mx, qx, px, lx, dx, Lx, Sx, Tx, ex, ax` — and all three sexes, including `Total` |
 | `indicators` | `Time` plus ~50 WPP indicators: `CDR`, `TFR`, `LEx`, `IMR`, `Q5`, `NetMigrations`, … |
 
@@ -264,6 +288,6 @@ lt.attrs['columns']['Lx']
 ## What is not here
 
 - **Subnational demographics,** other than the populations of the US states (`population_us`, above). WPP has no subnational dimension, so none can be derived from it.
-- **Age-specific fertility or migration.** WPP publishes only crude national rates for these.
+- **Age-specific migration.** WPP publishes only the crude national rate.
 - **"Both sexes" rows** in the bundled series, which contain Female and Male only. `fetch('life_table')` does include `Total`.
 - **Hong Kong, Macao and Puerto Rico** in the node table, as no boundary source covers them as separate entities. Their demographics and contact matrices are present.
