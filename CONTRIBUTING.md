@@ -28,20 +28,21 @@ The fetched stores (in `fetched/`, downloaded by `fetch()` rather than shipped i
 
 ## Releasing
 
-1. In the pull request, bump `__version__` and `__versiondate__` in `starsim_data/version.py` and add a section for that version to `CHANGELOG.md`. That section becomes the release notes.
+1. In the pull request, bump `__version__` and `__versiondate__` in `starsim_data/version.py` and add a section for that version to `CHANGELOG.md`, headed `## Version X.Y.Z (date)`. That section becomes the release notes.
 2. Merge the pull request, then update your local `main`:
    ```bash
    git switch main
    git pull
    ```
-3. Run the release script with the data tag, the value of `RELEASE` in `scripts/build_hdf5.py`. Do a dry run first:
+3. Run the release script:
    ```bash
-   python scripts/publish.py data-2026.10 --dry-run
-   python scripts/publish.py data-2026.10
+   scripts/publish_release
    ```
-   It checks that you're on an up-to-date `main` with no uncommitted changes, that the stores in `fetched/` match the manifest, and that the changelog has the version's section. Then it creates two GitHub releases, each with its git tag (`git fetch --tags` to get them locally):
-   - the data release, with the stores in `fetched/` attached, unless it already exists from an earlier version, in which case it checks the files are there;
-   - `v<version>`, the package release.
+   It is the same whether or not the data has changed; what decides it is `RELEASE` in `scripts/build_hdf5.py`, which names the data release the fetched stores are downloaded from (see above), and the script says up front which case it is:
+   - **Package only** (the usual case): no fetched store has changed, so the release named in `RELEASE` already exists. The script checks that its files are all there and creates only `v<version>`.
+   - **New data and the package**: you changed a fetched store and set a new `RELEASE`, so that release doesn't exist yet. The script creates it first, with the stores in `fetched/` attached, then `v<version>`.
+
+   Either way it first checks that you're on an up-to-date `main` with no uncommitted changes, that the stores in `fetched/` match the manifest, and that the changelog has the version's section, in a dry run, and then asks before creating anything. Each release gets its git tag on GitHub (`git fetch --tags` to get them locally). The script is a wrapper around `python scripts/publish.py <data tag> [--dry-run]`, which you can also run directly.
 4. Publishing `v<version>` triggers the Publish workflow (`.github/workflows/publish.yml`), which builds the package and uploads it to PyPI. It refuses to if any fetched store can't be downloaded. Watch it under the repository's Actions tab.
 
 PyPI accepts the upload through trusted publishing, so no token is needed. This is set up once on pypi.org, in the project's Publishing settings: owner `starsimhub`, repository `starsim_data`, workflow `publish.yml`, environment `pypi`.

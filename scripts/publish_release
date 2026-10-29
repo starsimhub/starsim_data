@@ -1,0 +1,27 @@
+#!/usr/bin/env bash
+# Release the package to PyPI, and the data with it if the data has changed. The data tag is
+# RELEASE in build_hdf5.py: if that release already exists (no fetched store has changed),
+# only the package is released; if not, the data release is created first. Does a dry run of
+# publish.py, then asks before the real one. Pass a data tag to override RELEASE.
+set -euo pipefail # Fail fast if needed
+
+cd "$(dirname "$0")/.."
+DATA_TAG=${1:-$(sed -n "s/^RELEASE = '\(.*\)'/\1/p" scripts/build_hdf5.py)}
+VERSION=$(sed -n "s/^__version__ = '\(.*\)'/\1/p" starsim_data/version.py)
+
+if gh release view "$DATA_TAG" -R starsimhub/starsim_data > /dev/null 2>&1; then
+    echo "Releasing the package only: v$VERSION, using the existing data release $DATA_TAG"
+else
+    echo "Releasing new data and the package: data release $DATA_TAG, then v$VERSION"
+fi
+echo
+
+python scripts/publish.py "$DATA_TAG" --dry-run
+
+echo
+read -rp "Publish? [y/N] " answer
+if [[ $answer != [yY]* ]]; then
+    echo "Not published"
+    exit 1
+fi
+python scripts/publish.py "$DATA_TAG"

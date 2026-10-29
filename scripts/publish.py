@@ -78,7 +78,7 @@ def check_stores(data_tag):
 def changelog_notes(version):
     """ This version's section of the changelog """
     text = (REPO / 'CHANGELOG.md').read_text(encoding='utf-8')
-    match = re.search(rf'^## {re.escape(version)}\b.*?\n(.*?)(?=^## |\Z)', text, flags=re.M | re.S)
+    match = re.search(rf'^## Version {re.escape(version)}\b.*?\n(.*?)(?=^## |\Z)', text, flags=re.M | re.S)
     if not match:
         raise ValueError(f'CHANGELOG.md has no section for {version}')
     return match[1].strip()

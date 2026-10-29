@@ -82,6 +82,12 @@ python scripts/publish.py data-2026.10 --dry-run  # check everything, create not
 python scripts/publish.py data-2026.10
 ```
 
+If the data release already exists, which is the case whenever no fetched store has changed, only the package is released.
+
+## publish_release
+
+The way to make a release: runs `publish.py` with the data tag in `RELEASE` in `build_hdf5.py`, first as a dry run, then for real if you confirm. It says up front whether it is releasing the package only (that data release exists) or new data as well (it doesn't). See [CONTRIBUTING.md](../CONTRIBUTING.md#releasing).
+
 ## Dependencies
 
 These scripts require `h5py`, `numpy`, `pandas`, plus `pycountry` for `build_locations.py` and `geopandas`/`pyogrio` for `build_nodes.py` — `pip install -e ".[dev,spatial]"` covers all of them. `provenance.py` is a shared helper, not a script: it stamps each store with its source, license, citation and build details, which `starsim_data.provenance()` then reads back.
