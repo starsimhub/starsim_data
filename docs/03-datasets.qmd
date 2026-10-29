@@ -2,6 +2,10 @@
 title: "Datasets and their shapes"
 guide-section: "The data"
 tags: [Reference, Data]
+authorship:
+  human: 15
+  ai: 85
+  note: Written by AI and reviewed by a human, who rewrote parts of it
 ---
 
 This page documents the columns, dtypes and units returned by each dataset. The frames shown are produced by executing the code when the page is built, so they correspond to the current contents of the package.

@@ -48,7 +48,6 @@ dependencies = [
 dev = [
   "pytest>=7.4",
   "pycountry",
-  "great-docs",
 ]
 
 # Full geometry and raster aggregation. Imported lazily, so `import starsim_data` works
@@ -57,6 +56,16 @@ spatial = [
   "geopandas>=1.0",
   "pyogrio>=0.8",
   "rastertoolkit>=0.5",
+]
+
+# The docs build uses Sciris' forks of great-docs and quartodoc rather than the upstream
+# versions. A dependency group rather than an extra because the great-docs fork is
+# installed from GitHub, and PyPI rejects a package whose extras point at a URL; groups
+# are not part of the published metadata. Install with `pip install --group docs`.
+[dependency-groups]
+docs = [
+  "great-docs[quartodoc] @ git+https://github.com/sciris/great-docs",
+  "quartopydoc",
 ]
 
 [tool.pytest.ini_options]

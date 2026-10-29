@@ -2,6 +2,10 @@
 title: "Related projects"
 guide-section: "The data"
 tags: [Explanation, Concepts]
+authorship:
+  human: 0
+  ai: 100
+  note: Written by AI
 ---
 
 Very little of what this package distributes is data that nobody else distributes. UN World Population Prospects, the Prem and Mistry contact matrices, UNOCHA and geoBoundaries administrative boundaries, and WorldPop rasters are all public, and several other projects package them for modelers. What separates those projects is not the numbers but the delivery: whether the data is inside the wheel or on a server, whether a call returns a dataframe or writes a directory of files, and how much of the model is decided on your behalf.

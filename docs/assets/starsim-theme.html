@@ -24,6 +24,18 @@
     margin-right: auto !important;
   }
 
+  /* Authorship badge from the "authorship" page metadata (see authorship.lua); the note
+     shows on hover. */
+  #quarto-document-content { position: relative; }
+  .authorship {
+    position: absolute;
+    top: 46px; /* Below the "Copy page" buttons great-docs puts in the same corner */
+    right: 0;
+    font-size: 0.85em;
+    opacity: 0.75;
+    cursor: help;
+  }
+
   /* Footer: centred text with the icon row on the right. */
   footer.footer .nav-footer { display: flex; align-items: center; gap: 1rem; }
   footer.footer .nav-footer-center { flex: 1 1 auto; }

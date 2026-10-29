@@ -2,6 +2,10 @@
 title: "Getting started"
 guide-section: "Getting started"
 tags: [Tutorial, Setup]
+authorship:
+  human: 5
+  ai: 95
+  note: Written by AI, lightly edited by a human
 ---
 
 `starsim_data` provides national demographic data, age-structured contact matrices, and subnational administrative geography, in forms intended to be read directly into a disease model. This page introduces the main functions in the order a new user is likely to need them. None of the examples require network access.

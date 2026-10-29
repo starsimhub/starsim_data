@@ -2,6 +2,10 @@
 title: "Building the data"
 guide-section: "Internals"
 tags: [Internals, Contributing]
+authorship:
+  human: 10
+  ai: 90
+  note: Written by AI, lightly edited by a human
 ---
 
 The `.h5` files inside the package are build artifacts, generated from human-readable sources by the scripts in `scripts/`. This page describes what each script does and how to regenerate or update the data. It is for the package's maintainers: users never need to run these scripts, since every release ships its data ready to use. It is relevant when a new upstream release appears, when a source needs correcting, or when adding a dataset.

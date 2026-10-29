@@ -2,6 +2,10 @@
 title: "Provenance and reproducibility"
 guide-section: "Internals"
 tags: [Reference, Reproducibility]
+authorship:
+  human: 5
+  ai: 95
+  note: Written by AI, lightly edited by a human
 ---
 
 The datasets distributed here are third-party data under a variety of licenses, and the numbers a model produces depend on which version of which source was used. This page describes how that information is recorded, how to retrieve it, and what is required to make an analysis reproducible.

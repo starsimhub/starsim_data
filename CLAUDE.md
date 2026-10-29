@@ -9,7 +9,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Commands
 
 ```bash
-pip install -e ".[dev]"              # runtime + pytest + pycountry + great-docs
+pip install -e ".[dev]"              # runtime + pytest + pycountry
+pip install --group docs             # the Sciris forks of great-docs and quartodoc (quartopydoc)
 pip install -e ".[dev,spatial]"      # also geopandas/pyogrio/rastertoolkit, needed by build_nodes.py
 
 pytest                               # the offline suite
@@ -82,7 +83,7 @@ Code is MIT; each bundled dataset keeps its own upstream license (GPL-3.0 for th
 
 ## Documentation
 
-Narrative pages are `.qmd` files in `docs/`, built by [great-docs](https://posit-dev.github.io/great-docs/). There is no navigation or API-reference config to maintain: the sidebar comes from each page's `guide-section` frontmatter and the reference is discovered from the public API. Rules `tests/test_docs.py` enforces:
+Narrative pages are `.qmd` files in `docs/`, built by [Sciris' fork of great-docs](https://github.com/sciris/great-docs), with [quartopydoc](https://pypi.org/project/quartopydoc/) in place of quartodoc; use these rather than the upstream versions. Both are in the `docs` dependency group in `pyproject.toml` (a group rather than an extra because PyPI rejects URL dependencies in a published package's metadata). There is no navigation or API-reference config to maintain: the sidebar comes from each page's `guide-section` frontmatter and the reference is discovered from the public API. Rules `tests/test_docs.py` enforces:
 
 - Every page needs `title` and a `guide-section` from `Getting started` / `The data` / `Internals`, and sections must stay **contiguous in filename order** — inserting a page in an earlier section means renumbering the later ones.
 - Renumbering is safe: site URLs strip the numeric prefix (`docs/09-provenance.qmd` → `user-guide/provenance.html`), so cross-page links are written as bare `provenance.qmd`.

@@ -2,6 +2,10 @@
 title: "Spatial data"
 guide-section: "The data"
 tags: [Reference, Spatial]
+authorship:
+  human: 15
+  ai: 85
+  note: Written by AI and reviewed by a human, who rewrote parts of it
 ---
 
 Spatial data is provided at two levels of detail. The node table reduces each administrative unit to a position, an extent, a population and an identifier, and records which units share a border, which is sufficient for most metapopulation models and is small enough to bundle. Polygon geometry and gridded population are considerably larger and are fetched on demand, behind an optional dependency group.

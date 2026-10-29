@@ -2,6 +2,10 @@
 title: "Architecture"
 guide-section: "Internals"
 tags: [Architecture, Internals]
+authorship:
+  human: 5
+  ai: 95
+  note: Written by AI, lightly edited by a human
 ---
 
 This page describes how the package is organized internally: what the modules do, how a call to `load()` is dispatched, how data is stored on disk, and where the extension points are. It is intended for people modifying the package or adding data to it, rather than for people using it.

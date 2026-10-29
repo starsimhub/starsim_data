@@ -207,15 +207,15 @@ ssd.provenance('deaths').license        # 'CC BY 3.0 IGO'
 
 ## Documentation
 
-The full documentation is at <https://starsimhub.github.io/starsim_data>. The narrative pages are `.qmd` sources in [`docs/`](docs/), ordered by their filename prefix and grouped in the sidebar by their `guide-section` frontmatter; the API reference is discovered from the public API. To build it locally you need [Quarto](https://quarto.org/docs/get-started/) plus:
+The full documentation is at <https://starsimhub.github.io/starsim_data>. The narrative pages are `.qmd` sources in [`docs/`](docs/), ordered by their filename prefix and grouped in the sidebar by their `guide-section` frontmatter; the API reference is discovered from the public API. It is built with [Sciris' fork of great-docs](https://github.com/sciris/great-docs) and [quartopydoc](https://pypi.org/project/quartopydoc/), which the `docs` dependency group installs. To build it locally you also need [Quarto](https://quarto.org/docs/get-started/):
 
 ```bash
-pip install -e ".[dev,docs]"
+pip install -e ".[dev]" --group docs
 great-docs build      # -> great-docs/_site/
 great-docs preview    # live reload on http://localhost:3000
 ```
 
-Adding a page means dropping a `.qmd` file in `docs/` with a `title` and a `guide-section` — there is no navigation or reference configuration to update. [`docs/assets/starsim-theme.html`](docs/assets/starsim-theme.html) holds three small style overrides (figure scaling, navbar centering, and the Starsim footer) for which great-docs has no setting.
+Adding a page means dropping a `.qmd` file in `docs/` with a `title` and a `guide-section` — there is no navigation or reference configuration to update. [`docs/assets/starsim-theme.html`](docs/assets/starsim-theme.html) holds a few small style overrides (figure scaling, navbar centering, the authorship badge, and the Starsim footer) for which great-docs has no setting.
 
 ## Building from source
 

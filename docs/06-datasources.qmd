@@ -2,6 +2,10 @@
 title: "Data sources"
 guide-section: "The data"
 tags: [Reference, Data]
+authorship:
+  human: 5
+  ai: 95
+  note: Written by AI, lightly edited by a human
 ---
 
 The sources drawn on by this package disagree with one another in places, cover different sets of countries, are revised on different schedules, and are distributed under different terms. This page compares them: what each is suited to, where its limitations lie, and how to choose between them.

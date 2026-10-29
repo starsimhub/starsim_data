@@ -71,11 +71,15 @@ funding:
     - funder
   homepage: https://www.gatesfoundation.org
 
-# Three small style overrides great-docs has no setting for: figure scaling, navbar
-# centering, and the Starsim footer. The `..` is because Quarto resolves a `file:` include
-# relative to the build directory, which is a child of the project root.
+# A few small style overrides great-docs has no setting for: figure scaling, navbar
+# centering, the authorship badge, and the Starsim footer.
 include_in_header:
-  - file: ../docs/assets/starsim-theme.html
+  - file: docs/assets/starsim-theme.html
+
+# Each page's `authorship` frontmatter is shown as a badge at the top right, as on the
+# Starsim site. great-docs has no setting for a Quarto filter, so this script adds
+# docs/assets/authorship.lua to the generated _quarto.yml before rendering.
+pre_render: docs/assets/authorship.py
 
 # The changelog is CHANGELOG.md, included by docs/11-changelog.qmd, rather than the page
 # great-docs generates from GitHub Releases: the releases here are data assets, not notes.
