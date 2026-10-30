@@ -19,13 +19,13 @@ pytestmark = pytest.mark.filterwarnings("ignore::DeprecationWarning")
 
 @sc.timer()
 def test_downloadable():
-    """ The downloadable series are listed and registered as tier 1, and a typo gets suggestions """
+    """ The downloadable series are listed and registered as tier 2, and a typo gets suggestions """
     sc.heading("Testing the downloadable series")
     downloadable = ssd.list_downloadable()
     for name in ("births", "deaths", "migration", "population", "fertility", "life_table", "indicators"):
         assert name in downloadable, f"Expected {name} to be downloadable"
     for name in ("life_table", "indicators"):
-        assert ssd.registry.dataset(name).tier == 1, f"Expected download-only {name} to be tier 1"
+        assert ssd.registry.dataset(name).tier == 2, f"Expected download-only {name} to be tier 2"
         assert ssd.registry.dataset(name).function == "download", f"Expected {name} to be got with download()"
     assert not set(downloadable) & set(ssd.list_fetchable()) # Each is got one way
     with pytest.raises(ValueError, match="did you mean.*births"):
@@ -113,7 +113,7 @@ def test_download_births():
     prov = df.attrs["provenance"]
     assert prov.license == "CC BY 3.0 IGO" # WPP's license
     assert prov.variant == "Medium" # The default variant
-    assert prov.tier == 1 # Not bundled
+    assert prov.tier == 2 # Downloaded
     assert prov.files[0]["sha256"] # The cached file is fingerprinted
     assert df.attrs["location"] == "Kenya" # Canonical location
 

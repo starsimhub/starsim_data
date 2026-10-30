@@ -30,7 +30,7 @@ pd.DataFrame([
 ])
 ```
 
-Import order matters, because two modules register themselves when they are imported: `loaders` adds its layout shapers and `downloading` adds its tier-1 datasets, both of which require `registry` to exist first. The order is fixed in `__init__.py`.
+Import order matters, because two modules register themselves when they are imported: `loaders` adds its layout shapers and `downloading` adds its tier-2 datasets, both of which require `registry` to exist first. The order is fixed in `__init__.py`.
 
 ## Import conventions
 
@@ -115,7 +115,7 @@ Demographic stores are named by revision, so a new UN release adds a file rather
 
 ## Tiers, in code
 
-Internally, whether a dataset is bundled is its *tier*, a field on the descriptor: 0 for bundled, 1 for fetched or downloaded (the descriptor's `access` property gives the words used in [Bundled, fetched and downloaded data](access.qmd), and its `function` property the function for each). `load()` enforces it:
+Internally, whether a dataset is bundled is its *tier*, a field on the descriptor: 0 for bundled, 1 for fetched and 2 for downloaded (the descriptor's `access` property gives the same in the words used in [Bundled, fetched and downloaded data](access.qmd), and its `function` property the function for each). `load()` enforces it:
 
 ```{python}
 #| error: true
@@ -140,7 +140,7 @@ ssd.register_layout('my_layout', shape_my_layout)
 **A new dataset.** Register a descriptor. Giving it a `loader` causes `load()` to delegate to it, which is the route for data this package does not ship:
 
 ```{python}
-ds = ssd.registry.Dataset(name='my_dataset', layout='crude', tier=1,
+ds = ssd.registry.Dataset(name='my_dataset', layout='crude', tier=2,
                           description='Something from elsewhere',
                           loader=lambda location, **kw: f'data for {location}')
 ssd.register_dataset(ds)

@@ -330,7 +330,7 @@ def download_nodes(location, level=1, year=None, source=None, refresh=False, ver
 
     out.attrs['provenance'] = sc.objdict(
         dataset             = 'nodes',
-        tier                = 1,
+        tier                = 2,
         location            = nodes.location.iloc[0],
         level               = level,
         boundary_source     = source,

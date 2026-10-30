@@ -95,7 +95,7 @@ def test_download_shapes():
     prov = gdf.attrs["provenance"]
     assert prov.license == "CC BY 3.0 IGO" # UNOCHA's license
     assert prov.redistributable is True # Which permits redistribution
-    assert prov.tier == 1 # Fetched
+    assert prov.tier == 2 # Downloaded
 
     france = ssd.download_shapes("France", level=1, verbose=False)
     assert set(france.source) == {"geoboundaries"} # France is not in the UNOCHA mirror, so the chain carries on

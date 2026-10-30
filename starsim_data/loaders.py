@@ -68,7 +68,7 @@ def list_datasets(detailed=False, tier=None):
         detailed (bool): if True, return a dataframe of the registry -- name, layout,
             access (bundled, fetched or downloaded), admin level, location count, license
             and revisions -- rather than just the names.
-        tier (int): restrict to one tier (0 bundled, 1 fetched or downloaded).
+        tier (int): restrict to one tier (0 bundled, 1 fetched, 2 downloaded).
 
     Returns:
         list or sciris.dataframe: dataset names, or the ssd.registry.

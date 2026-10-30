@@ -49,9 +49,12 @@ python scripts/download_epydemix.py           # refresh the US states in raw_dat
 Every function belongs to exactly one tier, and this is the design constraint the rest of the package is arranged around:
 
 - **Tier 0** — `load()`, `load_nodes()`, `distances()`. Reads only what is inside the wheel. **Never touches the network**, so it is instant, offline and byte-identical for everyone on a given version.
-- **Tier 1** — downloads and caches, with a provenance sidecar per file. `fetch()` gets the stores this package publishes with its releases (pinned by SHA-256); `download()`, `download_shapes()`, `download_nodes()` and `download_raster()` get data from its original publisher (UN, WorldPop, boundary sources), whose servers this package doesn't control. The verb tells the caller whose server they depend on, and `Dataset.function` names it for each dataset. `fetch()` of data that isn't packaged warns and passes the call to `download()`; `fetch_shapes`/`fetch_nodes`/`fetch_raster` are kept as aliases that do the same.
+- **Tier 1** — `fetch()`. The stores this package publishes with its releases (pinned by SHA-256), downloaded and cached with a provenance sidecar per file.
+- **Tier 2** — `download()`, `download_shapes()`, `download_nodes()`, `download_raster()`. Data from its original publisher (UN, WorldPop, boundary sources), whose servers this package doesn't control, cached the same way.
 
-Tier is a field on the dataset descriptor and `load()` enforces it: asking `load()` for a tier-1 dataset raises and names `fetch()` or `download()` instead. Do not add a network call to a tier-0 path — CI runs `-m "not network"` and `tests/test_docs.py` fails the build if an executed docs cell would fetch.
+The verb tells the caller whose server they depend on; `Dataset.access` and `Dataset.function` give the tier in words. `fetch()` of data that isn't packaged warns and passes the call to `download()`; `fetch_shapes`/`fetch_nodes`/`fetch_raster` are kept as aliases that do the same.
+
+Tier is a field on the dataset descriptor and `load()` enforces it: asking `load()` for a tier-1 or tier-2 dataset raises and names `fetch()` or `download()` instead. Do not add a network call to a tier-0 path — CI runs `-m "not network"` and `tests/test_docs.py` fails the build if an executed docs cell would fetch.
 
 ### Registry-driven dispatch
 
@@ -66,7 +69,7 @@ Descriptor discovery is cached — call `registry.refresh()` if the files change
 
 ### Import conventions
 
-Follow Starsim's convention: **`from` imports live only in `__init__.py`**. Every other module does `import starsim_data as ssd` and reaches everything as `ssd.load`, `ssd.registry.datasets()`, so modules can refer to each other freely without cycles. The import order in `__init__.py` is load-bearing: `registry` must exist before `loaders` (which registers layouts) and `downloading` (which registers tier-1 datasets).
+Follow Starsim's convention: **`from` imports live only in `__init__.py`**. Every other module does `import starsim_data as ssd` and reaches everything as `ssd.load`, `ssd.registry.datasets()`, so modules can refer to each other freely without cycles. The import order in `__init__.py` is load-bearing: `registry` must exist before `loaders` (which registers layouts) and `downloading` (which registers tier-2 datasets).
 
 Importing the package must stay side-effect free — no directories created, no files opened, no warnings. `options` reads the environment at import but acts on it lazily; the cache dir is resolved and created only when something is written. The `[spatial]` imports are lazy for the same reason: `import starsim_data` works without geopandas, and only the spatial functions raise.
 

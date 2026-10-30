@@ -272,7 +272,7 @@ def download_shapes(location, level=1, source=None, refresh=False, verbose=None)
         out.attrs['provenance'] = sc.objdict(
             dataset         = 'shapes',
             source          = name,
-            tier            = 1,
+            tier            = 2,
             source_url      = spec.source_url,
             license         = spec.license,
             citation        = spec.citation,

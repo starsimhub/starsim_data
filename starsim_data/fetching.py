@@ -103,11 +103,7 @@ def list_fetchable():
 
 def _fetched_stores():
     """The datasets that are stores kept out of the wheel, as {name: Dataset}."""
-    stores = {}
-    for name, ds in ssd.registry.datasets(tier=1).items():
-        if ds.sources and (not ds.source().bundled):
-            stores[name] = ds
-    return stores
+    return {name: ds for name, ds in ssd.registry.datasets(tier=1).items() if ds.sources}
 
 
 def _download_store(source, refresh, verbose):

@@ -362,7 +362,7 @@ def download(location, which='deaths', years=None, variant=DEFAULT_VARIANT, revi
         citation   = f'United Nations, Department of Economic and Social Affairs, Population Division ({revision}). World Population Prospects {revision}.',
         variant    = variant,
         revision   = revision,
-        tier       = 1,
+        tier       = 2,
         files      = [dict(ssd.cache_provenance(path) or {}) for path in paths],
     )
     if which == 'life_table':
@@ -378,7 +378,7 @@ def _register_download_only():
     """
     for name in ['life_table', 'indicators']:
         series = SERIES[name]
-        ds = ssd.registry.Dataset(name=name, layout=series.shape, tier=1, license=WPP_LICENSE, description=series.description)
+        ds = ssd.registry.Dataset(name=name, layout=series.shape, tier=2, license=WPP_LICENSE, description=series.description)
         ssd.registry.register_dataset(ds)
     return
 
