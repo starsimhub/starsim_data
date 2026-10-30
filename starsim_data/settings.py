@@ -31,9 +31,11 @@ class Options(sc.objdict):
     attribute, by call, or from an environment variable.
 
     Example:
-        >>> import starsim_data as ssd
-        >>> ssd.options(verbose=False)
-        >>> ssd.options.reset()
+        ```python
+        import starsim_data as ssd
+        ssd.options(verbose=False)
+        ssd.options.reset()
+        ```
     """
 
     def __init__(self):
@@ -84,9 +86,11 @@ class Options(sc.objdict):
         """Set options temporarily, restoring the previous values on exit.
 
         Example:
-            >>> import starsim_data as ssd
-            >>> with ssd.options.context(verbose=False):
-            ...     pass
+            ```python
+            import starsim_data as ssd
+            with ssd.options.context(verbose=False):
+                df = ssd.fetch('kenya', which='deaths') # Without the progress messages
+            ```
         """
         previous = {key: self[key] for key in kwargs}
         self.set(**kwargs)

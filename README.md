@@ -165,7 +165,7 @@ Levels 0 and 1 are covered for 184 countries, built from UNOCHA COD-AB where it 
 
 `ssd.parse_level()` accepts `'admin1'`, `'ADM2'`, `'3'` or a bare integer, up to 5.
 
-### Boundaries, rasters and maps: the `[spatial]` extra
+### Boundaries, rasters and maps: the spatial extra
 
 Actual polygons are far too big for a wheel, so they are fetched and cached, and they need the optional geospatial stack:
 

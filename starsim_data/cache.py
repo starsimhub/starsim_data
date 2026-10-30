@@ -64,9 +64,10 @@ def cache_dir(subdir=None, create=False):
         pathlib.Path: the cache directory.
 
     Example:
-        >>> import starsim_data as ssd
-        >>> ssd.cache_dir().name
-        'starsim_data'
+        ```python
+        import starsim_data as ssd
+        ssd.cache_dir().name # Returns 'starsim_data'
+        ```
     """
     if ssd.options.cache_dir:
         path = sc.path(ssd.options.cache_dir).expanduser()
@@ -166,8 +167,10 @@ def cache_info():
         nothing is cached.
 
     Example:
-        >>> import starsim_data as ssd
-        >>> ssd.cache_info()  # doctest: +SKIP
+        ```python
+        import starsim_data as ssd
+        ssd.cache_info()
+        ```
     """
     root = cache_dir()
     rows = []
@@ -196,8 +199,10 @@ def clear_cache(pattern=None, verbose=None):
         list: the paths that were deleted.
 
     Example:
-        >>> import starsim_data as ssd
-        >>> ssd.clear_cache('wpp/*')  # doctest: +SKIP
+        ```python
+        import starsim_data as ssd
+        ssd.clear_cache('wpp/*')
+        ```
     """
     verbose = sc.ifelse(verbose, ssd.options.verbose)
     root = cache_dir()

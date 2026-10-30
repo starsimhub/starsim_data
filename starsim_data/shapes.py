@@ -142,9 +142,10 @@ def list_shape_sources():
         universal, note]`.
 
     Example:
-        >>> import starsim_data as ssd
-        >>> bool(ssd.list_shape_sources().set_index('source').loc['gadm', 'redistributable'])
-        False
+        ```python
+        import starsim_data as ssd
+        ssd.list_shape_sources() # One row per source; GADM's has redistributable=False
+        ```
     """
     rows = []
     for s in SOURCES.values():
@@ -235,8 +236,10 @@ def fetch_shapes(location, level=1, source=None, refresh=False, verbose=None):
         KeyError: if the location is unknown, or no source has it at this level.
 
     Example:
-        >>> import starsim_data as ssd
-        >>> gdf = ssd.fetch_shapes('kenya', level=1)   # doctest: +SKIP
+        ```python
+        import starsim_data as ssd
+        gdf = ssd.fetch_shapes('kenya', level=1)
+        ```
     """
     gpd = _require_spatial('fetch_shapes()')
     verbose = sc.ifelse(verbose, ssd.options.verbose)

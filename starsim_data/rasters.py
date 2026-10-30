@@ -93,8 +93,10 @@ def fetch_raster(location, year=None, refresh=False, verbose=None):
         KeyError: if WorldPop has no raster for this country and year.
 
     Example:
-        >>> import starsim_data as ssd
-        >>> ssd.fetch_raster('kenya', year=2020)  # doctest: +SKIP
+        ```python
+        import starsim_data as ssd
+        ssd.fetch_raster('kenya', year=2020)
+        ```
     """
     verbose = sc.ifelse(verbose, ssd.options.verbose)
     year = _default_year() if year is None else int(year)
@@ -137,9 +139,11 @@ def aggregate_raster(raster, shapes, by='pcode', nearest=None):
         ValueError: if `by` is not a column of `shapes`.
 
     Example:
-        >>> import starsim_data as ssd
-        >>> gdf = ssd.fetch_shapes('kenya', level=1)             # doctest: +SKIP
-        >>> ssd.aggregate_raster(ssd.fetch_raster('kenya'), gdf)  # doctest: +SKIP
+        ```python
+        import starsim_data as ssd
+        gdf = ssd.fetch_shapes('kenya', level=1)
+        ssd.aggregate_raster(ssd.fetch_raster('kenya'), gdf)
+        ```
     """
     try:
         import rastertoolkit as rtk # Imported here since it is optional (the [spatial] extra), and `import starsim_data` must work without it
@@ -281,8 +285,10 @@ def fetch_nodes(location, level=1, year=None, source=None, refresh=False, verbos
         KeyError: if the location, its boundaries, or its raster cannot be found.
 
     Example:
-        >>> import starsim_data as ssd
-        >>> nodes = ssd.fetch_nodes('kenya', level=1)   # doctest: +SKIP
+        ```python
+        import starsim_data as ssd
+        nodes = ssd.fetch_nodes('kenya', level=1)
+        ```
     """
     verbose = sc.ifelse(verbose, ssd.options.verbose)
     year = _default_year() if year is None else int(year)
@@ -370,8 +376,10 @@ def rescale_to_national(nodes, location=None, year=None):
         sciris.dataframe: a copy with `population` rescaled.
 
     Example:
-        >>> import starsim_data as ssd
-        >>> nodes = ssd.rescale_to_national(ssd.fetch_nodes('kenya'))   # doctest: +SKIP
+        ```python
+        import starsim_data as ssd
+        nodes = ssd.rescale_to_national(ssd.fetch_nodes('kenya'))
+        ```
     """
     location = location or nodes.location.iloc[0]
     year = year or nodes.attrs.get('provenance', {}).get('population_year')

@@ -49,9 +49,10 @@ def list_revisions():
     """Return the bundled UN WPP revisions, oldest first; the last is the default.
 
     Example:
-        >>> import starsim_data as ssd
-        >>> ssd.list_revisions()
-        ['2024']
+        ```python
+        import starsim_data as ssd
+        ssd.list_revisions() # Returns ['2024']
+        ```
     """
     revisions = set()
     for ds in ssd.registry.datasets().values():
@@ -72,9 +73,10 @@ def list_datasets(detailed=False, tier=None):
         list or sciris.dataframe: dataset names, or the ssd.registry.
 
     Example:
-        >>> import starsim_data as ssd
-        >>> 'prem2021' in ssd.list_datasets()
-        True
+        ```python
+        import starsim_data as ssd
+        'prem2021' in ssd.list_datasets() # Returns True
+        ```
     """
     known = ssd.registry.datasets(tier=tier)
     if not detailed:
@@ -113,9 +115,10 @@ def list_locations(which, revision=None):
     A fetched dataset lists its locations from the manifest, without downloading it.
 
     Example:
-        >>> import starsim_data as ssd
-        >>> 'Kenya' in ssd.list_locations('prem2021')
-        True
+        ```python
+        import starsim_data as ssd
+        'Kenya' in ssd.list_locations('prem2021') # Returns True
+        ```
     """
     ds = ssd.registry.dataset(which)
     if ds.locations:
@@ -138,9 +141,10 @@ def provenance(which=None, revision=None):
         `citation`, `built` and `builder`. Contents vary by source.
 
     Example:
-        >>> import starsim_data as ssd
-        >>> ssd.provenance('prem2021').license
-        'GPL-3.0'
+        ```python
+        import starsim_data as ssd
+        ssd.provenance('prem2021').license # Returns 'GPL-3.0'
+        ```
     """
     if which is None:
         return sc.objdict({name: provenance(name) for name in list_datasets(tier=0)})
@@ -259,9 +263,11 @@ def load(location, which='prem', kind='all', revision=None, level=None):
         KeyError: if the location is unknown, or is absent from this dataset.
 
     Example:
-        >>> import starsim_data as ssd
-        >>> M = ssd.load(location='kenya')                            # (16, 16) contact matrix
-        >>> d = ssd.load(location='KEN', which='deaths')              # tidy mortality
+        ```python
+        import starsim_data as ssd
+        M = ssd.load(location='kenya') # (16, 16) contact matrix
+        d = ssd.load(location='KEN', which='deaths') # tidy mortality
+        ```
     """
     ds = ssd.registry.dataset(which)
     if ds.loader is not None:  # a registered dataset that is not a bundled store

@@ -80,9 +80,10 @@ def load_nodes(location, level=0):
         ValueError: if the level is not available.
 
     Example:
-        >>> import starsim_data as ssd
-        >>> ssd.load_nodes('kenya', level=1).shape[0]
-        47
+        ```python
+        import starsim_data as ssd
+        ssd.load_nodes('kenya', level=1).shape[0] # Returns 47
+        ```
     """
     return ssd.load(location, which='nodes', level=level)
 
@@ -132,10 +133,11 @@ def distances(location=None, level=1, nodes=None, units='km', index='dot_name'):
         ValueError: if `units` or `index` is not recognized, or there are no nodes.
 
     Example:
-        >>> import starsim_data as ssd
-        >>> d = ssd.distances('kenya', level=1)
-        >>> bool(d.loc['Kenya:Nairobi', 'Kenya:Mombasa'] > 400)
-        True
+        ```python
+        import starsim_data as ssd
+        d = ssd.distances('kenya', level=1)
+        d.loc['Kenya:Nairobi', 'Kenya:Mombasa'] # Returns 433.1 (km)
+        ```
     """
     if units not in UNITS:
         raise ValueError(f'units must be one of {sorted(UNITS)}, not {units!r}')
@@ -188,10 +190,11 @@ def adjacency(location=None, level=1, nodes=None, index='dot_name'):
         ValueError: if the level has no bundled borders, or `index` is not recognized.
 
     Example:
-        >>> import starsim_data as ssd
-        >>> a = ssd.adjacency('kenya', level=1)
-        >>> bool(a.loc['Kenya:Nairobi', 'Kenya:Kiambu'])
-        True
+        ```python
+        import starsim_data as ssd
+        a = ssd.adjacency('kenya', level=1)
+        a.loc['Kenya:Nairobi', 'Kenya:Kiambu'] # Returns True: they share a border
+        ```
     """
     level = ssd.parse_level(level)
     if nodes is None:

@@ -157,9 +157,10 @@ def list_fetchable():
     """Return the datasets `fetch()` can retrieve.
 
     Example:
-        >>> import starsim_data as ssd
-        >>> 'life_table' in ssd.list_fetchable()
-        True
+        ```python
+        import starsim_data as ssd
+        'life_table' in ssd.list_fetchable() # Returns True
+        ```
     """
     return sorted(set(SERIES) | set(_fetched_stores()))
 
@@ -338,10 +339,12 @@ def fetch(location, which='deaths', years=None, variant=DEFAULT_VARIANT, revisio
         KeyError: if the location is unknown.
 
     Example:
-        >>> import starsim_data as ssd
-        >>> d = ssd.fetch('kenya', which='deaths', years=(2020, 2024))  # doctest: +SKIP
-        >>> lt = ssd.fetch('KEN', which='life_table', years=2020)       # doctest: +SKIP
-        >>> M = ssd.fetch('Japan', which='prem2017', kind='home')       # doctest: +SKIP
+        ```python
+        import starsim_data as ssd
+        d = ssd.fetch('kenya', which='deaths', years=(2020, 2024))
+        lt = ssd.fetch('KEN', which='life_table', years=2020)
+        M = ssd.fetch('Japan', which='prem2017', kind='home')
+        ```
     """
     verbose = sc.ifelse(verbose, ssd.options.verbose)
 

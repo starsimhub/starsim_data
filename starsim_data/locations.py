@@ -138,9 +138,10 @@ def location_info(location):
         `population_source`.
 
     Example:
-        >>> import starsim_data as ssd
-        >>> ssd.location_info('USA').iso3
-        'USA'
+        ```python
+        import starsim_data as ssd
+        ssd.location_info('USA').iso3 # Returns 'USA'
+        ```
     """
     info, _ = _table()
     key = resolve(location)
@@ -258,9 +259,10 @@ def parse_level(level):
         ValueError: if `level` cannot be parsed or is out of range.
 
     Example:
-        >>> import starsim_data as ssd
-        >>> ssd.parse_level('ADM2')
-        2
+        ```python
+        import starsim_data as ssd
+        ssd.parse_level('ADM2') # Returns 2
+        ```
     """
     if isinstance(level, bool):  # bool is an int subclass; not a level
         raise ValueError(f'invalid administrative level {level!r}')

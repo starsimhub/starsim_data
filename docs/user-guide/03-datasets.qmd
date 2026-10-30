@@ -24,7 +24,7 @@ Five series are taken from UN World Population Prospects 2024, Medium variant. T
 
 The column names follow the UN's own conventions, so the frames can be passed to Starsim's demographic modules without renaming anything.
 
-### `births` and `migration`
+### Births and migration
 
 Both are national rates with one value per year and no age dimension. The UN publishes no age breakdown for migration; births by age of mother are the `fertility` series, below.
 
@@ -48,7 +48,7 @@ The `migration` series has the same shape, with `CNMR` (crude net-migration rate
 ssd.load('kenya', which='migration').head(3)
 ```
 
-### `deaths`
+### Deaths
 
 Age- and sex-specific mortality, in 5-year abridged bins (`0`, `1–4`, `5–9`, …, `100+`). Only Female and Male are retained; the UN's "Both sexes" rows are dropped, which matches Starsim's sex conventions.
 
@@ -68,7 +68,7 @@ pd.DataFrame([
 ```
 
 ::: {.callout-note}
-## `mx` is a rate, not a probability
+## Death rates are not probabilities
 `mx` is the central death rate, meaning deaths per person-year of exposure, rather than the probability of dying during the interval (`qx`). The two are similar where mortality is low and diverge where it is high. The remaining life-table columns are available through `fetch()`, as described below.
 :::
 
@@ -78,7 +78,7 @@ len(deaths), deaths.Time.nunique(), deaths.AgeGrpStart.nunique()
 
 This is sixteen years multiplied by two sexes and twenty-two age bins.
 
-### `population`
+### Population
 
 Population counts by 5-year age group and sex, expressed as absolute persons. The UN's own CSV distributions express these in thousands; the conversion is applied when the store is built.
 
@@ -103,7 +103,7 @@ The national total provides a check on the units:
 f"{population[population.Time == 2020].Value.sum() / 1e6:.1f}M"
 ```
 
-### `fertility`
+### Fertility
 
 Age-specific fertility rates, by 5-year age group of the mother (`10–14`, …, `50–54`). There is no `Sex` column, since the rates are per woman.
 

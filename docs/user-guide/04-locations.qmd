@@ -105,7 +105,7 @@ The underlying file, `starsim_data/data/locations.csv`, is partly hand-maintaine
 The generator discards any alias that would be ambiguous across two locations, so a successful match is always unambiguous.
 
 ::: {.callout-warning}
-## Namibia and the string `NA`
+## Namibia's country code
 Namibia's ISO 3166-1 alpha-2 code is the two-letter string `NA`, which `pandas.read_csv` interprets as a missing value under its default settings. Every reader of `locations.csv` in this package either passes `keep_default_na=False` or uses the standard library's `csv` module instead, and there is a regression test covering it. Anyone parsing country tables independently is likely to encounter the same problem.
 
 ```{python}

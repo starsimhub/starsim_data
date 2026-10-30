@@ -195,9 +195,11 @@ def plot(location, which=None, year=None, level=1, fig_kw=None):
         matplotlib.figure.Figure: the figure, so it can be saved or further adjusted.
 
     Example:
-        >>> import starsim_data as ssd
-        >>> fig = ssd.plot('kenya')                       # doctest: +SKIP
-        >>> fig = ssd.plot('kenya', which='population')   # doctest: +SKIP
+        ```python
+        import starsim_data as ssd
+        fig = ssd.plot('kenya')
+        fig = ssd.plot('kenya', which='population')
+        ```
     """
     panels = _panels(location, which, level=level)
     ncols = 1 if len(panels) == 1 else 2
@@ -245,8 +247,10 @@ def choropleth(location, level=1, value='population', shapes=None, ax=None, cmap
         ValueError: if `value` is not available.
 
     Example:
-        >>> import starsim_data as ssd
-        >>> ax = ssd.choropleth('kenya', level=1)   # doctest: +SKIP
+        ```python
+        import starsim_data as ssd
+        ax = ssd.choropleth('kenya', level=1)
+        ```
     """
     if shapes is None:
         shapes = ssd.fetch_shapes(location, level=level)

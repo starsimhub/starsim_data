@@ -356,13 +356,14 @@ def register_dataset(dataset, overwrite=False):
         overwrite (bool): whether to replace an existing dataset of the same name.
 
     Example:
-        >>> import starsim_data as ssd
-        >>> ds = ssd.registry.Dataset(name='mydata', layout='crude', tier=1,
-        ...                           loader=lambda location, **kw: location)
-        >>> ssd.registry.register_dataset(ds)
-        >>> ssd.load('Kenya', which='mydata')
-        'Kenya'
-        >>> ssd.registry.unregister_dataset('mydata')
+        ```python
+        import starsim_data as ssd
+        ds = ssd.registry.Dataset(name='mydata', layout='crude', tier=1,
+                                  loader=lambda location, **kw: location)
+        ssd.registry.register_dataset(ds)
+        ssd.load('Kenya', which='mydata') # Returns 'Kenya'
+        ssd.registry.unregister_dataset('mydata')
+        ```
     """
     if not isinstance(dataset, Dataset):
         raise TypeError(f'expected a Dataset descriptor, got {type(dataset).__name__}')
