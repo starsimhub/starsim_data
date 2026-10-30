@@ -8,11 +8,11 @@ authorship:
   note: Written by AI, lightly edited by a human
 ---
 
-The datasets distributed here are third-party data under a variety of licenses, and the numbers a model produces depend on which version of which source was used. This page describes how that information is recorded, how to retrieve it, and what is required to make an analysis reproducible.
+The data in this package comes from other organizations, under several different licenses, and the numbers a model produces depend on which version of which source it used. This page shows how to find out where a dataset came from, how to cite it, and how to make an analysis reproducible.
 
 ## Attribution travels with the data
 
-Every store records its source, URL, license, citation, build timestamp, package version and git commit, written into the HDF5 file at build time. For a store that is fetched rather than bundled, the manifest in the wheel carries a copy of the same record, so `provenance()` answers without downloading it; the frame `fetch()` returns adds where and when the file was downloaded.
+Every dataset records its source, URL, license and citation, along with when and by which package version it was built. `provenance()` shows it, for fetched datasets too, without downloading anything:
 
 ```{python}
 import starsim_data as ssd
@@ -20,7 +20,7 @@ import starsim_data as ssd
 ssd.provenance('prem2021')
 ```
 
-The same record is attached to every frame returned by `load()`:
+The same record is attached to every dataframe `load()` returns:
 
 ```{python}
 deaths = ssd.load('kenya', which='deaths')
@@ -31,9 +31,7 @@ deaths.attrs['provenance'].citation
 deaths.attrs['location'], deaths.attrs['dataset']
 ```
 
-The attribution lives inside the file rather than in an adjacent sidecar, so copying the data carries it along. The consequence for anyone adding a dataset is that provenance has to be written when the store is built; see [Building the data](building-the-data.qmd).
-
-Provenance for every bundled dataset is available at once:
+Provenance for every dataset is available at once:
 
 ```{python}
 sorted(ssd.provenance().keys())
@@ -41,80 +39,49 @@ sorted(ssd.provenance().keys())
 
 ## Licenses
 
-The bundled datasets are not distributed under this package's MIT license. Each retains the terms of its original authors.
+The data is not covered by this package's MIT license; each dataset keeps its original license.
 
 ```{python}
 ssd.list_datasets(detailed=True)[['dataset', 'access', 'license']]
 ```
 
-`NOTICE.md` in the repository holds the full attribution text, and `licenses/` holds the upstream license texts in full. The tests assert that the license recorded in each store matches the one asserted in `NOTICE.md`, so the machine-readable and human-readable attributions cannot drift apart without a test failing.
+[NOTICE.md](https://github.com/starsimhub/starsim_data/blob/main/NOTICE.md) has the full attribution text, and the `licenses/` folder in the repository has the original license texts.
 
-One license constrains the package as well as its users. GADM is non-commercial only, so nothing derived from it may be redistributed; the constraint is recorded on the source descriptor and checked by the build scripts:
+GADM boundaries are licensed for non-commercial use only. This package never uses GADM unless you ask for it by name, and never redistributes anything derived from it; if you download it, following its terms is up to you. See [Data sources](datasources.qmd#gadm).
 
-```{python}
-ssd.shapes.SOURCES.gadm.redistributable
-```
+## Downloaded data
 
-## Fetched data
-
-Downloaded files are not built by this package, so their provenance is recorded in a sidecar next to the cached file — the one situation in which a sidecar is the only option.
+Data downloaded from its original publisher (with `download()` and the `download_*()` functions) is saved on your computer, along with a note of where and when it was downloaded. `ssd.cache_info()` lists everything saved so far:
 
 ```python
 ssd.cache_info()
+#   file                                              size       url                            downloaded
+#   wpp/WPP2024_Demographic_Indicators_Medium.csv.gz  16.557 MB  https://population.un.org/...  2026-08-07T19:31:36+00:00
 ```
 
-Each entry records the URL it came from, when it was retrieved, its size and its SHA-256:
-
-```python
-ssd.cache_provenance(ssd.cache_dir('wpp') / 'WPP2024_Demographic_Indicators_Medium.csv.gz')
-# {'url': 'https://population.un.org/...',
-#  'downloaded': '2026-08-07T19:31:36+00:00',
-#  'bytes': 16557272,
-#  'sha256': '286ac36bb1415e2e1ade03acfef0a29f0e4c087e2f78e38c48f50c5df890...',
-#  'package_version': '...'}
-```
-
-Frames returned by `fetch()` and `download()` carry the same information, including the sidecar records of the files they were derived from:
-
-```python
-df = ssd.download('kenya', which='deaths', years=2020)
-df.attrs['provenance'].files[0]['sha256']
-```
+Dataframes returned by `fetch()` and `download()` carry the same information in `df.attrs['provenance']`.
 
 ## Making an analysis reproducible
 
-Four measures, in decreasing order of importance.
+Four steps, most important first.
 
-**Pin the package version.** Everything bundled or fetched is byte-identical for a given version of the package, so pinning the version pins the demographic series, the contact matrices and the node table together. This is the single most effective step, and it requires nothing beyond a version specifier in a requirements file.
+**Pin the package version.** Everything bundled or fetched is the same for everyone using a given version of the package, so pinning the version (for example `starsim_data==2.2.0` in your requirements file) fixes the demographics, the contact matrices and the node table together.
 
-**Pin the revision.** `load(..., revision=2024)` fixes the WPP release explicitly. Without it, `load()` uses the most recent bundled revision, which is convenient but means a future version of the package could change the data an existing script reads. Stores are added rather than replaced, so a pinned revision remains available.
+**Pin the WPP revision.** `load(..., revision=2024)` fixes the UN WPP release. Without it, `load()` uses the most recent revision in the package, so a future version could change what your script reads. Older revisions are kept when new ones are added, so a pinned revision stays available.
 
-**Record what was downloaded.** Anything downloaded from its original publisher depends on when it was downloaded, since the publishers revise their files. `ssd.cache_info()` reports what a run actually used, with retrieval timestamps and checksums; saving that alongside the results makes the dependency explicit.
+**Record what was downloaded.** Data downloaded from its original publisher depends on when you downloaded it, since publishers revise their files. Saving the output of `ssd.cache_info()` with your results records what you used and when.
 
-**Record the boundary source.** Two analyses of the same country using different boundary sources are not directly comparable, because the sources do not always agree on how a country is subdivided. The source is recorded per row in `nodes.source` and in the provenance of any downloaded geometry.
+**Record the boundary source.** Different boundary sources don't always divide a country up the same way, so two analyses that used different sources aren't directly comparable. The source is in `nodes.source` and in the provenance of any downloaded boundaries.
 
-## Reproducibility of the package's own build
-
-The bundled `.h5` files are build artifacts committed to the repository, which creates the possibility that they drift from the sources they claim to be derived from. Continuous integration guards against this by rebuilding every store from `raw_data/` and re-running the test suite against the result.
-
-```bash
-python scripts/build_locations.py --check      # locations.csv derived columns
-python scripts/build_hdf5.py --check           # contact matrices
-python scripts/build_demographics.py --check   # demographics
-python scripts/build_nodes.py --check          # node table
-```
-
-The node-table build is excluded from the automatic check because its inputs are downloaded rather than held in `raw_data/`, and a cold rebuild downloads roughly 1.4 GB. It runs as a separate, manually triggered workflow.
-
-[Building the data](building-the-data.qmd) describes what each script does.
+If you're curious how the bundled data is built from its sources, and how that is checked, see [Building the data](building-the-data.qmd).
 
 ## Citation
 
-Cite the underlying sources rather than this package alone: UN World Population Prospects 2024 for the demographic series, the relevant study for each contact-matrix source used, and UNOCHA and geoBoundaries for the node table. The citation strings are available programmatically:
+Cite the original sources, not just this package: UN World Population Prospects 2024 for the demographics, the relevant paper for each contact-matrix source you use, and UNOCHA and geoBoundaries for the node table. The citations are available in Python:
 
 ```{python}
 {name: ssd.provenance(name).citation[:80] + '...'
  for name in ['deaths', 'prem2021', 'mistry2021']}
 ```
 
-`NOTICE.md` gives the complete text for each source, including those that are fetched rather than bundled.
+[NOTICE.md](https://github.com/starsimhub/starsim_data/blob/main/NOTICE.md) gives the complete text for each source.

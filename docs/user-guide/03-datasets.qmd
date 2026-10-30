@@ -8,7 +8,7 @@ authorship:
   note: Written by AI and reviewed by a human, who rewrote parts of it
 ---
 
-This page documents the columns, dtypes and units returned by each dataset. The frames shown are produced by executing the code when the page is built, so they correspond to the current contents of the package.
+This page lists the columns and units of each dataset. The examples are run when this page is built, so they show what the current version actually returns.
 
 ```{python}
 import starsim_data as ssd
@@ -16,17 +16,17 @@ import starsim_data as ssd
 ssd.list_datasets(detailed=True).drop(columns='license')
 ```
 
-Licenses are omitted here for width; they are listed in [Provenance](provenance.qmd), and in full in `NOTICE.md`.
+Licenses are left out here to save space; they are listed in [Provenance](provenance.qmd), and in full in `NOTICE.md`.
 
 ## Demographics
 
-Five series are taken from UN World Population Prospects 2024, Medium variant. They are grouped in a single store and versioned by WPP revision, and consist of decadal snapshots from 1950 to 2100, giving sixteen time points. All 187 countries have all five series.
+Five series come from UN World Population Prospects (WPP) 2024, Medium variant, with one year per decade from 1950 to 2100 (sixteen years in all). All 187 countries have all five series.
 
-The column names follow the UN's own conventions, so the frames can be passed to Starsim's demographic modules without renaming anything.
+The column names are the UN's own, so the data can be passed to Starsim's demographic modules without renaming anything.
 
 ### Births and migration
 
-Both are national rates with one value per year and no age dimension. The UN publishes no age breakdown for migration; births by age of mother are the `fertility` series, below.
+Both are national crude rates, one value per year, not broken down by age. The UN publishes no age breakdown for migration; births by age of mother are the `fertility` series, below.
 
 ```{python}
 births = ssd.load('kenya', which='births')
@@ -50,7 +50,7 @@ ssd.load('kenya', which='migration').head(3)
 
 ### Deaths
 
-Age- and sex-specific mortality, in 5-year abridged bins (`0`, `1–4`, `5–9`, …, `100+`). Only Female and Male are retained; the UN's "Both sexes" rows are dropped, which matches Starsim's sex conventions.
+Age- and sex-specific mortality, in the usual abridged age groups (`0`, `1–4`, `5–9`, …, `100+`). Only Female and Male are included, not the UN's "Both sexes" rows, to match Starsim.
 
 ```{python}
 deaths = ssd.load('kenya', which='deaths')
@@ -69,18 +69,18 @@ pd.DataFrame([
 
 ::: {.callout-note}
 ## Death rates are not probabilities
-`mx` is the central death rate, meaning deaths per person-year of exposure, rather than the probability of dying during the interval (`qx`). The two are similar where mortality is low and diverge where it is high. The remaining life-table columns are available through `download()`, as described below.
+`mx` is the central death rate, deaths per person-year lived, not the probability of dying in the age group (`qx`). The two are similar where mortality is low and differ where it is high. The other life-table columns, including `qx`, are available through `download()`, as described below.
 :::
 
 ```{python}
 len(deaths), deaths.Time.nunique(), deaths.AgeGrpStart.nunique()
 ```
 
-This is sixteen years multiplied by two sexes and twenty-two age bins.
+That is sixteen years times two sexes times twenty-two age groups.
 
 ### Population
 
-Population counts by 5-year age group and sex, expressed as absolute persons. The UN's own CSV distributions express these in thousands; the conversion is applied when the store is built.
+Population by 5-year age group and sex, in persons. (The UN publishes these in thousands; they are converted here.)
 
 ```{python}
 population = ssd.load('kenya', which='population')
@@ -97,7 +97,7 @@ pd.DataFrame([
 ])
 ```
 
-The national total provides a check on the units:
+The national total is a quick check on the units:
 
 ```{python}
 f"{population[population.Time == 2020].Value.sum() / 1e6:.1f}M"
@@ -129,7 +129,7 @@ f"{5 * fertility[fertility.Time == 2020].ASFR.sum() / 1000:.2f}"
 
 ### Revisions
 
-Demographic stores are versioned by WPP revision, so that a new UN release adds a store rather than altering data already in use:
+The UN updates WPP every two years or so. Each release (revision) is kept separately, so a new one is added alongside the old rather than changing data already in use:
 
 ```{python}
 ssd.list_revisions()
@@ -140,18 +140,18 @@ ssd.load('kenya', which='deaths')                 # newest bundled revision
 ssd.load('kenya', which='deaths', revision=2024)  # pinned
 ```
 
-Pinning the revision is advisable in any analysis intended to be reproduced later.
+Naming the revision is a good idea in any analysis you want to be able to reproduce later.
 
 ## Contact matrices
 
-Contact matrices give the average number of daily contacts between people in each pair of age bins. Three sources are available, each providing five contact settings, selected with the `kind` argument. One of them, `prem2021`, is bundled; the other two are fetched on first use (see [Bundled, fetched and downloaded data](access.qmd)). The default, `prem`, is `prem2021`, or `prem2017` for the ten locations `prem2021` lacks (see [Which source](#which-source)).
+Contact matrices give the average number of daily contacts between people in each pair of age groups. Three sources are available, each with five contact settings, selected with the `kind` argument. One of them, `prem2021`, is bundled; the other two are fetched the first time you use them (see [Bundled, fetched and downloaded data](access.qmd)). The default, `prem`, is `prem2021`, or `prem2017` for the ten locations `prem2021` lacks (see [Which source](#which-source)).
 
 ```{python}
 matrix = ssd.load('kenya')   # prem2021
 matrix.iloc[:6, :6].round(3)
 ```
 
-The frames are square and `float32`, and both axes are indexed by the start age of the bin rather than by position, which permits selection by age:
+The matrices are square, with rows and columns labeled by the start age of each age group, so you can pick out values by age:
 
 ```{python}
 matrix.loc[25, 30]
@@ -180,15 +180,15 @@ The `kind` argument selects the setting:
  for kind in ('all', 'home', 'work', 'school', 'community')}
 ```
 
-The `all` matrix is the combined one and the remaining four are its components, although they do not sum exactly to `all`, since the upstream sources construct them separately.
+The `all` matrix is the combined one and the other four are its parts, although they don't add up exactly to `all`, since the original studies estimate them separately.
 
-Coverage differs between sources, and is worth checking before use. The locations of a fetched source are listed without downloading it:
+Coverage differs between sources, so it is worth checking. You can list the locations of a fetched source without downloading it:
 
 ```{python}
 len(ssd.list_locations('prem2021')), len(ssd.list_locations('prem2017')), len(ssd.list_locations('mistry2021'))
 ```
 
-The other two sources are read with `fetch()`, which downloads each store once (about 3 MB) and returns exactly the frame `load()` would:
+The other two sources are read with `fetch()`, which downloads each one once (about 3 MB) and returns the same kind of frame as `load()`:
 
 ```python
 ssd.fetch('japan', which='prem2017', kind='home')   # 16x16
@@ -197,26 +197,26 @@ ssd.fetch('france', which='mistry2021')             # 85x85, single years of age
 
 ### Which source
 
-`prem2021` is the authors' own update of `prem2017`, built from more contact surveys and newer demographic data, and covering 177 locations against 152. Where both have a country, they agree closely: the median correlation between a country's two matrices is 0.957.
+`prem2021` is the authors' own update of `prem2017`, based on more contact surveys and newer demographic data, and covering 177 locations rather than 152. Where both have a country, they agree closely: the median correlation between a country's two matrices is 0.957.
 
-`prem2021` dropped ten locations that `prem2017` has: Andorra, Antigua and Barbuda, Australia, Haiti, Japan, Kiribati, Lebanon, Monaco, Seychelles and Taiwan. Their `prem2017` matrices are bundled too, and the default contact matrices, `prem`, use them, so `ssd.load()` has a matrix for all 187 locations. Which study a frame came from is recorded on it:
+`prem2021` dropped ten locations that `prem2017` has: Andorra, Antigua and Barbuda, Australia, Haiti, Japan, Kiribati, Lebanon, Monaco, Seychelles and Taiwan. Their `prem2017` matrices are bundled too, and the default contact matrices, `prem`, use them, so `ssd.load()` has a matrix for all 187 locations. Each matrix records which study it came from:
 
 ```{python}
 ssd.load('Japan').attrs['dataset']
 ```
 
-Asking for `prem2021` by name gives that study alone, and says where else a location can be found:
+Asking for `prem2021` by name gives that study alone, and the error says where else to find a location it lacks:
 
 ```{python}
 #| error: true
 ssd.load('Japan', which='prem2021')
 ```
 
-The full `prem2017` is fetched for reproducing earlier analyses. `mistry2021` answers a different need: single-year age bins, but for only 36 mostly high-income countries, under the more permissive Apache-2.0 license.
+The full `prem2017` is mainly useful for reproducing earlier analyses. `mistry2021` meets a different need: single-year age groups, but for only 36 mostly high-income countries, under the more permissive Apache-2.0 license.
 
 ### US states
 
-`mistry2021_us` has the Mistry et al. 2021 matrices for each US state and the District of Columbia, and `population_us` each one's population in 2023 by single year of age, from the US Census Bureau, in the same age bins. A state is named with its country, separated by a colon, as in the node table's `dot_name` (see [Locations](locations.qmd#subnational-units)):
+`mistry2021_us` has the Mistry et al. 2021 matrices for each US state and the District of Columbia, and `population_us` has each one's population in 2023 by single year of age, from the US Census Bureau. A state is named with its country, separated by a colon, as in the node table's `dot_name` (see [Locations](locations.qmd#subnational-units)):
 
 ```{python}
 ssd.list_locations('mistry2021_us')[:3]
@@ -227,7 +227,7 @@ ssd.fetch('United States:Massachusetts', which='mistry2021_us', kind='school') #
 ssd.fetch('United States:Massachusetts', which='population_us') # Time, Sex, AgeGrp, Value
 ```
 
-`population_us` has the columns of `population`, for the one year 2023 and with `Sex` equal to `'Both sexes'`, since the source does not split by sex. The national datasets say where a state's data is:
+`population_us` has the same columns as `population`, for 2023 only and with `Sex` equal to `'Both sexes'`, since the source does not split by sex. Asking a national dataset for a state tells you where to find it:
 
 ```{python}
 #| error: true
@@ -236,7 +236,7 @@ ssd.load('United States:Massachusetts')
 
 ## The node table
 
-The node table contains one row per administrative unit. It is described in full in [Spatial data](spatial.qmd); the schema is reproduced here for completeness.
+The node table has one row per administrative unit (province, state, district and so on). It is described in full in [Spatial data](spatial.qmd); its columns are listed here too.
 
 ```{python}
 nodes = ssd.load_nodes('kenya', level=1)
@@ -246,25 +246,25 @@ nodes.head(3)
 ```{python}
 #| echo: false
 pd.DataFrame([
-    dict(column='nodeid', dtype='int32', note='0-based within (location, level); indexes the distance matrix'),
-    dict(column='location', dtype='str', note='canonical location key, e.g. Kenya'),
+    dict(column='nodeid', dtype='int32', note='numbered from 0 within each country and level; matches the rows of distances()'),
+    dict(column='location', dtype='str', note='the country, e.g. Kenya'),
     dict(column='iso3', dtype='str', note='ISO 3166-1 alpha-3'),
     dict(column='level', dtype='int32', note='0 = country, 1 = first-level subdivision'),
     dict(column='name', dtype='str', note="the unit's own name, as the source spells it"),
-    dict(column='pcode', dtype='str', note='the join key: a p-code for UNOCHA rows, a shapeID otherwise'),
+    dict(column='pcode', dtype='str', note='a standard code for the unit, for joining to other data: a p-code from UNOCHA, or a geoBoundaries ID'),
     dict(column='dot_name', dtype='str', note='hierarchical path, e.g. Kenya:Baringo'),
     dict(column='parent', dtype='str', note="the parent's dot_name; empty at level 0"),
-    dict(column='lat', dtype='float64', note='equal-area centroid latitude, WGS84'),
-    dict(column='lon', dtype='float64', note='equal-area centroid longitude, WGS84'),
-    dict(column='area_km2', dtype='float64', note='geodesic area on the WGS84 ellipsoid'),
+    dict(column='lat', dtype='float64', note='latitude of the center of the unit'),
+    dict(column='lon', dtype='float64', note='longitude of the center of the unit'),
+    dict(column='area_km2', dtype='float64', note='area in square kilometers'),
     dict(column='population', dtype='float64', note='UN WPP at level 0; WorldPop 2020 summed within each unit at level 1'),
-    dict(column='source', dtype='str', note='unocha or geoboundaries'),
+    dict(column='source', dtype='str', note='where the boundaries came from: unocha or geoboundaries'),
 ])
 ```
 
 ## Beyond the bundle
 
-For the contact sources that are not bundled (`prem2017`, `mistry2021` and `mistry2021_us`), `fetch()` returns the same frame `load()` returns for `prem2021`. For the five bundled series, `download()` returns the same schema at annual resolution, from the UN's bulk files, and it also provides two datasets with no bundled counterpart:
+For the contact sources that are not bundled (`prem2017`, `mistry2021` and `mistry2021_us`), `fetch()` returns the same kind of frame `load()` returns for `prem2021`. For the five bundled demographic series, `download()` returns the same columns for every year, straight from the UN, and it also provides two datasets that are not bundled at all:
 
 ```{python}
 ssd.list_fetchable(), ssd.list_downloadable()
@@ -278,10 +278,10 @@ ssd.download('kenya', which='deaths', years=(2000, 2025))
 |---|---|
 | `births`, `migration` | as bundled, but every year |
 | `deaths`, `population`, `fertility` | as bundled, but every year |
-| `life_table` | `Time, Sex, AgeGrpStart, mx, qx, px, lx, dx, Lx, Sx, Tx, ex, ax` — and all three sexes, including `Total` |
+| `life_table` | `Time, Sex, AgeGrpStart, mx, qx, px, lx, dx, Lx, Sx, Tx, ex, ax`, for Female, Male and `Total` |
 | `indicators` | `Time` plus ~50 WPP indicators: `CDR`, `TFR`, `LEx`, `IMR`, `Q5`, `NetMigrations`, … |
 
-The `life_table` result carries a glossary of its columns, since the conventional two-letter names are easily confused:
+The `life_table` result comes with a glossary of its columns, since the standard two-letter names are easy to mix up:
 
 ```python
 lt = ssd.download('kenya', which='life_table', years=2020)
@@ -293,5 +293,5 @@ lt.attrs['columns']['Lx']
 
 - **Subnational demographics,** other than the populations of the US states (`population_us`, above). WPP has no subnational dimension, so none can be derived from it.
 - **Age-specific migration.** WPP publishes only the crude national rate.
-- **"Both sexes" rows** in the bundled series, which contain Female and Male only. `download(..., which='life_table')` does include `Total`.
-- **Hong Kong, Macao and Puerto Rico** in the node table, as no boundary source covers them as separate entities. Their demographics and contact matrices are present.
+- **"Both sexes" rows** in the bundled data, which has Female and Male only. `download(..., which='life_table')` does include `Total`.
+- **Hong Kong, Macao and Puerto Rico** in the node table, since no boundary source treats them separately. Their demographics and contact matrices are included.

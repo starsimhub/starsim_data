@@ -8,15 +8,15 @@ authorship:
   note: Written by AI, based on an earlier version a human reviewed and partly rewrote
 ---
 
-Every dataset in `starsim_data` is one of three kinds, and each kind has its own function, so a call says where its data comes from:
+Every dataset in `starsim_data` is one of three kinds, and each kind has its own function, so you can tell from the call where the data comes from:
 
-| | Comes from | How you get it | Network | Same for everyone on a version? |
+| | Comes from | How you get it | Internet needed | Same for everyone on a version? |
 |---|---|---|---|---|
 | **Bundled** | Inside the package | `load()`, `load_nodes()`, `distances()` | Never | Yes |
 | **Fetched** | This package's releases | `fetch()` | First use only | Yes |
 | **Downloaded** | The original publisher | `download()`, `download_shapes()`, `download_nodes()`, `download_raster()` | First use only | Unless the publisher changes the file |
 
-Fetched and downloaded data are both cached after the first use, so they need the network only once. The difference is whose server they come from: `fetch()` reaches only this package's own releases, while `download()` reaches the UN, WorldPop and the boundary publishers, which this package does not control, and which may be slow, revise their files or be unavailable. Calling `fetch()` for data that is not packaged still works, but warns that it is downloading from an external source.
+Fetched and downloaded data are both saved on your computer after the first use, so they need the internet only once. The difference is where they come from: `fetch()` gets files from this package's own releases, while `download()` goes to the UN, WorldPop and the boundary publishers. Their servers are outside this package's control, and may be slow, change their files or be down. Calling `fetch()` for data that isn't packaged still works, but warns that it is downloading from an outside source.
 
 The `access` column of `list_datasets()` says which kind each dataset is:
 
@@ -28,18 +28,18 @@ ssd.list_datasets(detailed=True)[['dataset', 'access', 'levels', 'locations']]
 
 ## Bundled
 
-The demographic series (decadal, Medium variant), the default contact matrices (`prem2021`, and `prem2017` for the ten locations it lacks), the location table and the node table are inside the package, roughly 8 MB of it. Everyone who installs a given version has byte-identical data with no network access, so the package works offline, its tests are deterministic, and citing a version fully specifies the data an analysis used.
+The demographic data (one year per decade, Medium variant), the default contact matrices (`prem2021`, plus `prem2017` for the ten locations it lacks), the location table and the subnational node table are inside the package, about 9 MB in all. Everyone who installs a given version has exactly the same data, it works offline, and citing the version is enough to say which data an analysis used.
 
-`load()` only ever reads bundled data. Ask it for anything else, e.g. `ssd.load('kenya', which='life_table')`, and rather than downloading it, it raises an error that names the `fetch()` or `download()` call to use instead.
+`load()` only ever reads bundled data. If you ask it for anything else, such as `ssd.load('kenya', which='life_table')`, it doesn't download it; it gives an error telling you the `fetch()` or `download()` call to use instead.
 
 ## Fetched
 
-Some data that this package prepares is too large to put inside it, or needed by too few users:
+Some data this package prepares is too large to include, or needed by too few people:
 
 - The full `prem2017` and `mistry2021` contact matrices, about 3 MB each.
 - The US states' contact matrices (`mistry2021_us`, 5 MB) and their populations by single year of age (`population_us`).
 
-These are built the same way as the bundled data and published as files alongside each release. `fetch()` downloads one the first time it is used, makes sure it is exactly the file that was published, and caches it. A given version of the package therefore fixes their contents exactly, as it does for the bundled data, and their locations and provenance can be listed without downloading anything.
+These are prepared the same way as the bundled data and published with each release of the package. `fetch()` downloads one the first time you use it, checks that it is the file that was published, and saves it. As with bundled data, everyone on a given version gets the same data, and you can list which locations a fetched dataset covers without downloading it.
 
 ## Downloaded
 
@@ -49,11 +49,11 @@ Everything else comes straight from the organization that publishes it:
 - Administrative boundaries with geometry, from UNOCHA, geoBoundaries or GADM (tens of megabytes per country at admin level 2).
 - Gridded population rasters from WorldPop (1–40 MB per country-year), and the subnational populations `download_nodes()` computes from them.
 
-These are cached after the first use too, and each cached file records where and when it was retrieved. Since the files belong to their publishers, a publisher that revises one changes what a fresh download gives you; [Provenance and reproducibility](provenance.qmd) covers how to pin them.
+These are also saved after the first use, along with a note of where and when each was downloaded. Since the files belong to their publishers, a publisher that updates one changes what a fresh download gives you; [Provenance and reproducibility](provenance.qmd) covers how to keep an analysis reproducible anyway.
 
 ## The cache
 
-Fetched and downloaded files share one cache:
+Fetched and downloaded files are saved in one folder, the cache:
 
 ```{python}
 ssd.cache_dir()
@@ -64,11 +64,11 @@ ssd.cache_info()      # what is cached, its source, and when it was retrieved
 ssd.clear_cache()     # or clear_cache('wpp/*')
 ```
 
-The cache location follows `ssd.options.cache_dir`, or the `STARSIM_DATA_CACHE_DIR` environment variable, and otherwise defaults to a platform-appropriate directory. Nothing is created until something is cached, so importing the package does not touch the filesystem.
+To put it somewhere else, set `ssd.options.cache_dir` or the `STARSIM_DATA_CACHE_DIR` environment variable.
 
 ## Which kind something is
 
-The split is by size and use, not subject. The same UN WPP 2024 release appears as both bundled and downloaded data: decadal snapshots of five series take 4 MB and are bundled, while the complete annual life tables take 290 MB and are downloaded. Likewise, one contact source is bundled, the one a model should use unless it has a reason not to (see [Datasets](datasets.qmd#which-source)), and the others are fetched.
+The split is by size and how widely the data is needed, not by subject. The same UN WPP 2024 release is both bundled and downloaded: five series at one year per decade take 4 MB and are bundled, while the complete annual life tables take 290 MB and are downloaded. Likewise, the contact matrices most models should use are bundled (see [Datasets](datasets.qmd#which-source)), and the others are fetched.
 
 ```{python}
 #| echo: false
@@ -84,4 +84,4 @@ pd.DataFrame([
 ])
 ```
 
-An analysis confined to the first two rows needs no network access at all, and the data it uses is fully specified by a version number.
+An analysis that only uses the first two rows needs no internet connection at all, and the package version is enough to say exactly which data it used.
