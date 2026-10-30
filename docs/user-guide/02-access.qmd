@@ -3,12 +3,12 @@ title: "Bundled, fetched and downloaded data"
 guide-section: "Getting started"
 tags: [Concepts]
 authorship:
-  human: 10
-  ai: 90
+  human: 15
+  ai: 85
   note: Written by AI, based on an earlier version a human reviewed and partly rewrote
 ---
 
-Every dataset in `starsim_data` is one of three kinds, and the function you call tells you which:
+Every dataset in `starsim_data` is one of three kinds, accessed by one of three functions:
 
 | | Comes from | How you get it | Network | Same for everyone on a version? |
 |---|---|---|---|---|
@@ -74,20 +74,13 @@ The split is by size and use, not subject. The same UN WPP 2024 release appears 
 #| echo: false
 import pandas as pd
 pd.DataFrame([
-    dict(requirement="Age structure, mortality, births, fertility, contact matrices",
-         call="load()", access="bundled", cost="instant"),
-    dict(requirement="Positions, areas and separations of administrative units",
-         call="load_nodes(), distances()", access="bundled", cost="instant"),
-    dict(requirement="The other contact matrices (prem2017, mistry2021)",
-         call="fetch()", access="fetched", cost="3 MB each, once"),
-    dict(requirement="US states: contact matrices and populations",
-         call="fetch()", access="fetched", cost="5 MB, once"),
-    dict(requirement="Annual rates, life tables, other variants",
-         call="fetch()", access="downloaded", cost="17-290 MB, once"),
-    dict(requirement="Polygon geometry, for mapping or spatial joins",
-         call="fetch_shapes()", access="downloaded", cost="1-50 MB per country"),
-    dict(requirement="Subnational population estimates",
-         call="fetch_nodes()", access="downloaded", cost="1-40 MB per country"),
+    dict(requirement="Age structure, mortality, births, fertility, contact matrices", call="load()", access="bundled", cost="instant"),
+    dict(requirement="Positions, areas and separations of administrative units", call="load_nodes(), distances()", access="bundled", cost="instant"),
+    dict(requirement="The other contact matrices (prem2017, mistry2021)", call="fetch()", access="fetched", cost="3 MB each, once"),
+    dict(requirement="US states: contact matrices and populations", call="fetch()", access="fetched", cost="5 MB, once"),
+    dict(requirement="Annual rates, life tables, other variants", call="fetch()", access="downloaded", cost="17-290 MB, once"),
+    dict(requirement="Polygon geometry, for mapping or spatial joins", call="fetch_shapes()", access="downloaded", cost="1-50 MB per country"),
+    dict(requirement="Subnational population estimates", call="fetch_nodes()", access="downloaded", cost="1-40 MB per country"),
 ])
 ```
 

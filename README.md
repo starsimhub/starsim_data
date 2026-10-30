@@ -2,7 +2,7 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://github.com/starsimhub/starsim_data/blob/main/LICENSE)
 
-National-level **demographic data** and **contact matrices** for disease modeling with [Starsim](https://starsim.org), bundled as compact HDF5 and loaded with a single function. 
+National-level **demographic data** and **contact matrices** for disease modeling with [Starsim](https://starsim.org), bundled as compact HDF5 files and loaded with a single function. 
 
 Example usage:
 
@@ -19,7 +19,7 @@ ssd.fetch('kenya', which='deaths', years=(2000, 2025))  # annual data, downloade
 
 Locations can be named however you like: `'Kenya'`, `'kenya'`, `'KE'`, `'KEN'` and `'Republic of Kenya'` are the same country, as are `'USA'`, `'US'`, `'united states'` and `'United States of America'`. ISO-2/ISO-3 codes, official names, common abbreviations (`UK`, `DRC`) and French/Spanish/Portuguese names all resolve; accents, case and punctuation are ignored, so `"Côte d'Ivoire"` and `'cote divoire'` both work. A name that doesn't match raises, with suggestions — it is never resolved to the nearest guess. Use `ssd.list_locations(which)` for the countries in a given dataset, `ssd.list_all_locations()` for every known location, and `ssd.resolve()`/`ssd.location_info()` to inspect the mapping.
 
-**Documentation:** <https://starsimhub.github.io/starsim_data>
+**Documentation:** <https://starsim.org/starsim_data>
 
 ## Installation
 
@@ -207,7 +207,7 @@ ssd.provenance('deaths').license        # 'CC BY 3.0 IGO'
 
 ## Documentation
 
-The full documentation is at <https://starsimhub.github.io/starsim_data>. The narrative pages are `.qmd` sources in [`docs/user-guide/`](docs/user-guide/), ordered by their filename prefix and grouped in the sidebar by their `guide-section` frontmatter; the API reference is written by quartopydoc, one page per module. It is built with [Sciris' fork of great-docs](https://github.com/sciris/great-docs) and [quartopydoc](https://pypi.org/project/quartopydoc/), which the `docs` dependency group installs. To build it locally you also need [Quarto](https://quarto.org/docs/get-started/):
+The full documentation is at <https://starsim.org/starsim_data>. It is built with [Sciris' fork of great-docs](https://github.com/sciris/great-docs) and [quartopydoc](https://pypi.org/project/quartopydoc/), which the `docs` dependency group installs. To build it locally you also need [Quarto](https://quarto.org/docs/get-started/):
 
 ```bash
 pip install -e ".[dev]" --group docs
@@ -216,7 +216,7 @@ docs/render           # the same, rendering pages in parallel
 great-docs preview    # live reload on http://localhost:3000
 ```
 
-Adding a page means dropping a `.qmd` file in `docs/user-guide/` with a `title` and a `guide-section` — there is no navigation configuration to update (a new module, though, needs adding to the `quartodoc:` sections in `docs/great-docs.yml`). [`docs/user-guide/assets/starsim-theme.html`](docs/user-guide/assets/starsim-theme.html) holds the style overrides that make the site look like the Starsim docs (Raleway, the navbar, the sidebar, figure scaling, the authorship badge, and the Starsim footer).
+Adding a page means adding a `.qmd` file to `docs/user-guide/` with a `title` and a `guide-section` — there is no navigation configuration to update (a new module, though, needs adding to the `quartodoc:` sections in `docs/great-docs.yml`). [`docs/user-guide/assets/starsim-theme.html`](docs/user-guide/assets/starsim-theme.html) holds the style overrides that make the site look like the Starsim docs.
 
 ## Building from source
 
@@ -227,3 +227,7 @@ The bundled `.h5` files are generated from the human-readable sources in [`raw_d
 The repository's code, packaging, and curation are licensed under the [MIT License](https://github.com/starsimhub/starsim_data/blob/main/LICENSE).
 
 The bundled data files are third-party datasets under their own upstream licenses — the UN WPP data under its [terms of use](https://population.un.org/wpp/), and the contact matrices under **Apache-2.0** (`mistry2021`) and **GPL-3.0** (`prem2017`/`prem2021`) — not under MIT. Full upstream license texts are in [`licenses/`](https://github.com/starsimhub/starsim_data/blob/main/licenses), and [NOTICE.md](https://github.com/starsimhub/starsim_data/blob/main/NOTICE.md) has the per-source details and required attributions.
+
+## AI disclosure
+
+Many tokens (mainly from Claude Opus 5.5) were harmed in the making of this repo. We believe in transparency around AI use. On most pages you will see a small marker like "🧠5% 🤖95%". This means that humans wrote 5% of the content, and AI wrote the other 95% (hover for details).

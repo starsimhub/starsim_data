@@ -3,9 +3,9 @@ title: "Getting started"
 guide-section: "Getting started"
 tags: [Tutorial, Setup]
 authorship:
-  human: 5
-  ai: 95
-  note: Written by AI, lightly edited by a human
+  human: 20
+  ai: 80
+  note: Drafted by AI, revised by a human
 ---
 
 `starsim_data` provides national demographic data, age-structured contact matrices, and subnational administrative geography, in forms intended to be read directly into a disease model. This page introduces the main functions in the order a new user is likely to need them. None of the examples require network access.
@@ -35,7 +35,7 @@ pip install -e starsim_data
 
 :::
 
-The base installation requires `numpy`, `sciris`, `h5py`, `pandas` and `matplotlib`, and includes approximately 14 MB of data inside the wheel. The `[spatial]` extra additionally installs `geopandas`, `pyogrio` and `rastertoolkit`, which are needed only for the full geometry and population rasters described in [Spatial data](user-guide/spatial.qmd).
+The base installation includes approximately 14 MB of data inside the wheel. The `[spatial]` extra additionally installs `geopandas`, `pyogrio` and `rastertoolkit`, which are needed only for the full geometry and population rasters described in [Spatial data](user-guide/spatial.qmd).
 
 ## Listing what is available
 
@@ -148,8 +148,4 @@ ssd.fetch('kenya', which='life_table', years=2020)      # qx, lx, ex, and the re
 ssd.fetch('kenya', which='births', variant='High')      # a different projection variant
 ```
 
-These are the only calls on this page that access the network. [Bundled, fetched and downloaded data](user-guide/access.qmd) covers the distinction.
-
-## Further reading
-
-The sidebar lists every page in the guide. [Bundled, fetched and downloaded data](user-guide/access.qmd) is the natural next one: it explains the distinction between the data inside the package and the data that is downloaded, which the rest of the documentation assumes.
+The page [Bundled, fetched and downloaded data](user-guide/access.qmd) covers the distinction, and we encourage you to read that next.
