@@ -98,9 +98,9 @@ For each country, the script prefers UNOCHA boundaries where the mirror covers i
 
 Downloads pass through the package cache, so a rebuild after the first is quick. `--limit` is useful while developing, since a full build reads several hundred megabytes of geometry.
 
-The script refuses to draw on any source whose descriptor sets `redistributable=False`, which is how GADM's non-commercial license is kept out of bundled data. The check is performed against the same descriptors `fetch_shapes()` uses, so the two cannot disagree.
+The script refuses to draw on any source whose descriptor sets `redistributable=False`, which is how GADM's non-commercial license is kept out of bundled data. The check is performed against the same descriptors `download_shapes()` uses, so the two cannot disagree.
 
-For level-1 units, the script also sums WorldPop's 2020 raster within each unit for its population (about 1 GB of rasters, from a slow server), and works out which units share a border, which it writes to `adjacency.h5`. Other years and finer levels are left to `fetch_nodes()`.
+For level-1 units, the script also sums WorldPop's 2020 raster within each unit for its population (about 1 GB of rasters, from a slow server), and works out which units share a border, which it writes to `adjacency.h5`. Other years and finer levels are left to `download_nodes()`.
 
 ## Adding a dataset
 

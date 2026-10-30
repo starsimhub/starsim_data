@@ -8,8 +8,8 @@ comes from summing a 1 km gridded population raster inside each unit's polygon:
 
 ```python
 import starsim_data as ssd
-nodes = ssd.fetch_nodes('kenya', level=1)   # the node table, with population filled in
-ssd.distances('kenya', level=1)             # ... and the distances between them
+nodes = ssd.download_nodes('kenya', level=1)   # the node table, with population filled in
+ssd.distances('kenya', level=1)                #  ... and the distances between them
 ```
 
 Which is everything a gravity model needs: `P_i`, `P_j` and `D_ij`.
@@ -32,7 +32,7 @@ import numpy as np
 import sciris as sc
 import starsim_data as ssd
 
-__all__ = ['fetch_nodes', 'fetch_raster', 'aggregate_raster', 'rescale_to_national']
+__all__ = ['download_nodes', 'download_raster', 'aggregate_raster', 'rescale_to_national']
 
 WORLDPOP_LICENSE = 'CC BY 4.0'
 WORLDPOP_URL = 'https://www.worldpop.org'
@@ -74,13 +74,13 @@ def _default_year():
     return int(ssd.provenance('nodes').get('population_year', 2020))
 
 
-def fetch_raster(location, year=None, refresh=False, verbose=None):
+def download_raster(location, year=None, refresh=False, verbose=None):
     """
     Download a WorldPop 1 km gridded-population raster for a country, and cache it.
 
     Args:
         location (str): location name, ISO-2/ISO-3 code, official name or alias.
-        year (int): the year to fetch (2000-2030). Defaults to the year the bundled node
+        year (int): the year to download (2000-2030). Defaults to the year the bundled node
             table uses for national population, so the two are comparable.
         refresh (bool): re-download even if the file is already cached.
         verbose (bool): report progress (default: `options.verbose`).
@@ -95,7 +95,7 @@ def fetch_raster(location, year=None, refresh=False, verbose=None):
     Example:
         ```python
         import starsim_data as ssd
-        ssd.fetch_raster('kenya', year=2020)
+        ssd.download_raster('kenya', year=2020)
         ```
     """
     verbose = sc.ifelse(verbose, ssd.options.verbose)
@@ -123,8 +123,8 @@ def aggregate_raster(raster, shapes, by='pcode', nearest=None):
     Sum a raster inside each polygon: zonal statistics, keyed by an attribute.
 
     Args:
-        raster (str/Path): a GeoTIFF, e.g. from `fetch_raster()`.
-        shapes (GeoDataFrame): polygons, e.g. from `fetch_shapes()`.
+        raster (str/Path): a GeoTIFF, e.g. from `download_raster()`.
+        shapes (GeoDataFrame): polygons, e.g. from `download_shapes()`.
         by (str): the column of `shapes` to key the result on.
         nearest (float): if given, also count a cell whose center is in no polygon but
             within this distance (in degrees) of one, for the nearest: boundaries are
@@ -141,8 +141,8 @@ def aggregate_raster(raster, shapes, by='pcode', nearest=None):
     Example:
         ```python
         import starsim_data as ssd
-        gdf = ssd.fetch_shapes('kenya', level=1)
-        ssd.aggregate_raster(ssd.fetch_raster('kenya'), gdf)
+        gdf = ssd.download_shapes('kenya', level=1)
+        ssd.aggregate_raster(ssd.download_raster('kenya'), gdf)
         ```
     """
     try:
@@ -251,7 +251,7 @@ def _populated(block, row, col, grid):
     return np.vstack([lon, lat, block[i, j]])
 
 
-def fetch_nodes(location, level=1, year=None, source=None, refresh=False, verbose=None):
+def download_nodes(location, level=1, year=None, source=None, refresh=False, verbose=None):
     """
     The node table with `population` filled in, from WorldPop, at any level and year.
 
@@ -259,7 +259,7 @@ def fetch_nodes(location, level=1, year=None, source=None, refresh=False, verbos
     This downloads the boundaries and the population raster for a country, sums the
     raster inside each unit, and returns the same table with the numbers filled in.
 
-    At a bundled level, the boundaries are fetched from whichever source the bundled node
+    At a bundled level, the boundaries are downloaded from whichever source the bundled node
     table used for this country, so the p-codes line up and the join is exact rather than
     by name. At a finer level (2 and up), the table is built from the boundaries
     themselves, as the bundled one is, and which units share a border is worked out too
@@ -287,7 +287,7 @@ def fetch_nodes(location, level=1, year=None, source=None, refresh=False, verbos
     Example:
         ```python
         import starsim_data as ssd
-        nodes = ssd.fetch_nodes('kenya', level=1)
+        nodes = ssd.download_nodes('kenya', level=1)
         ```
     """
     verbose = sc.ifelse(verbose, ssd.options.verbose)
@@ -305,17 +305,17 @@ def fetch_nodes(location, level=1, year=None, source=None, refresh=False, verbos
 
     kwargs = dict(level=level, refresh=refresh, verbose=verbose)
     try:
-        shapes = ssd.fetch_shapes(location, source=source, **kwargs)
+        shapes = ssd.download_shapes(location, source=source, **kwargs)
     except KeyError:
         if bundled:
             raise
-        shapes = ssd.fetch_shapes(location, **kwargs) # Not bundled: any source that has this level
+        shapes = ssd.download_shapes(location, **kwargs) # Not bundled: any source that has this level
         source = shapes.source.iloc[0]
     if not bundled:
         nodes = _nodes_from_shapes(shapes)
 
     # Sum the raster inside each unit
-    raster = fetch_raster(location, year=year, refresh=refresh, verbose=verbose)
+    raster = download_raster(location, year=year, refresh=refresh, verbose=verbose)
     units = [str(i) for i in range(len(shapes))]
     totals = aggregate_raster(raster, shapes.assign(unit=units), by='unit', nearest=COAST_DISTANCE)
     out = nodes.copy()
@@ -330,7 +330,7 @@ def fetch_nodes(location, level=1, year=None, source=None, refresh=False, verbos
 
     out.attrs['provenance'] = sc.objdict(
         dataset             = 'nodes',
-        tier                = 1,
+        tier                = 2,
         location            = nodes.location.iloc[0],
         level               = level,
         boundary_source     = source,
@@ -345,6 +345,17 @@ def fetch_nodes(location, level=1, year=None, source=None, refresh=False, verbos
         out.attrs['borders'] = ssd.shapes.borders(shapes)
     return out
 
+
+def fetch_raster(location, year=None, refresh=False, verbose=None):
+    """Not packaged: warns that the raster comes from an external source, then calls `download_raster()`."""
+    ssd.downloading._external('Gridded population', f'WorldPop ({WORLDPOP_URL})', 'download_raster()')
+    return download_raster(location, year=year, refresh=refresh, verbose=verbose)
+
+
+def fetch_nodes(location, level=1, year=None, source=None, refresh=False, verbose=None):
+    """Not packaged: warns that the populations come from external sources, then calls `download_nodes()`."""
+    ssd.downloading._external('Subnational population', f'WorldPop ({WORLDPOP_URL}), with boundaries from UNOCHA, geoBoundaries or GADM', 'download_nodes()')
+    return download_nodes(location, level=level, year=year, source=source, refresh=refresh, verbose=verbose)
 
 def _nodes_from_shapes(shapes):
     """A node table, as the bundled one is built, from the polygons of one level."""
@@ -368,7 +379,7 @@ def rescale_to_national(nodes, location=None, year=None):
     silently in play.
 
     Args:
-        nodes (dataframe): a node table with `population` filled, from `fetch_nodes()`.
+        nodes (dataframe): a node table with `population` filled, from `download_nodes()`.
         location (str): the location; taken from the table if not given.
         year (int): the WPP year to match; taken from the table's provenance if not given.
 
@@ -378,7 +389,7 @@ def rescale_to_national(nodes, location=None, year=None):
     Example:
         ```python
         import starsim_data as ssd
-        nodes = ssd.rescale_to_national(ssd.fetch_nodes('kenya'))
+        nodes = ssd.rescale_to_national(ssd.download_nodes('kenya'))
         ```
     """
     location = location or nodes.location.iloc[0]

@@ -3,12 +3,12 @@ title: "Getting started"
 guide-section: "Getting started"
 tags: [Tutorial, Setup]
 authorship:
-  human: 5
-  ai: 95
-  note: Written by AI, lightly edited by a human
+  human: 20
+  ai: 80
+  note: Drafted by AI, revised by a human
 ---
 
-`starsim_data` provides national demographic data, age-structured contact matrices, and subnational administrative geography, in forms intended to be read directly into a disease model. This page introduces the main functions in the order a new user is likely to need them. None of the examples require network access.
+`starsim_data` gives you national demographic data, age-structured contact matrices and subnational administrative boundaries, ready to use in a disease model. This page walks through the main functions in the order you are likely to need them. None of the examples need an internet connection.
 
 ## Installation
 
@@ -35,7 +35,7 @@ pip install -e starsim_data
 
 :::
 
-The base installation requires `numpy`, `sciris`, `h5py`, `pandas` and `matplotlib`, and includes approximately 14 MB of data inside the wheel. The `[spatial]` extra additionally installs `geopandas`, `pyogrio` and `rastertoolkit`, which are needed only for the full geometry and population rasters described in [Spatial data](user-guide/spatial.qmd).
+The package includes about 9 MB of data. The `[spatial]` option also installs `geopandas`, `pyogrio` and `rastertoolkit`, which you only need for the boundary shapes and population maps described in [Spatial data](user-guide/spatial.qmd).
 
 ## Listing what is available
 
@@ -45,7 +45,7 @@ import starsim_data as ssd
 ssd.list_datasets(detailed=True)[['dataset', 'description', 'access', 'locations']]
 ```
 
-The `access` column says how you get each dataset. **Bundled** data is inside the package and reads instantly, with no network access. **Fetched** data is prepared by this package but kept out of it to save space; it is downloaded from the package's own releases the first time it is used. **Downloaded** data comes from its original publisher, such as the UN, and is also cached after the first use. [Bundled, fetched and downloaded data](user-guide/access.qmd) explains the difference.
+The `access` column says how you get each dataset. **Bundled** data is inside the package and loads instantly, with no internet connection. **Fetched** data is prepared by this package but kept out of it to save space; it is downloaded from this package's own releases the first time you use it. **Downloaded** data comes from its original publisher, such as the UN. Both fetched and downloaded data are saved on your computer after the first use. [Bundled, fetched and downloaded data](user-guide/access.qmd) explains the difference.
 
 ## Loading a dataset
 
@@ -54,16 +54,16 @@ deaths = ssd.load('kenya', which='deaths')
 deaths.head()
 ```
 
-The result is a `sciris.dataframe`, which subclasses `pandas.DataFrame`, so ordinary pandas operations apply. The column names follow the UN's own conventions rather than any introduced by this package: `Time`, `Sex`, `AgeGrpStart` and `mx` are the names used in World Population Prospects, and they are also the names Starsim's demographic modules expect.
+The result is a `sciris.dataframe`, which is a kind of `pandas.DataFrame`, so everything you do with pandas works. The column names are the UN's own: `Time`, `Sex`, `AgeGrpStart` and `mx` are the names used in World Population Prospects, and also the names Starsim's demographic modules expect.
 
-Contact matrices are returned as square frames whose rows and columns are indexed by the start age of each bin:
+Contact matrices are square, with rows and columns labeled by the start age of each age group:
 
 ```{python}
 matrix = ssd.load('kenya', which='prem2021')
 matrix.iloc[:5, :5]
 ```
 
-This allows selection by age rather than by position:
+So you can pick out values by age:
 
 ```{python}
 matrix.loc[25, 30]   # daily contacts between the 25-29 and 30-34 bins
@@ -71,7 +71,7 @@ matrix.loc[25, 30]   # daily contacts between the 25-29 and 30-34 bins
 
 ## Specifying locations
 
-The canonical name is not required. ISO codes, official names, common abbreviations, and French, Spanish or Portuguese names are all recognized, and accents, case and punctuation are ignored.
+You don't need to know the exact name the package uses. ISO codes, official names, common abbreviations, and French, Spanish or Portuguese names are all recognized, and accents, case and punctuation are ignored.
 
 ```{python}
 [ssd.resolve(name) for name in
@@ -82,13 +82,11 @@ The canonical name is not required. ISO codes, official names, common abbreviati
 [ssd.resolve(name) for name in ["Côte d'Ivoire", 'cote divoire', 'Ivory Coast', 'CIV']]
 ```
 
-A name that does not match raises an error rather than resolving to the nearest candidate, though the error does suggest possibilities: `ssd.load('Keyna', which='deaths')` gives "location 'Keyna' not found (did you mean: Kenya, China, Ghana?)".
-
-The reasoning behind this division of labour — an exact table performs the resolution, and approximate matching only contributes to the error message — is discussed in [Locations](user-guide/locations.qmd).
+A name that doesn't match gives an error rather than a guess, though the error suggests what you might have meant: `ssd.load('Keyna', which='deaths')` gives "location 'Keyna' not found (did you mean: Kenya, China, Ghana?)". [Locations](user-guide/locations.qmd) has more on which names are recognized.
 
 ## Inspecting the data visually
 
-Plotting the data before using it is a straightforward way to detect a mistaken country or a units error.
+Plotting the data before you use it is an easy way to catch the wrong country or a units mistake.
 
 ```{python}
 #| fig-width: 11
@@ -97,7 +95,7 @@ Plotting the data before using it is a straightforward way to detect a mistaken 
 ssd.plot('kenya');
 ```
 
-The summary figure shows the age pyramid, the crude birth rate over time, the mortality curve by sex, and the contact matrix. Individual panels can be drawn on their own using `which=`.
+The summary figure shows the age pyramid, the crude birth rate over time, mortality by age and sex, and the contact matrix. Use `which=` to draw one panel on its own.
 
 ```{python}
 #| fig-width: 7
@@ -108,7 +106,7 @@ ssd.plot('kenya', which='deaths', year=2050);
 
 ## Attribution
 
-Each dataset records its own source, license and citation, stored alongside the data rather than kept separately:
+Each dataset records its source, license and citation, so you know what to cite:
 
 ```{python}
 prov = ssd.provenance('prem2021')
@@ -121,11 +119,11 @@ The same information is attached to every frame returned by `load()`:
 deaths.attrs['provenance'].license
 ```
 
-[Provenance and reproducibility](user-guide/provenance.qmd) describes this in more detail.
+[Provenance and reproducibility](user-guide/provenance.qmd) has more on this.
 
 ## Subnational geography
 
-Administrative geography is also bundled, in the form of a node table giving the position and extent of each administrative unit:
+Subnational geography is bundled too, as a table of administrative units (provinces, states, districts and so on) with their locations, areas and populations:
 
 ```{python}
 nodes = ssd.load_nodes('kenya', level=1)
@@ -136,20 +134,16 @@ nodes.head()
 ssd.distances('kenya', level=1).iloc[:4, :4].round(1)
 ```
 
-Centroids, areas and a distance matrix are available without any geospatial dependency and without downloading anything. Polygon geometry is a separate, optional step, described in [Spatial data](user-guide/spatial.qmd).
+Center points, areas and the distances between units need no extra packages and no downloads. Boundary shapes, for drawing maps, are an optional extra described in [Spatial data](user-guide/spatial.qmd).
 
 ## Data that is not bundled
 
-The bundled demographic series consist of decadal snapshots of the Medium variant. Annual resolution, complete life tables, and other projection variants are available through `fetch()`, which downloads and caches the UN's bulk files:
+The bundled demographic data gives one year per decade, from the UN's Medium projection variant. For every year, complete life tables, or other projection variants, use `download()`, which gets the data from the UN the first time and saves it on your computer:
 
 ```python
-ssd.fetch('kenya', which='deaths', years=(2000, 2025))  # annual rather than decadal
-ssd.fetch('kenya', which='life_table', years=2020)      # qx, lx, ex, and the rest
-ssd.fetch('kenya', which='births', variant='High')      # a different projection variant
+ssd.download('kenya', which='deaths', years=(2000, 2025))  # annual rather than decadal
+ssd.download('kenya', which='life_table', years=2020)      # qx, lx, ex, and the rest
+ssd.download('kenya', which='births', variant='High')      # a different projection variant
 ```
 
-These are the only calls on this page that access the network. [Bundled, fetched and downloaded data](user-guide/access.qmd) covers the distinction.
-
-## Further reading
-
-The sidebar lists every page in the guide. [Bundled, fetched and downloaded data](user-guide/access.qmd) is the natural next one: it explains the distinction between the data inside the package and the data that is downloaded, which the rest of the documentation assumes.
+[Bundled, fetched and downloaded data](user-guide/access.qmd) explains the difference, and is a good page to read next.

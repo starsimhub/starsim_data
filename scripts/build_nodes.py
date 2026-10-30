@@ -7,7 +7,7 @@ A *node table* is the lightweight half of a metapopulation input. A spatial mode
 needs to know, for each administrative unit, where it is, how big it is and how many
 people live there -- not the exact shape of its border. Reduced to centroids, areas and
 p-codes, the whole world at admin 0 and 1 is a few hundred KB and needs no geospatial
-libraries to read, so it bundles inside the wheel. Full geometry stays a fetch (see
+libraries to read, so it bundles inside the wheel. Full geometry stays a download (see
 `starsim_data.shapes`), because it does not.
 
 Two boundary sources, in preference order per country:
@@ -27,7 +27,7 @@ outside every unit but within about 10 km of one counts for the nearest, since b
 are simplified at the coast). The
 rasters are a ~1 GB download of a slow server, but that is paid once, here: the result is
 one number per unit (about 3,000 in all), so it bundles. A country WorldPop has no raster
-for keeps a missing level-1 population, which `fetch_nodes()` can fill later.
+for keeps a missing level-1 population, which `download_nodes()` can fill later.
 
 The units that share a border are written alongside, to `adjacency.h5`: one list of
 pairs per location, a few hundred KB in all.
@@ -155,7 +155,7 @@ def unit_populations(location, gdf):
     """Return the WorldPop population of each unit of a level, or None if there is no raster."""
     for attempt in range(3): # WorldPop's server resets connections now and then
         try:
-            raster = ssd.fetch_raster(location, year=POPULATION_YEAR, verbose=False)
+            raster = ssd.download_raster(location, year=POPULATION_YEAR, verbose=False)
             break
         except KeyError as e:
             if attempt == 2 or 'empty' in str(e):

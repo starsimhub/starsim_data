@@ -8,7 +8,7 @@ authorship:
   note: Written by AI, lightly edited by a human
 ---
 
-Datasets are keyed by a canonical name — `Kenya`, `United_States`, `Cote_dIvoire` — but users write country names in many other ways. This page describes how an arbitrary string is mapped onto a canonical key, and why the mapping is arranged as it is.
+Each location has one standard name in this package, such as `Kenya`, `United_States` or `Cote_dIvoire`, but people write country names in many other ways. This page covers which names are recognized and what happens when one isn't.
 
 ```{python}
 import starsim_data as ssd
@@ -18,11 +18,11 @@ import starsim_data as ssd
 
 ## What is recognized
 
-The resolver matches, in the following order of generality, against a table generated into `data/locations.csv`:
+These forms are all recognized:
 
 | Form | Example | Resolves to |
 |---|---|---|
-| Canonical name | `United_States` | `United_States` |
+| Standard name | `United_States` | `United_States` |
 | Free-text name | `united states` | `United_States` |
 | ISO 3166-1 alpha-2 | `US` | `United_States` |
 | ISO 3166-1 alpha-3 | `USA` | `United_States` |
@@ -31,7 +31,7 @@ The resolver matches, in the following order of generality, against a table gene
 | Former name | `Zaire`, `Burma` | the current country |
 | French, Spanish or Portuguese name | `Allemagne`, `Alemania` | `Germany` |
 
-Accents, case, punctuation and separator style are normalized away before matching, so the following are all the same string as far as the resolver is concerned:
+Accents, case, punctuation and spacing are ignored, so these are all treated as the same name:
 
 ```{python}
 {name: ssd.locations.normalize(name) for name in
@@ -44,35 +44,35 @@ len(set(ssd.resolve(n) for n in ["Côte d'Ivoire", 'cote divoire', 'Ivory Coast'
 
 ## Resolution is exact; approximate matching only advises
 
-Matching against the table is exact. Approximate matching only ever shapes the error message when an exact match fails; it never decides what is returned.
+A name has to match one in the table exactly (after ignoring accents, case and punctuation). Close matches are only used to suggest names in the error message; the package never guesses which country you meant.
 
 ```{python}
 #| error: true
 ssd.load('Keyna', which='deaths')
 ```
 
-The two mechanisms suit different problems. Approximate matching cannot reach abbreviations at all — the edit distance from `USA` to `United_States` is far too large — so abbreviations live in the table. It will, on the other hand, readily offer candidates for a string that corresponds to no country:
+Guessing would go wrong both ways. Abbreviations like `USA` look nothing like `United_States`, so they have to be listed in the table rather than guessed. And a name that is no country at all still has close matches:
 
 ```{python}
 import sciris as sc
 sc.suggest('Atlantis', ssd.list_all_locations(), n=3, die=False)
 ```
 
-Which is useful in an error message, and would be wrong as a lookup.
+That is helpful in an error message, but would be wrong as an answer.
 
 ## Subnational units
 
-A subnational unit is named by its country and its own name, separated by a colon, as in the node table's `dot_name`. The country part is resolved as above; the unit's name has to match exactly, up to case, accents and punctuation:
+A subnational unit is named by its country and its own name, separated by a colon, as in the node table's `dot_name`. The country part is recognized as above; the unit's name has to match exactly, ignoring case, accents and punctuation:
 
 ```{python}
 [ssd.resolve(name) for name in ['United States:Massachusetts', 'USA:massachusetts', 'us:new york']]
 ```
 
-Without a dataset to scope to, the units are those of the node table, so a misspelled unit gets suggestions from its own country. Only a few datasets have subnational units so far: `mistry2021_us` and `population_us`, for the US states (see [Datasets](datasets.qmd#us-states)).
+When no dataset is given, the units are those of the node table, and a misspelled unit gets suggestions from its own country. Only a few datasets have subnational units so far: `mistry2021_us` and `population_us`, for the US states (see [Datasets](datasets.qmd#us-states)).
 
 ## Scoping to a dataset
 
-Coverage varies between datasets, so `load()` resolves against the locations that are actually present in the dataset being read. A country that exists but is absent from a particular source produces a different error from one that does not exist at all:
+Coverage varies between datasets, so `load()` checks the name against the locations in the dataset you asked for. A country that exists but is missing from that dataset gives a different error from a name that isn't a country at all:
 
 ```{python}
 #| error: true
@@ -100,13 +100,11 @@ info = ssd.location_info('DRC')
 ssd.location_info('Germany').aliases[:8]
 ```
 
-The underlying file, `starsim_data/data/locations.csv`, is partly hand-maintained and partly generated. The `location`, `level`, `iso_code`, `primary_contact_source`, `contact_sources` and `population_source` columns are maintained by hand; `iso3`, `official_name` and `aliases` are generated from `pycountry` by `scripts/build_locations.py`, which is why `pycountry` is a build-time dependency and not a runtime one.
-
-The generator discards any alias that would be ambiguous across two locations, so a successful match is always unambiguous.
+The table itself is `starsim_data/data/locations.csv`, with official names and aliases taken from the `pycountry` package. Any alias that could mean two different locations is left out, so a name that matches always means just one.
 
 ::: {.callout-warning}
 ## Namibia's country code
-Namibia's ISO 3166-1 alpha-2 code is the two-letter string `NA`, which `pandas.read_csv` interprets as a missing value under its default settings. Every reader of `locations.csv` in this package either passes `keep_default_na=False` or uses the standard library's `csv` module instead, and there is a regression test covering it. Anyone parsing country tables independently is likely to encounter the same problem.
+Namibia's two-letter ISO code is `NA`, which `pandas.read_csv` reads as a missing value by default. This package handles it, but if you read country tables with pandas yourself, pass `keep_default_na=False` to avoid losing Namibia.
 
 ```{python}
 ssd.resolve('NA'), ssd.location_info('Namibia').iso3
@@ -115,20 +113,20 @@ ssd.resolve('NA'), ssd.location_info('Namibia').iso3
 
 ## Administrative levels
 
-`parse_level()` accepts the several spellings in circulation and returns an integer:
+`parse_level()` accepts the common ways of writing an administrative level and returns a number:
 
 ```{python}
 [ssd.parse_level(x) for x in ['admin1', 'ADM2', '3', 4, 'level0']]
 ```
 
-Level 0 denotes the country; higher levels denote progressively finer subdivisions. The upper bound is 5, which is the finest level published by any of the boundary sources described in [Data sources](datasources.qmd).
+Level 0 is the country, level 1 its first subdivisions (provinces, states), and so on. The highest is 5, the finest level any of the boundary sources in [Data sources](datasources.qmd) publishes.
 
 ```{python}
 #| error: true
 ssd.parse_level('admin9')
 ```
 
-Booleans are rejected explicitly, since `bool` is a subclass of `int` in Python and `parse_level(True)` would otherwise silently mean level 1:
+`True` and `False` are rejected, rather than quietly read as levels 1 and 0:
 
 ```{python}
 #| error: true
@@ -137,7 +135,7 @@ ssd.parse_level(True)
 
 ## Naming below the country level
 
-Subnational units in the node table follow the same normalization, with case preserved, and are addressed by a hierarchical `dot_name`:
+Subnational units in the node table are named by their `dot_name`, the country and unit names joined by a colon, cleaned up the same way but keeping capitals:
 
 ```{python}
 ssd.load_nodes('France', level=1).dot_name.head(4).tolist()
@@ -147,4 +145,4 @@ ssd.load_nodes('France', level=1).dot_name.head(4).tolist()
 [ssd.node_name(x) for x in ['New York', 'Île-de-France', 'KwaZulu-Natal']]
 ```
 
-The component before the colon is always a string that `load()` accepts, so a `dot_name` can be decomposed and its country looked up directly. For joining to external data, however, `pcode` rather than `dot_name` is the appropriate key; see [Spatial data](spatial.qmd).
+The part before the colon is always a name `load()` accepts, so you can split a `dot_name` and look up its country directly. To join to other data, though, use `pcode` rather than `dot_name`; see [Spatial data](spatial.qmd).

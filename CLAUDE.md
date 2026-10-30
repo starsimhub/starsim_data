@@ -49,9 +49,12 @@ python scripts/download_epydemix.py           # refresh the US states in raw_dat
 Every function belongs to exactly one tier, and this is the design constraint the rest of the package is arranged around:
 
 - **Tier 0** — `load()`, `load_nodes()`, `distances()`. Reads only what is inside the wheel. **Never touches the network**, so it is instant, offline and byte-identical for everyone on a given version.
-- **Tier 1** — `fetch()`, `fetch_shapes()`, `fetch_nodes()`, `fetch_raster()`. Downloads and caches, with a provenance sidecar per file.
+- **Tier 1** — `fetch()`. The stores this package publishes with its releases (pinned by SHA-256), downloaded and cached with a provenance sidecar per file.
+- **Tier 2** — `download()`, `download_shapes()`, `download_nodes()`, `download_raster()`. Data from its original publisher (UN, WorldPop, boundary sources), whose servers this package doesn't control, cached the same way.
 
-Tier is a field on the dataset descriptor and `load()` enforces it: asking `load()` for a tier-1 dataset raises and names `fetch()` instead. Do not add a network call to a tier-0 path — CI runs `-m "not network"` and `tests/test_docs.py` fails the build if an executed docs cell would fetch.
+The verb tells the caller whose server they depend on; `Dataset.access` and `Dataset.function` give the tier in words. `fetch()` of data that isn't packaged warns and passes the call to `download()`; `fetch_shapes`/`fetch_nodes`/`fetch_raster` are kept as aliases that do the same.
+
+Tier is a field on the dataset descriptor and `load()` enforces it: asking `load()` for a tier-1 or tier-2 dataset raises and names `fetch()` or `download()` instead. Do not add a network call to a tier-0 path — CI runs `-m "not network"` and `tests/test_docs.py` fails the build if an executed docs cell would fetch.
 
 ### Registry-driven dispatch
 
@@ -66,14 +69,14 @@ Descriptor discovery is cached — call `registry.refresh()` if the files change
 
 ### Import conventions
 
-Follow Starsim's convention: **`from` imports live only in `__init__.py`**. Every other module does `import starsim_data as ssd` and reaches everything as `ssd.load`, `ssd.registry.datasets()`, so modules can refer to each other freely without cycles. The import order in `__init__.py` is load-bearing: `registry` must exist before `loaders` (which registers layouts) and `fetching` (which registers tier-1 datasets).
+Follow Starsim's convention: **`from` imports live only in `__init__.py`**. Every other module does `import starsim_data as ssd` and reaches everything as `ssd.load`, `ssd.registry.datasets()`, so modules can refer to each other freely without cycles. The import order in `__init__.py` is load-bearing: `registry` must exist before `loaders` (which registers layouts) and `downloading` (which registers tier-2 datasets).
 
 Importing the package must stay side-effect free — no directories created, no files opened, no warnings. `options` reads the environment at import but acts on it lazily; the cache dir is resolved and created only when something is written. The `[spatial]` imports are lazy for the same reason: `import starsim_data` works without geopandas, and only the spatial functions raise.
 
 ### Invariants that are enforced as data, not as memory
 
-- **Provenance travels with the data.** `scripts/provenance.py` stamps source/URL/license/citation/build details into each store at build time; `load()` and `fetch()` put the same record in `df.attrs['provenance']`. `tests/test_provenance.py` asserts the licenses recorded in the stores match `NOTICE.md`.
-- **GADM is never redistributed.** Its `ShapeSource` sets `redistributable=False`, `fetch_shapes()` leaves it out of the UNOCHA→geoBoundaries fallback chain, and `build_nodes.py` refuses any source with that flag. Keep the constraint on the descriptor rather than in a comment or a conditional.
+- **Provenance travels with the data.** `scripts/provenance.py` stamps source/URL/license/citation/build details into each store at build time; `load()`, `fetch()` and `download()` put the same record in `df.attrs['provenance']`. `tests/test_provenance.py` asserts the licenses recorded in the stores match `NOTICE.md`.
+- **GADM is never redistributed.** Its `ShapeSource` sets `redistributable=False`, `download_shapes()` leaves it out of the UNOCHA→geoBoundaries fallback chain, and `build_nodes.py` refuses any source with that flag. Keep the constraint on the descriptor rather than in a comment or a conditional.
 - **Demographic stores are versioned by WPP revision**, as `demographics-<revision>.h5`. A new UN release is an additive rebuild, never an edit to data already in use.
 - **Namibia's ISO-2 code is the string `NA`.** Any CSV read must pass `keep_default_na=False` or use the `csv` module, or pandas turns Namibia into a missing value. There is a regression test for it in `tests/test_locations.py`.
 - **Location resolution is exact.** Fuzzy matching (`sc.suggest`) only builds the "did you mean" error message; it never resolves a name.

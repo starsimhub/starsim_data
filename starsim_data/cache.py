@@ -2,19 +2,19 @@
 Download cache for data that is too big to bundle.
 
 Tier-0 data ships inside the wheel and `load()` never touches the network. Anything
-larger -- the UN WPP bulk files behind `fetch()`, and later the spatial sources -- is
-downloaded once into a local cache and reused from then on.
+larger -- the stores behind `fetch()`, and the UN WPP bulk files and spatial sources
+behind `download()` and the other `download_*` functions -- is downloaded once into a local cache and reused from then on.
 
 Every cached file gets a provenance sidecar (`<file>.provenance.json`) recording the URL
 it came from, when it was downloaded, its size and its SHA-256. That is `laser-init`'s
-idea, and it is the right one for fetched files: unlike bundled data, where provenance
+idea, and it is the right one for cached files: unlike bundled data, where provenance
 is written into the HDF5 itself, a cache entry is an ordinary file on disk and a sidecar
 is the only place the lineage can live.
 
 ```python
 import starsim_data as ssd
 ssd.cache_dir()      # where things are cached
-ssd.cache_info()     # what is cached, from where, and when it was fetched
+ssd.cache_info()     # what is cached, from where, and when it was downloaded
 ssd.clear_cache()    # delete it all
 ```
 """

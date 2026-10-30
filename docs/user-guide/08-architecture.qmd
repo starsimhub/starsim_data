@@ -21,15 +21,16 @@ pd.DataFrame([
     dict(module='locations.py', role='Resolving location strings; administrative-level vocabulary'),
     dict(module='loaders.py', role='Reading bundled stores: `load`, `list_datasets`, `provenance`'),
     dict(module='cache.py', role='The download cache and its provenance sidecars'),
-    dict(module='fetching.py', role='UN WPP bulk files: `fetch`'),
+    dict(module='fetching.py', role='Stores published with the releases: `fetch`'),
+    dict(module='downloading.py', role='UN WPP bulk files: `download`'),
     dict(module='nodes.py', role='The node table and `distances`'),
-    dict(module='shapes.py', role='Boundary sources and `fetch_shapes` (needs [spatial])'),
-    dict(module='rasters.py', role='WorldPop rasters and `fetch_nodes` (needs [spatial])'),
+    dict(module='shapes.py', role='Boundary sources and `download_shapes` (needs [spatial])'),
+    dict(module='rasters.py', role='WorldPop rasters and `download_nodes` (needs [spatial])'),
     dict(module='plotting.py', role='Validation figures and the choropleth'),
 ])
 ```
 
-Import order matters, because two modules register themselves when they are imported: `loaders` adds its layout shapers and `fetching` adds its tier-1 datasets, both of which require `registry` to exist first. The order is fixed in `__init__.py`.
+Import order matters, because two modules register themselves when they are imported: `loaders` adds its layout shapers and `downloading` adds its tier-2 datasets, both of which require `registry` to exist first. The order is fixed in `__init__.py`.
 
 ## Import conventions
 
@@ -73,7 +74,7 @@ load(location, which, kind, revision, level)
   │
   ├─ registry.dataset(which)          → the descriptor, or an error with suggestions
   ├─ descriptor.loader?               → delegate (e.g. `prem`, which picks prem2021 or prem2017)
-  ├─ descriptor.tier > 0?             → refuse, and point at fetch()
+  ├─ descriptor.tier > 0?             → refuse, and point at fetch() or download()
   ├─ descriptor.source(revision)      → which file, and which group inside it
   ├─ h5py.File(...)                   → open the store
   ├─ resolve(location, valid=...)     → the canonical key, scoped to this dataset
@@ -114,14 +115,14 @@ Demographic stores are named by revision, so a new UN release adds a file rather
 
 ## Tiers, in code
 
-Internally, whether a dataset is bundled is its *tier*, a field on the descriptor: 0 for bundled, 1 for fetched or downloaded (the descriptor's `access` property gives the words used in [Bundled, fetched and downloaded data](access.qmd)). `load()` enforces it:
+Internally, whether a dataset is bundled is its *tier*, a field on the descriptor: 0 for bundled, 1 for fetched and 2 for downloaded (the descriptor's `access` property gives the same in the words used in [Bundled, fetched and downloaded data](access.qmd), and its `function` property the function for each). `load()` enforces it:
 
 ```{python}
 #| error: true
 ssd.load('kenya', which='life_table')
 ```
 
-Tier-1 datasets appear in the registry despite having no bundled store, which is what lets `load()` redirect to `fetch()` by name rather than fail to find a file.
+Tier-1 datasets appear in the registry despite having no bundled store, which is what lets `load()` redirect to `fetch()` or `download()` by name rather than fail to find a file.
 
 ## Extension points
 
@@ -139,7 +140,7 @@ ssd.register_layout('my_layout', shape_my_layout)
 **A new dataset.** Register a descriptor. Giving it a `loader` causes `load()` to delegate to it, which is the route for data this package does not ship:
 
 ```{python}
-ds = ssd.registry.Dataset(name='my_dataset', layout='crude', tier=1,
+ds = ssd.registry.Dataset(name='my_dataset', layout='crude', tier=2,
                           description='Something from elsewhere',
                           loader=lambda location, **kw: f'data for {location}')
 ssd.register_dataset(ds)
@@ -177,7 +178,7 @@ pd.DataFrame([
     dict(marker='network', requires='Internet access',
          note='Deselected by default in CI; set STARSIM_DATA_CACHE_DIR to reuse downloads'),
     dict(marker='slow', requires='More than a second or so',
-         note='Chiefly the 145 MB life-table fetches'),
+         note='Chiefly the 145 MB life-table downloads'),
     dict(marker='spatial', requires='The [spatial] extra',
          note='Skipped automatically when it is absent'),
 ])

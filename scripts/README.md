@@ -69,7 +69,7 @@ Boundaries come from UNOCHA COD-AB where the [laser-base mirror](https://github.
 
 The script refuses to draw on any source whose descriptor says `redistributable=False` — that is how GADM's non-commercial license is kept out of bundled data, rather than by remembering.
 
-National population is read from this package's own bundled WPP data. Level-1 population is WorldPop's 2020 raster summed within each unit, a ~1 GB download paid once here rather than by every user; other years and finer levels are left to `ssd.fetch_nodes()`.
+National population is read from this package's own bundled WPP data. Level-1 population is WorldPop's 2020 raster summed within each unit, a ~1 GB download paid once here rather than by every user; other years and finer levels are left to `ssd.download_nodes()`.
 
 Needs the `[spatial]` extra as well as `[dev]`: `pip install -e ".[dev,spatial]"`.
 

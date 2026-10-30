@@ -15,6 +15,19 @@ pytest -m "not network"     # the offline suite, as CI runs it
 
 Make the change on a branch, with a test if it fixes or adds something, and update the prose it affects: the API reference regenerates itself, but the pages in `docs/user-guide/` don't. A new dataset or source also touches `docs/user-guide/03-datasets.qmd`, `docs/user-guide/06-datasources.qmd` and `NOTICE.md` (a test checks the licenses there against the data).
 
+## Building the documentation
+
+The documentation is built with [Sciris' fork of great-docs](https://github.com/sciris/great-docs) and [quartopydoc](https://pypi.org/project/quartopydoc/), which the `docs` dependency group installs, plus [Quarto](https://quarto.org/docs/get-started/):
+
+```bash
+pip install -e ".[dev]" --group docs
+great-docs build      # -> docs/_site/
+docs/render           # the same, rendering pages in parallel
+great-docs preview    # live reload on http://localhost:3000
+```
+
+Adding a page means adding a `.qmd` file to `docs/user-guide/` with a `title` and a `guide-section`; there is no navigation configuration to update (a new module, though, needs adding to the `quartodoc:` sections in `docs/great-docs.yml`). `docs/user-guide/assets/starsim-theme.html` holds the style overrides that make the site look like the Starsim docs.
+
 ## Changing data
 
 The `.h5` files are build artifacts: never edit them by hand. Edit the sources in `raw_data/` and rebuild with the scripts in `scripts/` (its README describes each), checking the result with `--check`, which is what CI runs:

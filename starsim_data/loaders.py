@@ -20,9 +20,10 @@ Demographic stores are versioned by UN WPP revision. `load` uses the newest bund
 revision unless `revision=` says otherwise, so a new WPP release is an additive
 rebuild rather than a silent change to data already in use; see `list_revisions()`.
 
-`load` never touches the network -- everything it reads is inside the wheel. For data
-that is not bundled (annual series, life tables, other projection variants) see
-`fetch()`, which downloads and caches.
+`load` never touches the network -- everything it reads is inside the wheel. For the
+contact sources that are published but not bundled see `fetch()`, and for data from its
+original publisher (annual series, life tables, other projection variants) see
+`download()`; both cache what they download.
 
 Locations are resolved by name, ISO-2/ISO-3 code, official name or alias -- see
 `starsim_data.locations`. Every `load` result is a `sciris.dataframe`, a drop-in
@@ -67,7 +68,7 @@ def list_datasets(detailed=False, tier=None):
         detailed (bool): if True, return a dataframe of the registry -- name, layout,
             access (bundled, fetched or downloaded), admin level, location count, license
             and revisions -- rather than just the names.
-        tier (int): restrict to one tier (0 bundled, 1 fetched).
+        tier (int): restrict to one tier (0 bundled, 1 fetched, 2 downloaded).
 
     Returns:
         list or sciris.dataframe: dataset names, or the ssd.registry.
@@ -240,7 +241,8 @@ def load(location, which='prem', kind='all', revision=None, level=None):
             is `'prem2021'` or, for the ten locations it lacks, `'prem2017'`; or
             `'prem2021'` itself), or a demographic series (`'births'`, `'deaths'`,
             `'migration'`, `'population'`, `'fertility'`). See `list_datasets()`; all of `'prem2017'`
-            and `'mistry2021'` are fetched with `fetch()`.
+            and `'mistry2021'` are fetched with `fetch()`, and annual series are
+            downloaded with `download()`.
         kind (str): for contact-matrix datasets only, the contact setting -- one of
             `'all'`, `'home'`, `'work'`, `'school'`, `'community'`. Ignored otherwise.
         revision (str/int): for demographic series only, the UN WPP revision to read
@@ -275,7 +277,7 @@ def load(location, which='prem', kind='all', revision=None, level=None):
     if (level is not None) and (ds.layout != 'nodes'):
         raise ValueError(f'level={level!r} does not apply to {which!r}; only the node table is addressed by administrative level')
     if ds.tier > 0: # `load` never touches the network; say so rather than quietly downloading
-        raise ValueError(f'{which!r} is not bundled; use fetch({location!r}, which={which!r}) to download it')
+        raise ValueError(f'{which!r} is not bundled; use {ds.function}({location!r}, which={which!r}) to download it')
     return _read(which, location, kind=kind, revision=revision, level=level)
 
 

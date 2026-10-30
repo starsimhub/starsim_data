@@ -8,37 +8,35 @@ authorship:
   note: Written by AI
 ---
 
-Very little of what this package distributes is data that nobody else distributes. UN World Population Prospects, the Prem and Mistry contact matrices, UNOCHA and geoBoundaries administrative boundaries, and WorldPop rasters are all public, and several other projects package them for modelers. What separates those projects is not the numbers but the delivery: whether the data is inside the wheel or on a server, whether a call returns a dataframe or writes a directory of files, and how much of the model is decided on your behalf.
+Almost all the data in this package is public, and other projects package it for modelers too. What differs between them is mostly how you get it: whether the data comes with the package or from a server, whether you get a dataframe or a folder of files, and how much of the model is set up for you.
 
-Two projects in particular shaped this one, and are acknowledged here in more detail than a citation allows. For the upstream sources themselves — coverage, revision cadence, licensing and known limitations — see [Data sources](datasources.qmd) instead; this page is about the packages that sit between those sources and a model.
+Two projects in particular shaped this one. For the original data sources themselves (coverage, updates, licenses and limitations), see [Data sources](datasources.qmd); this page is about the packages that sit between those sources and a model.
 
 ## The two this package builds on
 
 ### epydemix-data
 
-[epydemix-data](https://github.com/epistorm/epydemix-data) is the data repository behind [epydemix](https://github.com/epistorm/epydemix), the ISI Foundation's Python package for stochastic compartmental modeling with approximate Bayesian calibration. It holds age distributions and age-structured contact matrices for more than 3,500 regions, as a tree of per-location CSV folders in git, with a top-level `locations.csv` recording which contact sources exist for each location.
+[epydemix-data](https://github.com/epistorm/epydemix-data) is the data behind [epydemix](https://github.com/epistorm/epydemix), the ISI Foundation's Python package for stochastic compartmental modeling and calibration. It has age distributions and contact matrices for more than 3,500 regions, as folders of CSV files on GitHub.
 
-**What this package took from it.** The bundled contact matrices are derived from epydemix-data: the `prem2017`, `prem2021` and `mistry2021` matrices here were taken from its curated CSVs, trimmed to national level (and later the US states, as `mistry2021_us`, with their populations) and reorganized into one HDF5 store per source. Assembling those matrices from the original supplementary material is a genuinely tedious job — inconsistent spreadsheet layouts, inconsistent country naming — and epydemix-data had already done it carefully. Two of its design decisions were also adopted rather than reinvented: a single manifest file listing every location and the sources available for it, which is what `locations.csv` is here too, and pinning data releases so that a version of the package implies an exact version of the data.
+**What this package took from it.** The contact matrices here (`prem2017`, `prem2021`, `mistry2021` and `mistry2021_us`, plus the US state populations) come from epydemix-data's carefully cleaned-up files, keeping the national and US-state ones. Assembling them from the papers' original spreadsheets is tedious work, and epydemix-data had already done it well. This package also borrowed the idea of a single list of locations and the data available for each, and of tying each package version to an exact version of the data.
 
-**Where the two differ.** epydemix-data resolves over the network by default: `load_epydemix_population()` reads from `raw.githubusercontent.com` unless a local copy has been downloaded and `path_to_data` points at it. `ssd.load()` never touches the network, because the data is in the wheel. The trade-off is deliberate on both sides — a git-hosted CSV tree can hold 3,500 regions and four contact sources, which a wheel cannot, whereas a wheel is instant, works offline and is byte-identical for everyone on the same version.
+**Where the two differ.** epydemix-data reads its files from GitHub by default, unless you have downloaded a local copy. `ssd.load()` works offline, because the data comes with the package. Each choice has its advantages: a collection of files on GitHub can hold 3,500 regions and four contact sources, which a package can't, while bundled data is instant, works offline and is the same for everyone using the same version.
 
 The scope differs in both directions:
 
-- **epydemix-data has more contact data.** Subnational matrices at state and province level, all 3,144 US counties, the `litvinova_2025` source, and US matrices stratified by sex and by race/ethnicity. None of that is bundled here; this package carries national-level matrices only.
-- **This package has more demographic data.** epydemix-data's demographic file is a single age distribution per location, which is what a compartmental model needs to initialize. Here the demographics are five UN WPP series across 1950–2100 — births, deaths by age and sex, migration, population and fertility by age — because an agent-based model with vital dynamics needs rates over time, not just a starting age structure. Annual resolution, life tables and other projection variants are a `fetch()` away.
-- **This package adds geography.** epydemix-data has no boundaries, node table or gridded population.
+- **epydemix-data has more contact data:** state and province matrices for other countries, all 3,144 US counties, a fourth source (`litvinova_2025`), and US matrices by sex and by race/ethnicity. This package has national and US-state matrices only.
+- **This package has more demographic data.** epydemix-data has one age distribution per location, which is what a compartmental model needs to get started. Here there are five UN WPP series from 1950 to 2100 (births, deaths by age and sex, migration, population, and fertility by age), because an agent-based model with births and deaths needs rates over time, not just a starting age structure.
+- **This package adds geography.** epydemix-data has no boundaries, node table or population grids.
 
-Finally, the licensing is arranged differently. epydemix-data is GPL-3.0 as a whole. Here the code is MIT and each dataset keeps its own upstream license, recorded as data on the dataset (`ssd.provenance(which).license`) — the Prem matrices remain GPL-3.0, `mistry2021` remains Apache-2.0, and the WPP data remains CC BY 3.0 IGO. See [NOTICE.md](https://github.com/starsimhub/starsim_data/blob/main/NOTICE.md) for the details.
+The licenses differ too. epydemix-data is GPL-3.0 as a whole. Here the code is MIT and each dataset keeps its original license (`ssd.provenance(which).license`): the Prem matrices are GPL-3.0, `mistry2021` is Apache-2.0, and the WPP data is CC BY 3.0 IGO. See [NOTICE.md](https://github.com/starsimhub/starsim_data/blob/main/NOTICE.md) for details.
 
 ### laser-init
 
-[laser-init](https://github.com/laser-base/laser-init) bootstraps a spatial model for [LASER](https://github.com/laser-base/laser-generic). It is a command-line tool rather than a library: `laser-init NGA 2 2000 2025` downloads administrative boundaries, a WorldPop raster and UN WPP statistics for Nigeria at admin level 2, aggregates the raster into the boundaries, and writes a directory containing a GeoPackage, demographic CSVs, a `config.yaml`, validation plots, a PDF report, a `provenance.json`, and a runnable SEIR model script.
+[laser-init](https://github.com/laser-base/laser-init) sets up a spatial model for [LASER](https://github.com/laser-base/laser-generic). It is a command-line tool rather than a library: `laser-init NGA 2 2000 2025` downloads boundaries, WorldPop population and UN WPP data for Nigeria at admin level 2, works out the population of each unit, and writes a folder with the boundaries, demographic CSVs, a config file, plots, a PDF report, a record of where the data came from, and a runnable SEIR model script.
 
-**What this package took from it.** The treatment of spatial data here follows laser-init's. The three boundary sources and the reasons for preferring one over another, the UNOCHA-then-geoBoundaries fallback with GADM available only on request, WorldPop as the population raster, and aggregating that raster inside administrative polygons to get a population per node, are all laser-init's arrangement. Much of the boundary and raster material in [Data sources](datasources.qmd) is adapted from laser-init's corresponding page. Recording provenance as an artifact of every run, rather than leaving users to remember what they downloaded, is also its idea, though it is implemented differently here.
+**What this package took from it.** The spatial data here follows laser-init's approach: the three boundary sources and when to prefer each, trying UNOCHA then geoBoundaries with GADM only on request, and adding up WorldPop's population grid within each unit. Much of the boundary and population material in [Data sources](datasources.qmd) is adapted from laser-init's documentation. Keeping a record of where each piece of data came from was also its idea.
 
-**Where the two differ.** laser-init is a scaffolding tool and this is a library. laser-init produces a working model; this package produces dataframes and stops. The other consequential difference is what a first run costs. laser-init downloads everything, including — with its default boundary source — UNOCHA's 1–2 GB global geodatabase, cached in `~/.laser/cache/` for later runs. Here the node table is bundled: centroids, areas, p-codes and the administrative hierarchy for 184 countries at levels 0 and 1 are a couple of megabytes in the wheel, which is most of what a metapopulation model actually needs and needs no download, no cache and no geospatial dependencies. Polygons, deeper levels and rasters are still fetched, behind the optional `[spatial]` extra, but they are the exception.
-
-Smaller differences: laser-init writes files and this returns objects; laser-init's demographic outputs are a birth/death rate series and a survival curve for one country and period, whereas `load()` returns the full WPP series for every country; laser-init generates SI, SIR and SEIR models in agent-based or metapopulation form, and this generates nothing. Both are MIT-licensed.
+**Where the two differ.** laser-init sets up a working model; this package returns dataframes and stops there. laser-init also downloads everything on its first run, which with its default boundary source is 1–2 GB. Here the node table (centroids, areas, populations, p-codes and borders for 184 countries at levels 0 and 1) is bundled, which covers most of what a metapopulation model needs with no download and no extra libraries. Boundary shapes, finer levels and population grids are still downloaded when you need them. laser-init's demographics are birth and death rates and a survival curve for one country and period, whereas `load()` returns the full WPP series for every country. Both are MIT-licensed.
 
 ### The three side by side
 
@@ -46,53 +44,53 @@ Smaller differences: laser-init writes files and this returns objects; laser-ini
 |---|---|---|---|
 | **Form** | Python library | Git-hosted CSV tree + loader in `epydemix` | Command-line tool |
 | **You get** | Dataframes | A `Population` object | A directory of files and a model script |
-| **Network on first use** | No, for bundled data | Yes, unless downloaded first | Yes, always |
-| **Demographics** | Four UN WPP series, 1950–2100 | One age distribution per location | CBR/CDR series, age distribution, survival curve |
+| **Internet needed** | No, for bundled data | Yes, unless downloaded first | Yes |
+| **Demographics** | Five UN WPP series, 1950–2100 | One age distribution per location | Birth and death rates, age distribution, survival curve |
 | **Contact matrices** | 3 sources, national and US state | 4 sources, national to US county | None |
-| **Geography** | Node table bundled; shapes and rasters fetched | None | Shapes and rasters fetched |
+| **Geography** | Node table bundled; boundaries and population grids downloaded | None | Boundaries and population grids downloaded |
 | **Locations** | 187 countries, 51 US states | 3,500+ regions | Any one country per run |
 | **Generates a model** | No | No | Yes |
 | **License** | MIT code, per-dataset data licenses | GPL-3.0 | MIT |
 
-Each package is best for a different use case. If you are running a compartmental model of a US county, or of another country's provinces, and want the finest contact structure available, epydemix-data has data this package does not. If you want a spatial LASER model of Nigeria running this ASAP, laser-init will get you there faster than assembling one from `load_nodes()`. This package is aimed at the case where a Starsim model needs national demographic rates and a contact matrix, offline and reproducibly, with subnational structure available when it is wanted.
+Each is best for something different. For a compartmental model of a US county, or of another country's provinces, epydemix-data has contact data this package doesn't. For a spatial LASER model of Nigeria running as soon as possible, laser-init will get you there faster than building one from `load_nodes()`. This package is aimed at Starsim models that need national demographic rates and contact matrices, offline and reproducibly, with subnational geography when you want it.
 
 ## Other places these data come from
 
-Many other projects have also packaged data for epi modeling:
+Other projects that package data for epidemic modeling:
 
 ### Contact matrices
 
 | Project | Language | What it provides |
 |---|---|---|
-| [`contactdata`](https://github.com/socialcontactdata/contactdata) | R (CRAN) | The Prem 2017 and 2021 matrices for 177 countries, bundled in the package. The closest R analogue to this package's contact-matrix half, and a clean dependency if matrices are all you need. |
-| [`socialmixr`](https://github.com/epiforecasts/socialmixr) | R (CRAN) | Contact matrices computed from raw diary surveys — POLYMOD and the wider [socialcontactdata.org](http://socialcontactdata.org) collection on Zenodo — rather than projected onto countries. Empirical where it has coverage, which is a few dozen surveys rather than every country. |
-| [`mobs-lab/mixing-patterns`](https://github.com/mobs-lab/mixing-patterns) | Data repository | The original release of the Mistry 2021 matrices and the synthetic populations they were derived from. Upstream of both `mistry2021` here and epydemix-data's copy. |
-| [`synthpops`](https://github.com/synthpops/synthpops) | Python | Generates synthetic populations with household, school and workplace network layers from demographic inputs, rather than distributing matrices. A different answer to the same question: a contact matrix summarizes mixing, a synthetic population instantiates it. |
+| [`contactdata`](https://github.com/socialcontactdata/contactdata) | R (CRAN) | The Prem 2017 and 2021 matrices for 177 countries. The closest R equivalent to this package's contact matrices, and a good choice if matrices are all you need. |
+| [`socialmixr`](https://github.com/epiforecasts/socialmixr) | R (CRAN) | Contact matrices computed directly from contact surveys (POLYMOD and the wider [socialcontactdata.org](http://socialcontactdata.org) collection), rather than estimated for countries without a survey. Covers a few dozen surveys rather than every country. |
+| [`mobs-lab/mixing-patterns`](https://github.com/mobs-lab/mixing-patterns) | Data repository | The original Mistry 2021 matrices and the synthetic populations they came from. The source of both `mistry2021` here and epydemix-data's copy. |
+| [`synthpops`](https://github.com/synthpops/synthpops) | Python | Builds synthetic populations with household, school and workplace networks, rather than providing matrices. A contact matrix summarizes who mixes with whom; a synthetic population spells it out person by person. |
 
-The distinction that matters most in this group is **projected versus empirical**. Prem 2017 and 2021 project survey-derived contact patterns onto countries that have no survey of their own, using household composition and age structure; `socialmixr` computes matrices only where a survey exists. Projections cover almost every country and are what most models use; empirical matrices are preferable where the survey exists and the projection assumptions are doing real work in your result.
+The main difference in this group is **estimated versus measured**. Prem 2017 and 2021 estimate contact patterns for countries without their own survey, from household composition and age structure; `socialmixr` computes matrices only where a survey exists. The estimates cover almost every country and are what most models use; measured matrices are better where a survey exists and the choice of matrix matters for your results.
 
 ### Demographics
 
 | Project | Language | What it provides |
 |---|---|---|
-| [`wpp2024`](https://github.com/PPgp/wpp2024) and [`wpp2024extra`](https://github.com/PPgp/wpp2024extra) | R (GitHub) | The UN WPP 2024 release as data packages, including annual and single-year-of-age (1×1) data and projection uncertainty bounds. Too large for CRAN, hence the GitHub distribution. The most complete WPP packaging in any language; this package's `fetch()` covers a subset of the same ground from the UN's bulk CSVs. |
-| [UN WPP Data Portal](https://population.un.org/dataportal/) | API | The authoritative source, with a free Bearer token. The build scripts here use it; `fetch()` uses the public bulk CSVs instead so that users need no token. |
-| National statistical offices, [DHS](https://dhsprogram.com), [IPUMS](https://international.ipums.org) | Various | Subnational demographics, which WPP does not have at all. If a model needs province-level fertility or mortality, this is where it comes from. |
+| [`wpp2024`](https://github.com/PPgp/wpp2024) and [`wpp2024extra`](https://github.com/PPgp/wpp2024extra) | R (GitHub) | The UN WPP 2024 release as R data packages, including annual data by single year of age and projection uncertainty ranges. The most complete packaging of WPP in any language; this package's `download()` covers part of the same ground. |
+| [UN WPP Data Portal](https://population.un.org/dataportal/) | API | The official source; needs a free access token. `download()` uses the UN's public files instead, so you don't need one. |
+| National statistical offices, [DHS](https://dhsprogram.com), [IPUMS](https://international.ipums.org) | Various | Subnational demographics, which WPP doesn't have. If your model needs province-level fertility or mortality, look here. |
 
 ### Geography and population
 
 | Project | Language | What it provides |
 |---|---|---|
-| [geoBoundaries](https://github.com/wmgeolab/geoBoundaries) | Data + API | Near-universal open administrative boundaries with tagged releases. Fetched directly by `fetch_shapes()`. |
-| [HDX](https://data.humdata.org) and [`hdx-python-api`](https://pypi.org/project/hdx-python-api/) | Python | The humanitarian data exchange, where UNOCHA boundaries and most p-coded subnational health data live. The reason the node table carries p-codes is to join to datasets found here. |
-| [`pygadm`](https://pypi.org/project/pygadm/) | Python | GADM boundaries, the deepest administrative hierarchies available. Note the non-commercial license, which is why this package fetches GADM only on request and never redistributes it. |
-| [WorldPop](https://hub.worldpop.org) and [`rasterstats`](https://pypi.org/project/rasterstats/) | Data + Python | Gridded population and the zonal statistics to aggregate it. `fetch_nodes()` does this for you; `rasterstats` is the general tool if you need something the node table does not provide. |
+| [geoBoundaries](https://github.com/wmgeolab/geoBoundaries) | Data + API | Open administrative boundaries for nearly every country. Used directly by `download_shapes()`. |
+| [HDX](https://data.humdata.org) and [`hdx-python-api`](https://pypi.org/project/hdx-python-api/) | Python | The Humanitarian Data Exchange, home of the UNOCHA boundaries and most subnational health data labeled with p-codes. The node table has p-codes so you can join it to data from here. |
+| [`pygadm`](https://pypi.org/project/pygadm/) | Python | GADM boundaries, which go down to the finest administrative levels. Note the non-commercial license, which is why this package downloads GADM only on request and never redistributes it. |
+| [WorldPop](https://hub.worldpop.org) and [`rasterstats`](https://pypi.org/project/rasterstats/) | Data + Python | Population grids, and a tool for adding them up within boundaries. `download_nodes()` does this for you; `rasterstats` is the general tool if you need something else. |
 
 ## Choosing between them
 
-A few rules of thumb, given that most of these projects agree on the underlying numbers:
+Most of these projects use the same underlying data, so a few rules of thumb:
 
-- **Take the data from whatever is closest to your framework.** All of these read the same handful of upstream sources. The cost of a data package is not accuracy but friction, so prefer the one that returns the shape your model wants.
-- **Do not mix packages for the same quantity within one analysis.** Two packages may both distribute "the Prem 2021 matrix for Kenya" and differ in age-bin labeling, normalization or which release they pinned. Pick one and record it.
-- **Check what has been trimmed.** Every package in this list subsets its upstream. This one drops subnational contact matrices, non-Medium WPP variants from the bundled store, and "both sexes" rows; others drop different things. The [Data sources](datasources.qmd) page lists what is missing here and why.
-- **Record what you used.** Whichever you choose, pin the version and keep the provenance. Here that is `.attrs['provenance']` and `ssd.cache_info()`; see [Provenance and reproducibility](provenance.qmd) for what to keep.
+- **Use whichever is closest to your modeling framework.** They mostly draw on the same few sources, so the difference is convenience rather than accuracy: pick the one that gives you data in the form your model wants.
+- **Don't mix packages for the same data in one analysis.** Two packages may both offer "the Prem 2021 matrix for Kenya" but differ in age-group labels, scaling or which release they use. Pick one and note which.
+- **Check what has been left out.** Every package here includes only part of its sources. This one leaves out subnational contact matrices, for example, and bundles only the Medium WPP projection; [Data sources](datasources.qmd) lists what is missing.
+- **Record what you used.** Whichever you choose, note the version and where the data came from; see [Provenance and reproducibility](provenance.qmd).

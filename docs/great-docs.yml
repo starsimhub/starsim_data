@@ -65,6 +65,8 @@ authors:
     role: Author
   - name: Robyn Stuart
     role: Author
+  - name: Christopher Lorton
+    role: Author
 
 funding:
   name: "Gates Foundation"
@@ -107,10 +109,11 @@ quartodoc:
         - loaders
         - locations
         - nodes
-    - title: Fetched data
-      desc: Download, cache and process data that is too large to bundle.
+    - title: Fetched and downloaded data
+      desc: Fetch the data this package publishes but does not bundle, and download the rest from its publishers.
       contents:
         - fetching
+        - downloading
         - shapes
         - rasters
         - cache

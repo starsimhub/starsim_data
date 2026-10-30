@@ -148,7 +148,7 @@ def test_us_states():
     with pytest.raises(KeyError, match=r"fetch\('United_States:Massachusetts', which='mistry2021_us'\)"): # The national matrices say where the state's are
         ssd.load(state)
     with pytest.raises(KeyError, match="which='population_us'"): # As does WPP
-        ssd.fetch(state, which="population")
+        ssd.download(state, which="population")
     with pytest.raises(ValueError, match="does not apply"): # A population has no contact setting
         ssd.fetch(state, which="population_us", kind="home")
     return pop

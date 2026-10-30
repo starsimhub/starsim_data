@@ -4,7 +4,9 @@ The dataset registry: what datasets exist, where they live, and how to shape the
 Two tables live here.
 
 `DATASETS` maps a dataset name to a `Dataset` descriptor -- its layout, tier, admin
-level, license, available UN WPP revisions and location count. Bundled datasets are
+level, license, available UN WPP revisions and location count. The tier says how the
+data is got: 0 bundled (`load()`), 1 fetched from this package's releases (`fetch()`), 2
+downloaded from its original publisher (`download()`). Bundled datasets are
 discovered once by reading the HDF5 stores in `data/`. Stores that are built the same way
 but kept out of the wheel (tier 1, fetched on demand by `fetch()`) are described by the
 manifest `data/fetched.json`, which `scripts/build_hdf5.py` writes. Anything else can be
@@ -38,6 +40,11 @@ __all__ = ['Dataset', 'Source', 'datasets', 'dataset', 'register_dataset',
 
 # Demographic stores are named `demographics-<revision>.h5`, e.g. demographics-2024.h5.
 DEMOGRAPHICS_PREFIX = 'demographics-'
+
+# How each tier is reached: bundled and read by load(), published by this package and
+# fetched, or downloaded from the original publisher.
+ACCESS    = {0: 'bundled', 1: 'fetched', 2: 'downloaded'}
+FUNCTIONS = {0: 'load',    1: 'fetch',   2: 'download'}
 
 # The manifest of stores that are not bundled but fetched (see `scripts/build_hdf5.py`).
 FETCHED_MANIFEST = 'fetched.json'
@@ -83,8 +90,9 @@ class Dataset:
     Attributes:
         name (str): the dataset name, as passed to `load(which=...)`.
         layout (str): how the values are stored; see `LAYOUTS`.
-        tier (int): 0 if the dataset is bundled in the wheel, 1 if it is fetched or
-            downloaded and cached (see `access` for which).
+        tier (int): 0 if the dataset is bundled in the wheel, 1 if it is a store this
+            package publishes and `fetch()` downloads, 2 if `download()` gets it from its
+            original publisher (see `access` and `function` for the same in words).
         levels (tuple): the administrative levels covered; `(0,)` for national data.
         sources (tuple): `Source` records, oldest revision first.
         license (str): the upstream data license, e.g. `'CC BY 3.0 IGO'`.
@@ -113,12 +121,16 @@ class Dataset:
         """How the data is reached, in the terms the documentation uses.
 
         `'bundled'` is inside the package and read by `load()`; `'fetched'` is a store this
-        package publishes, downloaded once and verified; `'downloaded'`
-        comes from its original publisher, such as the UN, and is cached.
+        package publishes, downloaded once by `fetch()` and verified; `'downloaded'`
+        comes from its original publisher, such as the UN, through `download()`, and is
+        cached.
         """
-        if self.tier == 0:
-            return 'bundled'
-        return 'fetched' if any(s.url for s in self.sources) else 'downloaded'
+        return ACCESS[self.tier]
+
+    @property
+    def function(self):
+        """The name of the function that gets this dataset: `'load'`, `'fetch'` or `'download'`."""
+        return FUNCTIONS[self.tier]
 
     @property
     def level(self):
@@ -321,7 +333,7 @@ def datasets(tier=None):
     """Return every known dataset as `{name: Dataset}`.
 
     Args:
-        tier (int): if given, only datasets in this tier (0 bundled, 1 fetched).
+        tier (int): if given, only datasets in this tier (0 bundled, 1 fetched, 2 downloaded).
 
     Returns:
         sciris.objdict: name -> `Dataset`, sorted by name.
@@ -358,7 +370,7 @@ def register_dataset(dataset, overwrite=False):
     Example:
         ```python
         import starsim_data as ssd
-        ds = ssd.registry.Dataset(name='mydata', layout='crude', tier=1,
+        ds = ssd.registry.Dataset(name='mydata', layout='crude', tier=2,
                                   loader=lambda location, **kw: location)
         ssd.registry.register_dataset(ds)
         ssd.load('Kenya', which='mydata') # Returns 'Kenya'

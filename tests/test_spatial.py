@@ -48,9 +48,12 @@ def test_sources():
     assert f"tags/{ssd.shapes.GEOBOUNDARIES_TAG}" in ssd.shapes.SOURCES.geoboundaries.url # And the URL uses it
 
     with pytest.raises(ValueError, match="unknown shape source"):
-        ssd.fetch_shapes("Kenya", source="not_a_source")
+        ssd.download_shapes("Kenya", source="not_a_source")
     with pytest.raises(KeyError, match="publishes up to level"): # A source that stops at level 4 says so, rather than asking for a 404
-        ssd.fetch_shapes("Kenya", level=5, source="unocha")
+        ssd.download_shapes("Kenya", level=5, source="unocha")
+    with pytest.warns(UserWarning, match="not packaged.*download_shapes"): # The old name still works, and says where the data is from
+        with pytest.raises(ValueError, match="unknown shape source"):
+            ssd.fetch_shapes("Kenya", source="not_a_source")
     return sources
 
 
@@ -80,10 +83,10 @@ def test_worldpop():
 
 @pytest.mark.network
 @sc.timer()
-def test_fetch_shapes():
+def test_download_shapes():
     """ Shapes come from UNOCHA, fall back to geoBoundaries, carry provenance and join to the nodes """
-    sc.heading("Testing fetch_shapes")
-    gdf = ssd.fetch_shapes("kenya", level=1, verbose=False)
+    sc.heading("Testing download_shapes")
+    gdf = ssd.download_shapes("kenya", level=1, verbose=False)
     assert set(gdf.source) == {"unocha"} # Kenya is in the UNOCHA mirror
     assert len(gdf) == 47 # Kenya's counties
     assert list(gdf.columns) == list(ssd.shapes.COLUMNS) # The documented columns
@@ -92,12 +95,12 @@ def test_fetch_shapes():
     prov = gdf.attrs["provenance"]
     assert prov.license == "CC BY 3.0 IGO" # UNOCHA's license
     assert prov.redistributable is True # Which permits redistribution
-    assert prov.tier == 1 # Fetched
+    assert prov.tier == 2 # Downloaded
 
-    france = ssd.fetch_shapes("France", level=1, verbose=False)
+    france = ssd.download_shapes("France", level=1, verbose=False)
     assert set(france.source) == {"geoboundaries"} # France is not in the UNOCHA mirror, so the chain carries on
 
-    # The bundled node table and the fetched geometry must be the same units
+    # The bundled node table and the downloaded geometry must be the same units
     for location, shapes in {"kenya": gdf, "France": france}.items():
         nodes = ssd.load_nodes(location, level=1)
         assert set(shapes.pcode) == set(nodes.pcode), f"Expected {location}'s shapes and nodes to share p-codes"
@@ -111,11 +114,11 @@ def test_fetch_shapes():
 @pytest.mark.network
 @pytest.mark.slow
 @sc.timer()
-def test_fetch_nodes():
-    """ fetch_nodes() fills in level-1 populations from WorldPop, and they rescale to WPP """
-    sc.heading("Testing fetch_nodes")
+def test_download_nodes():
+    """ download_nodes() fills in level-1 populations from WorldPop, and they rescale to WPP """
+    sc.heading("Testing download_nodes")
     pytest.importorskip("rastertoolkit", reason="needs the [spatial] extra")
-    nodes = ssd.fetch_nodes("kenya", level=1, verbose=False)
+    nodes = ssd.download_nodes("kenya", level=1, verbose=False)
     assert nodes.population.notna().all() # Every county has a population
     assert len(nodes) == 47 # Kenya's counties
     national = ssd.load_nodes("Kenya").population.iloc[0]
@@ -127,8 +130,8 @@ def test_fetch_nodes():
     assert "UN WPP" in rescaled.attrs["provenance"].rescaled_to # And says so
 
     # Our own windowed reader and rastertoolkit sum the same raster to the same total
-    raster = ssd.fetch_raster("kenya", verbose=False)
-    shapes = ssd.fetch_shapes("kenya", level=1, verbose=False)
+    raster = ssd.download_raster("kenya", verbose=False)
+    shapes = ssd.download_shapes("kenya", level=1, verbose=False)
     window = ssd.rasters._aggregate_window(raster, shapes, by="pcode")
     toolkit = ssd.aggregate_raster(raster, shapes)
     assert np.isclose(sum(window.values()), sum(toolkit.values()), rtol=1e-3) # Within 0.1%: cells on a border may be assigned differently
@@ -138,11 +141,11 @@ def test_fetch_nodes():
 @pytest.mark.network
 @pytest.mark.slow
 @sc.timer()
-def test_fetch_level2():
-    """ fetch_nodes() builds a level that is not bundled, borders included """
-    sc.heading("Testing fetch_nodes at level 2")
+def test_download_level2():
+    """ download_nodes() builds a level that is not bundled, borders included """
+    sc.heading("Testing download_nodes at level 2")
     pytest.importorskip("rastertoolkit", reason="needs the [spatial] extra")
-    nodes = ssd.fetch_nodes("kenya", level=2, verbose=False)
+    nodes = ssd.download_nodes("kenya", level=2, verbose=False)
     assert len(nodes) == 290 # Kenya's sub-counties
     assert (nodes.level == 2).all() # All at level 2
     assert nodes.population.notna().all() # Every one has a population
@@ -179,9 +182,9 @@ if __name__ == "__main__":
     sources  = test_sources()
     products = test_worldpop()
     if do_network:
-        shapes  = test_fetch_shapes()
-        nodes   = test_fetch_nodes()
-        level2  = test_fetch_level2()
+        shapes  = test_download_shapes()
+        nodes   = test_download_nodes()
+        level2  = test_download_level2()
         choro   = test_choropleth()
 
     T.toc()

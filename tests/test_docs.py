@@ -84,7 +84,7 @@ def test_offline():
     Examples that download are written as static ```python blocks instead.
     """
     sc.heading("Testing that executed cells stay offline")
-    calls = ("ssd.fetch", "fetch_shapes(", "fetch_nodes(", "fetch_raster(", "choropleth(", "cached_download(")
+    calls = ("ssd.fetch", "ssd.download", "download_shapes(", "download_nodes(", "download_raster(", "fetch_shapes(", "fetch_nodes(", "fetch_raster(", "choropleth(", "cached_download(")
     for page in pages():
         for cell in re.findall(r"```\{python\}\n(.*?)```", page.read_text(), flags=re.S):
             # Strip string literals first: several pages tabulate these function names as

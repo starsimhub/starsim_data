@@ -26,19 +26,22 @@ def test_datasets():
 
 @sc.timer()
 def test_tiers():
-    """ Bundled datasets are tier 0, fetched ones tier 1, and load() refuses tier 1 """
+    """ Bundled datasets are tier 0, fetched ones 1 and downloaded ones 2, and load() refuses all but tier 0 """
     sc.heading("Testing tiers")
     for name in ssd.list_datasets(tier=0):
         assert ssd.registry.dataset(name).tier == 0, f"Expected bundled {name} to be tier 0"
-    assert "life_table" in ssd.list_datasets(tier=1) # Fetched
+    assert "life_table" in ssd.list_datasets(tier=2) # Downloaded
     assert "life_table" not in ssd.list_datasets(tier=0) # Not bundled
     assert "prem2021" in ssd.list_datasets(tier=0) # Bundled
     access = {name: ds.access for name, ds in ssd.registry.datasets().items()}
     assert access["prem2021"] == "bundled"
     assert access["mistry2021"] == "fetched" # Published by this package
     assert access["life_table"] == "downloaded" # From the UN
+    assert [ssd.registry.dataset(name).function for name in ["prem2021", "mistry2021", "life_table"]] == ["load", "fetch", "download"]
     assert "prem2017" in ssd.list_datasets(tier=1) # Fetched, not bundled
-    with pytest.raises(ValueError, match="not bundled.*use fetch"): # load() never reaches for the network; it says so instead
+    assert ssd.list_datasets(tier=1) == ssd.list_fetchable() # Tier 1 is exactly what fetch() gets
+    assert set(ssd.list_datasets(tier=2)) <= set(ssd.list_downloadable()) # And tier 2 what download() gets
+    with pytest.raises(ValueError, match="not bundled.*use download"): # load() never reaches for the network; it says so instead
         ssd.load("Kenya", which="life_table")
 
 
@@ -77,7 +80,7 @@ def test_source():
 def test_register():
     """ A custom dataset can be registered, used and unregistered; the bundled ones are protected """
     sc.heading("Testing dataset registration")
-    ds = ssd.registry.Dataset(name="_test_custom", layout="crude", tier=1, loader=lambda location, **kw: f"loaded {location}")
+    ds = ssd.registry.Dataset(name="_test_custom", layout="crude", tier=2, loader=lambda location, **kw: f"loaded {location}")
     ssd.registry.register_dataset(ds)
     try:
         assert "_test_custom" in ssd.list_datasets() # Listed once registered

@@ -59,7 +59,7 @@ All three licenses permit redistribution of derived works with attribution, whic
 
 ## Fetched, never redistributed
 
-These are **not** bundled with the package. They are downloaded to a local cache when you call `fetch_shapes()`, `fetch_raster()` or `fetch_nodes()`, and the terms below are yours to comply with as the person who fetched them.
+These are **not** bundled with the package. They are downloaded to a local cache when you call `download_shapes()`, `download_raster()` or `download_nodes()`, and the terms below are yours to comply with as the person who downloaded them.
 
 - **GADM v4.1** — [gadm.org](https://gadm.org). **Free for non-commercial use only; redistribution is not permitted.** This package therefore never bundles GADM data, never derives bundled data from it, and never reaches it through the automatic source fallback — `source='gadm'` must be asked for explicitly. The constraint is enforced in code, via `ShapeSource.redistributable`. **Citation:** GADM database of Global Administrative Areas, version 4.1.
 - **WorldPop** — 1 km gridded population, [worldpop.org](https://www.worldpop.org). License: Creative Commons Attribution 4.0. **Citation:** WorldPop (www.worldpop.org), School of Geography and Environmental Science, University of Southampton. https://dx.doi.org/10.5258/SOTON/WP00645
