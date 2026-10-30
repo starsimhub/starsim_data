@@ -12,7 +12,7 @@ The sources drawn on by this package disagree with one another in places, cover 
 
 Much of the material on boundaries and rasters is adapted from the corresponding page in [`laser-init`](https://github.com/laser-base/laser-init). [Related projects](related-projects.qmd) covers that debt, and the equivalent one to [epydemix-data](https://github.com/epistorm/epydemix-data), at greater length, and compares this package with the other ways of obtaining the same data.
 
-The operative attribution and license text is in [NOTICE.md](https://github.com/starsimhub/starsim_data/blob/main/NOTICE.md). Each dataset also carries its attribution as data, retrievable with `ssd.provenance(which)` or from `df.attrs['provenance']` on any frame returned by `load()` or `fetch()`.
+The operative attribution and license text is in [NOTICE.md](https://github.com/starsimhub/starsim_data/blob/main/NOTICE.md). Each dataset also carries its attribution as data, retrievable with `ssd.provenance(which)` or from `df.attrs['provenance']` on any frame returned by `load()`, `fetch()` or `download()`.
 
 ## What comes from where
 
@@ -21,9 +21,9 @@ The operative attribution and license text is in [NOTICE.md](https://github.com/
 | Births, deaths, migration, population | UN WPP 2024 | bundled | `load()` |
 | Contact matrices | Prem 2017 / Prem 2021 / Mistry 2021 | bundled (`prem`), fetched (the rest) | `load()` |
 | Node table: centroids, areas, p-codes | UNOCHA COD-AB, geoBoundaries | bundled | `load_nodes()` |
-| Annual series, life tables, other variants | UN WPP 2024 bulk files | downloaded | `fetch()` |
-| Administrative boundaries with geometry | UNOCHA, geoBoundaries, GADM | downloaded | `fetch_shapes()` |
-| Gridded population | WorldPop | downloaded | `fetch_raster()`, `fetch_nodes()` |
+| Annual series, life tables, other variants | UN WPP 2024 bulk files | downloaded | `download()` |
+| Administrative boundaries with geometry | UNOCHA, geoBoundaries, GADM | downloaded | `download_shapes()` |
+| Gridded population | WorldPop | downloaded | `download_raster()`, `download_nodes()` |
 
 Bundled data is inside the package: no network access, byte-identical for everyone on the same version. Fetched data is prepared by this package and downloaded from its releases on first use; downloaded data comes from its original publisher. Both are cached. The split is by size rather than subject, which is why the same UN WPP release is both bundled and downloaded; see [Bundled, fetched and downloaded data](access.qmd).
 
@@ -41,14 +41,14 @@ The standard national demographic series, covering all countries from 1950 to 21
 |---|---|
 | **Coverage** | 187 countries (plus aggregates this package drops) |
 | **Levels** | National only — WPP has no subnational dimension at all |
-| **Variants** | Medium (bundled), plus High, Low, Constant fertility and others via `fetch()` |
+| **Variants** | Medium (bundled), plus High, Low, Constant fertility and others via `download()` |
 | **Update** | Biennial: 2022, 2024, … |
 
 **Strengths.** The estimates are standardized across every country, which makes cross-country comparison meaningful, and the time series is long and methodologically consistent. The methodology is well documented, and revisions are frequent enough that the data remains current.
 
 **Limitations.** The data is national only; province-level rates cannot be derived from it. Projections are scenarios rather than predictions. Estimates change between revisions, sometimes substantially, since a new census can revise a country's recorded history — which is why this package versions the data by revision (`load(..., revision=2024)`) rather than replacing it in place.
 
-**Two access routes.** The bundled store is built at release time from the WPP Data Portal API, filtered to decadal years and to this package's countries, and then frozen; this is what `load()` reads, at roughly 4 MB and without network access. `fetch()` instead reads the UN's public bulk CSVs, which provide annual resolution, complete life tables and other variants at the cost of a 17–290 MB download. The Data Portal API requires a free Bearer token whereas the bulk files do not, which is why `fetch()` uses the latter and only the build scripts use the former.
+**Two access routes.** The bundled store is built at release time from the WPP Data Portal API, filtered to decadal years and to this package's countries, and then frozen; this is what `load()` reads, at roughly 4 MB and without network access. `download()` instead reads the UN's public bulk CSVs, which provide annual resolution, complete life tables and other variants at the cost of a 17–290 MB download. The Data Portal API requires a free Bearer token whereas the bulk files do not, which is why `download()` uses the latter and only the build scripts use the former.
 
 **A hazard worth knowing about.** Namibia's ISO-2 code is the string `NA`, which pandas interprets as a missing value unless `keep_default_na=False` is passed. Every reader in this package disables that coercion, and there is a regression test for it; anyone processing WPP CSVs independently should be aware of the same problem.
 
@@ -81,7 +81,7 @@ Not every country appears in every source, so `list_locations('prem2021')` is wo
 
 ## Administrative boundaries
 
-The three boundary sources are complementary rather than interchangeable, which is why all three are available and why `fetch_shapes()` uses a fallback chain rather than a single default.
+The three boundary sources are complementary rather than interchangeable, which is why all three are available and why `download_shapes()` uses a fallback chain rather than a single default.
 
 ### UNOCHA COD-AB
 
@@ -128,14 +128,14 @@ The three boundary sources are complementary rather than interchangeable, which 
 
 **Strengths.** The most complete and most detailed of the three, with names in several languages and frequent updates.
 
-**The license is the constraint.** GADM is free for non-commercial use only, which makes it unusable in much applied public-health work, and which means this package may fetch it on request but may never redistribute anything derived from it. Two consequences follow:
+**The license is the constraint.** GADM is free for non-commercial use only, which makes it unusable in much applied public-health work, and which means this package may download it on request but may never redistribute anything derived from it. Two consequences follow:
 
-- GADM is not part of the automatic fallback chain. `fetch_shapes(..., source='gadm')` must be requested by name, and prints a reminder of the terms.
+- GADM is not part of the automatic fallback chain. `download_shapes(..., source='gadm')` must be requested by name, and prints a reminder of the terms.
 - The bundled node table is not built from GADM, and the build script will refuse to build it from any source whose descriptor sets `redistributable=False`. The constraint is recorded as data on the source descriptor rather than as a comment.
 
 ### Choosing between them
 
-With no `source` argument, `fetch_shapes()` tries UNOCHA and then geoBoundaries. This is a reasonable default for most disease modeling, giving p-codes where they exist and coverage elsewhere. It is worth overriding when:
+With no `source` argument, `download_shapes()` tries UNOCHA and then geoBoundaries. This is a reasonable default for most disease modeling, giving p-codes where they exist and coverage elsewhere. It is worth overriding when:
 
 - **you need level 4–5** — geoBoundaries or GADM;
 - **you are reproducing a published analysis** — whichever it used, pinned;
@@ -160,7 +160,7 @@ One caution: the three sources do not always agree on how many units a country c
 | **Format** | GeoTIFF, 1–40 MB per country-year |
 | **Method** | Random-forest disaggregation of census counts |
 
-Summing the grid within each polygon yields a population for each node, which is the step that turns a boundary file into a metapopulation. `fetch_nodes()` performs it.
+Summing the grid within each polygon yields a population for each node, which is the step that turns a boundary file into a metapopulation. `download_nodes()` performs it.
 
 **Strengths.** Global, open, fine-grained, UN-adjusted and extensively validated. The time series allows a model's spatial population structure to change over time rather than being held fixed.
 
@@ -177,7 +177,7 @@ Upstream sources change over time. Four measures keep an analysis reproducible i
 1. **Pin the package version.** Everything bundled is byte-identical for a given `starsim_data` version, so pinning the version pins the demographics, the contact matrices and the node table together.
 2. **Pin the revision, not just the version.** `load(..., revision=2024)` fixes the WPP release explicitly, so a future rebuild that adds WPP 2026 does not change data already in use.
 3. **Keep the provenance.** Every frame carries `.attrs['provenance']` — source, URL, license, citation, build timestamp and git SHA. Cached downloads get a sidecar with the URL, timestamp, size and SHA-256. Record it alongside your results; `ssd.cache_info()` shows what a run actually used.
-4. **Record the boundary source.** It is available in `nodes.source` and in the provenance of any fetched geometry. Two analyses of the same country using different boundary sources are not directly comparable, and the discrepancy is difficult to detect after the fact.
+4. **Record the boundary source.** It is available in `nodes.source` and in the provenance of any downloaded geometry. Two analyses of the same country using different boundary sources are not directly comparable, and the discrepancy is difficult to detect after the fact.
 
 ---
 

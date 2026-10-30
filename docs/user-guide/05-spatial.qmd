@@ -8,7 +8,7 @@ authorship:
   note: Written by AI and reviewed by a human, who rewrote parts of it
 ---
 
-Spatial data is provided at two levels of detail. The node table reduces each administrative unit to a position, an extent, a population and an identifier, and records which units share a border, which is sufficient for most metapopulation models and is small enough to bundle. Polygon geometry and gridded population are considerably larger and are fetched on demand, behind an optional dependency group.
+Spatial data is provided at two levels of detail. The node table reduces each administrative unit to a position, an extent, a population and an identifier, and records which units share a border, which is sufficient for most metapopulation models and is small enough to bundle. Polygon geometry and gridded population are considerably larger and are downloaded from their publishers on demand, behind an optional dependency group.
 
 ## The node table
 
@@ -130,15 +130,15 @@ pip install "starsim_data[spatial]"
 This installs `geopandas`, `pyogrio` and `rastertoolkit`. They are imported lazily, so `import starsim_data` succeeds without them and only the functions that need them raise:
 
 ```python
-ssd.fetch_shapes('kenya')
-# ImportError: fetch_shapes() needs the optional geospatial dependencies;
+ssd.download_shapes('kenya')
+# ImportError: download_shapes() needs the optional geospatial dependencies;
 # install them with: pip install starsim_data[spatial]
 ```
 
 ## Boundaries with geometry
 
 ```python
-gdf = ssd.fetch_shapes('kenya', level=1)
+gdf = ssd.download_shapes('kenya', level=1)
 ```
 
 The result is a `GeoDataFrame` with the columns `nodeid`, `location`, `iso3`, `level`, `name`, `pcode`, `dot_name`, `source` and `geometry`. The `pcode` and `dot_name` values match the node table for the same country and level, so the two join directly on either.
@@ -153,7 +153,7 @@ With no `source` argument, UNOCHA is tried first and geoBoundaries second. UNOCH
 
 ::: {.callout-warning}
 ## GADM is licensed for non-commercial use only
-GADM is never reached by the automatic fallback and must be requested by name. Nothing derived from it is bundled with this package or redistributed by it, and the build scripts refuse to draw on any source whose descriptor sets `redistributable=False`. Data fetched from GADM is subject to its terms, which are the responsibility of whoever fetches it.
+GADM is never reached by the automatic fallback and must be requested by name. Nothing derived from it is bundled with this package or redistributed by it, and the build scripts refuse to draw on any source whose descriptor sets `redistributable=False`. Data downloaded from GADM is subject to its terms, which are the responsibility of whoever downloads it.
 
 ```{python}
 ssd.shapes.SOURCES.gadm.redistributable, ssd.shapes.FALLBACK_CHAIN
@@ -164,24 +164,24 @@ UNOCHA's 1–2 GB global geodatabase is not used as a fallback here; geoBoundari
 
 ## Subnational population
 
-`fetch_nodes()` returns the node table with `population` filled in for any year from 2000 to 2030, by downloading a WorldPop 1 km raster for the country and summing it within each unit:
+`download_nodes()` returns the node table with `population` filled in for any year from 2000 to 2030, by downloading a WorldPop 1 km raster for the country and summing it within each unit:
 
 ```python
-nodes = ssd.fetch_nodes('kenya', level=1, year=2025)
+nodes = ssd.download_nodes('kenya', level=1, year=2025)
 ```
 
-At a bundled level, the boundaries are fetched from whichever source the bundled node table used for that country, so the join is on `pcode` rather than on names. At a finer level, the table is built from the boundaries themselves, as the bundled one is, and carries its own borders:
+At a bundled level, the boundaries are downloaded from whichever source the bundled node table used for that country, so the join is on `pcode` rather than on names. At a finer level, the table is built from the boundaries themselves, as the bundled one is, and carries its own borders:
 
 ```python
-subcounties = ssd.fetch_nodes('kenya', level=2)        # Kenya's 290 sub-counties
+subcounties = ssd.download_nodes('kenya', level=2)        # Kenya's 290 sub-counties
 ssd.adjacency('kenya', level=2, nodes=subcounties)      # their borders, from the same polygons
 ```
 
 The two component steps are also available separately, for cases where a raster other than population is of interest:
 
 ```python
-raster = ssd.fetch_raster('kenya', year=2020)
-shapes = ssd.fetch_shapes('kenya', level=1)
+raster = ssd.download_raster('kenya', year=2020)
+shapes = ssd.download_shapes('kenya', level=1)
 totals = ssd.aggregate_raster(raster, shapes, by='pcode')
 ```
 
@@ -192,7 +192,7 @@ WorldPop's constrained estimates are modeled rather than enumerated, and they do
 Where a model requires the subnational figures to sum to the national one, `rescale_to_national()` performs that adjustment explicitly:
 
 ```python
-nodes = ssd.rescale_to_national(ssd.fetch_nodes('kenya', level=1))
+nodes = ssd.rescale_to_national(ssd.download_nodes('kenya', level=1))
 ```
 
 The intention is to make the choice visible rather than to leave two national totals in circulation.
@@ -214,7 +214,7 @@ ssd.plot('kenya', which='nodes', level=1);
 `choropleth()` draws filled polygons, and requires the `[spatial]` extra:
 
 ```python
-ssd.choropleth('kenya', level=1)                    # colored by fetched population
+ssd.choropleth('kenya', level=1)                    # colored by downloaded population
 ssd.choropleth('kenya', level=1, shapes=my_frame, value='incidence')
 ```
 

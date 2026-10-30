@@ -230,9 +230,9 @@ def choropleth(location, level=1, value='population', shapes=None, ax=None, cmap
     Args:
         location (str): location name, ISO-2/ISO-3 code, official name or alias.
         level (int/str): administrative level to draw (default 1).
-        value (str): the column to color by. `'population'` (default) fetches it from
+        value (str): the column to color by. `'population'` (default) downloads it from
             WorldPop; any other name must already be a column of `shapes`.
-        shapes (GeoDataFrame): draw these instead of fetching, e.g. a frame you have
+        shapes (GeoDataFrame): draw these instead of downloading, e.g. a frame you have
             already merged your own values onto.
         ax (matplotlib.axes.Axes): draw into this axes rather than making a figure.
         cmap (str): the colormap.
@@ -253,9 +253,9 @@ def choropleth(location, level=1, value='population', shapes=None, ax=None, cmap
         ```
     """
     if shapes is None:
-        shapes = ssd.fetch_shapes(location, level=level)
+        shapes = ssd.download_shapes(location, level=level)
         if value == 'population':
-            nodes = ssd.fetch_nodes(location, level=level)
+            nodes = ssd.download_nodes(location, level=level)
             shapes = shapes.merge(nodes[['pcode', 'population']], on='pcode', how='left')
     if value not in shapes.columns:
         available = [c for c in shapes.columns if c != 'geometry']

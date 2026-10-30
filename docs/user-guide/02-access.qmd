@@ -8,15 +8,15 @@ authorship:
   note: Written by AI, based on an earlier version a human reviewed and partly rewrote
 ---
 
-Every dataset in `starsim_data` is one of three kinds, accessed by one of three functions:
+Every dataset in `starsim_data` is one of three kinds, and each kind has its own function, so a call says where its data comes from:
 
 | | Comes from | How you get it | Network | Same for everyone on a version? |
 |---|---|---|---|---|
 | **Bundled** | Inside the package | `load()`, `load_nodes()`, `distances()` | Never | Yes |
 | **Fetched** | This package's releases | `fetch()` | First use only | Yes |
-| **Downloaded** | The original publisher | `fetch()`, `fetch_shapes()`, `fetch_nodes()`, `fetch_raster()` | First use only | Unless the publisher changes the file |
+| **Downloaded** | The original publisher | `download()`, `download_shapes()`, `download_nodes()`, `download_raster()` | First use only | Unless the publisher changes the file |
 
-Fetched and downloaded data are both cached after the first use, so they need the network only once.
+Fetched and downloaded data are both cached after the first use, so they need the network only once. The difference is whose server they come from: `fetch()` reaches only this package's own releases, while `download()` reaches the UN, WorldPop and the boundary publishers, which this package does not control, and which may be slow, revise their files or be unavailable. Calling `fetch()` for data that is not packaged still works, but warns that it is downloading from an external source.
 
 The `access` column of `list_datasets()` says which kind each dataset is:
 
@@ -30,7 +30,7 @@ ssd.list_datasets(detailed=True)[['dataset', 'access', 'levels', 'locations']]
 
 The demographic series (decadal, Medium variant), the default contact matrices (`prem2021`, and `prem2017` for the ten locations it lacks), the location table and the node table are inside the package, roughly 8 MB of it. Everyone who installs a given version has byte-identical data with no network access, so the package works offline, its tests are deterministic, and citing a version fully specifies the data an analysis used.
 
-`load()` only ever reads bundled data. Ask it for anything else, e.g. `ssd.load('kenya', which='life_table')`, and rather than downloading it, it raises an error that names the `fetch()` call to use instead.
+`load()` only ever reads bundled data. Ask it for anything else, e.g. `ssd.load('kenya', which='life_table')`, and rather than downloading it, it raises an error that names the `fetch()` or `download()` call to use instead.
 
 ## Fetched
 
@@ -47,7 +47,7 @@ Everything else comes straight from the organization that publishes it:
 
 - Annual UN WPP series, complete life tables, other projection variants and summary indicators, from the UN's bulk files (17–290 MB each).
 - Administrative boundaries with geometry, from UNOCHA, geoBoundaries or GADM (tens of megabytes per country at admin level 2).
-- Gridded population rasters from WorldPop (1–40 MB per country-year), and the subnational populations `fetch_nodes()` computes from them.
+- Gridded population rasters from WorldPop (1–40 MB per country-year), and the subnational populations `download_nodes()` computes from them.
 
 These are cached after the first use too, and each cached file records where and when it was retrieved. Since the files belong to their publishers, a publisher that revises one changes what a fresh download gives you; [Provenance and reproducibility](provenance.qmd) covers how to pin them.
 
@@ -78,9 +78,9 @@ pd.DataFrame([
     dict(requirement="Positions, areas and separations of administrative units", call="load_nodes(), distances()", access="bundled", cost="instant"),
     dict(requirement="The other contact matrices (prem2017, mistry2021)", call="fetch()", access="fetched", cost="3 MB each, once"),
     dict(requirement="US states: contact matrices and populations", call="fetch()", access="fetched", cost="5 MB, once"),
-    dict(requirement="Annual rates, life tables, other variants", call="fetch()", access="downloaded", cost="17-290 MB, once"),
-    dict(requirement="Polygon geometry, for mapping or spatial joins", call="fetch_shapes()", access="downloaded", cost="1-50 MB per country"),
-    dict(requirement="Subnational population estimates", call="fetch_nodes()", access="downloaded", cost="1-40 MB per country"),
+    dict(requirement="Annual rates, life tables, other variants", call="download()", access="downloaded", cost="17-290 MB, once"),
+    dict(requirement="Polygon geometry, for mapping or spatial joins", call="download_shapes()", access="downloaded", cost="1-50 MB per country"),
+    dict(requirement="Subnational population estimates", call="download_nodes()", access="downloaded", cost="1-40 MB per country"),
 ])
 ```
 

@@ -26,7 +26,7 @@ hierarchical path (`Kenya:Baringo`), in this package's canonical spelling, so th
 `population` is UN WPP at level 0, and WorldPop (1 km, UN-adjusted, 2020) summed within
 each unit at level 1, worked out when the table is built. Other years, and finer levels,
 need the raster aggregation at the time of use, which is a download rather than a
-lookup, so they live behind `fetch_nodes()` in `starsim_data.rasters`.
+lookup, so they live behind `download_nodes()` in `starsim_data.rasters`.
 
 Full geometry -- actual polygons, for maps and exact spatial operations -- is
 `starsim_data.shapes`, and needs the `[spatial]` extra.
@@ -51,7 +51,7 @@ def node_name(name):
     punctuation-folding as `locations.normalize`, but case is preserved: a `dot_name` is
     read by people as well as matched by machines.
 
-    Shared by the node-table build and by `fetch_shapes()`, so that a shape's `dot_name`
+    Shared by the node-table build and by `download_shapes()`, so that a shape's `dot_name`
     is always the same string as its node's.
     """
     decomposed = unicodedata.normalize('NFKD', str(name or '').strip())
@@ -121,7 +121,7 @@ def distances(location=None, level=1, nodes=None, units='km', index='dot_name'):
         location (str): location name, ISO-2/ISO-3 code, official name or alias.
         level (int/str): administrative level to use (default 1, the subdivisions).
         nodes (dataframe): use this node table instead of loading one, e.g. one from
-            `fetch_nodes()` with population filled in, or a subset.
+            `download_nodes()` with population filled in, or a subset.
         units (str): `'km'` (default), `'m'`, or `'mi'`.
         index (str): which column labels the rows and columns -- `'dot_name'` (default),
             `'pcode'`, `'name'` or `'nodeid'`.
@@ -176,9 +176,9 @@ def adjacency(location=None, level=1, nodes=None, index='dot_name'):
         location (str): location name, ISO-2/ISO-3 code, official name or alias.
         level (int/str): administrative level (default 1; level 1 is the finest bundled).
         nodes (dataframe): label the rows and columns from this node table instead of
-            loading one, e.g. one from `fetch_nodes()` with population filled in; it
+            loading one, e.g. one from `download_nodes()` with population filled in; it
             must be the units of `location` at `level`, in `nodeid` order or a subset.
-            A table from `fetch_nodes()` at a level that is not bundled carries its own
+            A table from `download_nodes()` at a level that is not bundled carries its own
             borders, so any level works that way.
         index (str): which column labels the rows and columns -- `'dot_name'` (default),
             `'pcode'`, `'name'` or `'nodeid'`.
@@ -202,7 +202,7 @@ def adjacency(location=None, level=1, nodes=None, index='dot_name'):
     _check_index(nodes, index)
     labels = list(nodes[index])
 
-    # Borders worked out by fetch_nodes(), at a level that is not bundled
+    # Borders worked out by download_nodes(), at a level that is not bundled
     if nodes.attrs.get('borders') is not None:
         pairs = np.asarray(nodes.attrs['borders'], dtype=int).reshape(-1, 2)
         matrix = np.zeros((len(nodes), len(nodes)), dtype=bool)

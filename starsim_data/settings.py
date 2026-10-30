@@ -3,7 +3,7 @@ Package-level settings.
 
 Everything here is optional: the bundled data (tier 0) needs no configuration at all.
 These settings exist for the parts that touch the filesystem or the network -- the
-download cache used by `fetch()`.
+download cache used by `fetch()` and `download()`.
 
 Settings are read from the environment at import time but *acted on* lazily, so nothing
 here creates a directory, opens a file or emits a warning merely because the package was
@@ -14,7 +14,7 @@ import starsim_data as ssd
 ssd.options.cache_dir = '/fast/scratch/wpp'   # or set STARSIM_DATA_CACHE_DIR
 ssd.options(verbose=False)                     # quieten downloads
 with ssd.options.context(cache_dir='/tmp/x'):  # temporarily
-    ssd.fetch('kenya', which='deaths')
+    ssd.download('kenya', which='deaths')
 ```
 """
 
@@ -89,7 +89,7 @@ class Options(sc.objdict):
             ```python
             import starsim_data as ssd
             with ssd.options.context(verbose=False):
-                df = ssd.fetch('kenya', which='deaths') # Without the progress messages
+                df = ssd.download('kenya', which='deaths') # Without the progress messages
             ```
         """
         previous = {key: self[key] for key in kwargs}

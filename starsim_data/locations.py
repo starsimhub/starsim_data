@@ -221,8 +221,7 @@ def _elsewhere(location, dataset):
     if prem and (location in prem.locations) and (layout == prem.layout): # The default contact matrices have it too
         calls.append(f'load({location!r})')
     for name in others:
-        func = 'load' if known[name].tier == 0 else 'fetch'
-        calls.append(f'{func}({location!r}, which={name!r})')
+        calls.append(f'{known[name].function}({location!r}, which={name!r})')
     return f"; it is in {sc.strjoin(calls, sep=' or ')}"
 
 

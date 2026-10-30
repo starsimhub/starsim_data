@@ -30,15 +30,16 @@ def test_tiers():
     sc.heading("Testing tiers")
     for name in ssd.list_datasets(tier=0):
         assert ssd.registry.dataset(name).tier == 0, f"Expected bundled {name} to be tier 0"
-    assert "life_table" in ssd.list_datasets(tier=1) # Fetched
+    assert "life_table" in ssd.list_datasets(tier=1) # Downloaded
     assert "life_table" not in ssd.list_datasets(tier=0) # Not bundled
     assert "prem2021" in ssd.list_datasets(tier=0) # Bundled
     access = {name: ds.access for name, ds in ssd.registry.datasets().items()}
     assert access["prem2021"] == "bundled"
     assert access["mistry2021"] == "fetched" # Published by this package
     assert access["life_table"] == "downloaded" # From the UN
+    assert [ssd.registry.dataset(name).function for name in ["prem2021", "mistry2021", "life_table"]] == ["load", "fetch", "download"]
     assert "prem2017" in ssd.list_datasets(tier=1) # Fetched, not bundled
-    with pytest.raises(ValueError, match="not bundled.*use fetch"): # load() never reaches for the network; it says so instead
+    with pytest.raises(ValueError, match="not bundled.*use download"): # load() never reaches for the network; it says so instead
         ssd.load("Kenya", which="life_table")
 
 

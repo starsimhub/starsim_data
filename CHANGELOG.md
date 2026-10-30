@@ -2,6 +2,12 @@
 
 All notable changes to `starsim_data` are recorded here. Versions follow [semantic versioning](https://semver.org); the *data* is versioned too, so a change to a bundled dataset is a release, not an amendment.
 
+## Unreleased
+
+- **The function says whose server it uses.** `ssd.fetch()` now gets only the stores this package publishes with its releases (`prem2017`, `mistry2021`, `mistry2021_us`, `population_us`), which are checked against a pinned SHA-256 and are the same for everyone on a version. Data from its original publisher has its own verb: `ssd.download('kenya', which='deaths', years=(2000, 2025))` for UN WPP, and `download_shapes()`, `download_nodes()` and `download_raster()` for boundaries and WorldPop, whose servers this package does not control. `list_downloadable()` lists what `download()` can get, and `list_fetchable()` now lists only the published stores.
+- Existing code keeps working: `fetch()` of a UN WPP series, and `fetch_shapes()`, `fetch_nodes()` and `fetch_raster()`, warn that the data is not packaged and is being downloaded from an external source, then call the `download` function.
+- `Dataset.function` gives the function that gets each dataset (`'load'`, `'fetch'` or `'download'`), and the errors that point elsewhere name the right one.
+
 ## Version 2.1.0 (2026-10-29)
 
 - **Age-specific fertility rates.** `ssd.load('nigeria', which='fertility')` returns UN WPP 2024's fertility rates by 5-year age group of mother (`10–14` to `50–54`), as `[Time, AgeGrpStart, ASFR]`, in births per 1,000 women per year, for all 187 countries, bundled like `births` (decadal, 1950–2100, Medium variant). It is what `ss.Pregnancy` needs, where `births` (the crude rate) is what `ss.Births` needs. It adds about 0.1 MB to the download (0.65 MB installed).

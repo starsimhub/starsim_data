@@ -140,12 +140,12 @@ Centroids, areas and a distance matrix are available without any geospatial depe
 
 ## Data that is not bundled
 
-The bundled demographic series consist of decadal snapshots of the Medium variant. Annual resolution, complete life tables, and other projection variants are available through `fetch()`, which downloads and caches the UN's bulk files:
+The bundled demographic series consist of decadal snapshots of the Medium variant. Annual resolution, complete life tables, and other projection variants are available through `download()`, which downloads and caches the UN's bulk files:
 
 ```python
-ssd.fetch('kenya', which='deaths', years=(2000, 2025))  # annual rather than decadal
-ssd.fetch('kenya', which='life_table', years=2020)      # qx, lx, ex, and the rest
-ssd.fetch('kenya', which='births', variant='High')      # a different projection variant
+ssd.download('kenya', which='deaths', years=(2000, 2025))  # annual rather than decadal
+ssd.download('kenya', which='life_table', years=2020)      # qx, lx, ex, and the rest
+ssd.download('kenya', which='births', variant='High')      # a different projection variant
 ```
 
 The page [Bundled, fetched and downloaded data](user-guide/access.qmd) covers the distinction, and we encourage you to read that next.

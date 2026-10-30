@@ -74,10 +74,10 @@ ssd.cache_provenance(ssd.cache_dir('wpp') / 'WPP2024_Demographic_Indicators_Medi
 #  'package_version': '...'}
 ```
 
-Frames returned by `fetch()` carry the same information, including the sidecar records of the files they were derived from:
+Frames returned by `fetch()` and `download()` carry the same information, including the sidecar records of the files they were derived from:
 
 ```python
-df = ssd.fetch('kenya', which='deaths', years=2020)
+df = ssd.download('kenya', which='deaths', years=2020)
 df.attrs['provenance'].files[0]['sha256']
 ```
 
@@ -91,7 +91,7 @@ Four measures, in decreasing order of importance.
 
 **Record what was downloaded.** Anything downloaded from its original publisher depends on when it was downloaded, since the publishers revise their files. `ssd.cache_info()` reports what a run actually used, with retrieval timestamps and checksums; saving that alongside the results makes the dependency explicit.
 
-**Record the boundary source.** Two analyses of the same country using different boundary sources are not directly comparable, because the sources do not always agree on how a country is subdivided. The source is recorded per row in `nodes.source` and in the provenance of any fetched geometry.
+**Record the boundary source.** Two analyses of the same country using different boundary sources are not directly comparable, because the sources do not always agree on how a country is subdivided. The source is recorded per row in `nodes.source` and in the provenance of any downloaded geometry.
 
 ## Reproducibility of the package's own build
 

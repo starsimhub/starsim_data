@@ -69,7 +69,7 @@ pd.DataFrame([
 
 ::: {.callout-note}
 ## Death rates are not probabilities
-`mx` is the central death rate, meaning deaths per person-year of exposure, rather than the probability of dying during the interval (`qx`). The two are similar where mortality is low and diverge where it is high. The remaining life-table columns are available through `fetch()`, as described below.
+`mx` is the central death rate, meaning deaths per person-year of exposure, rather than the probability of dying during the interval (`qx`). The two are similar where mortality is low and diverge where it is high. The remaining life-table columns are available through `download()`, as described below.
 :::
 
 ```{python}
@@ -264,14 +264,14 @@ pd.DataFrame([
 
 ## Beyond the bundle
 
-For the five bundled series, `fetch()` returns the same schema at annual resolution, and for the contact sources that are not bundled (`prem2017`, `mistry2021` and `mistry2021_us`) the same frame `load()` returns for `prem2021`. It also provides two datasets with no bundled counterpart:
+For the contact sources that are not bundled (`prem2017`, `mistry2021` and `mistry2021_us`), `fetch()` returns the same frame `load()` returns for `prem2021`. For the five bundled series, `download()` returns the same schema at annual resolution, from the UN's bulk files, and it also provides two datasets with no bundled counterpart:
 
 ```{python}
-ssd.list_fetchable()
+ssd.list_fetchable(), ssd.list_downloadable()
 ```
 
 ```python
-ssd.fetch('kenya', which='deaths', years=(2000, 2025))
+ssd.download('kenya', which='deaths', years=(2000, 2025))
 ```
 
 | Returns | Columns |
@@ -284,7 +284,7 @@ ssd.fetch('kenya', which='deaths', years=(2000, 2025))
 The `life_table` result carries a glossary of its columns, since the conventional two-letter names are easily confused:
 
 ```python
-lt = ssd.fetch('kenya', which='life_table', years=2020)
+lt = ssd.download('kenya', which='life_table', years=2020)
 lt.attrs['columns']['Lx']
 # 'person-years lived between ages x and x+n'
 ```
@@ -293,5 +293,5 @@ lt.attrs['columns']['Lx']
 
 - **Subnational demographics,** other than the populations of the US states (`population_us`, above). WPP has no subnational dimension, so none can be derived from it.
 - **Age-specific migration.** WPP publishes only the crude national rate.
-- **"Both sexes" rows** in the bundled series, which contain Female and Male only. `fetch('life_table')` does include `Total`.
+- **"Both sexes" rows** in the bundled series, which contain Female and Male only. `download(..., which='life_table')` does include `Total`.
 - **Hong Kong, Macao and Puerto Rico** in the node table, as no boundary source covers them as separate entities. Their demographics and contact matrices are present.

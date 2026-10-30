@@ -4,7 +4,7 @@ Administrative boundaries: the full geometry.
 `load_nodes()` gives you centroids, areas and p-codes, which is what a metapopulation
 model actually consumes and which fits in the wheel. This module gives you the polygons,
 for maps, exact spatial joins and raster aggregation. Polygons do not fit in a wheel --
-a single country at admin 2 runs to tens of MB -- so they are fetched and cached, and
+a single country at admin 2 runs to tens of MB -- so they are downloaded and cached, and
 they need the optional geospatial stack:
 
 ```bash
@@ -14,8 +14,8 @@ pip install starsim_data[spatial]
 ```python
 import starsim_data as ssd
 ssd.list_shape_sources()                              # what's available, and its license
-gdf = ssd.fetch_shapes('kenya', level=1)              # 47 counties, with geometry
-gdf = ssd.fetch_shapes('kenya', level=2, source='gadm')
+gdf = ssd.download_shapes('kenya', level=1)              # 47 counties, with geometry
+gdf = ssd.download_shapes('kenya', level=2, source='gadm')
 ```
 
 Three sources, because coverage genuinely varies by country and level:
@@ -37,7 +37,7 @@ Two things deliberately not ported from `laser-init`. Its UNOCHA extractor falls
 a 1-2 GB global geodatabase when a country is missing; a download that size triggered
 implicitly by a library call is user-hostile, and geoBoundaries covers the same gap for a
 few MB. And its transformer writes GeoPackages to an output directory as a pipeline step;
-here `fetch_shapes()` just returns the frame, and saving is `gdf.to_file(...)`.
+here `download_shapes()` just returns the frame, and saving is `gdf.to_file(...)`.
 """
 
 import zipfile
@@ -48,7 +48,7 @@ import zstandard
 import sciris as sc
 import starsim_data as ssd
 
-__all__ = ['fetch_shapes', 'list_shape_sources', 'measure', 'borders']
+__all__ = ['download_shapes', 'list_shape_sources', 'measure', 'borders']
 
 
 @dc.dataclass(frozen=True)
@@ -62,7 +62,7 @@ class ShapeSource:
         max_level (int): the finest administrative level published.
         license (str): the upstream license.
         redistributable (bool): whether derived data may be shipped inside this package.
-            False for GADM, which is non-commercial only -- so it can be fetched at
+            False for GADM, which is non-commercial only -- so it can be downloaded at
             runtime by a user who accepts those terms, but never bundled or released.
         universal (bool): whether coverage is effectively global (used for the fallback
             chain: a non-universal source is tried first but expected to miss).
@@ -113,7 +113,7 @@ SOURCES = sc.objdict(
         citation        = 'GADM: Database of Global Administrative Areas, version 4.1.',
         redistributable = False,
         universal       = True,
-        note            = 'NON-COMMERCIAL ONLY. Never reached by the automatic fallback, never bundled, never redistributed -- fetch at runtime or not at all. One file per country containing every level (~50 MB).',
+        note            = 'NON-COMMERCIAL ONLY. Never reached by the automatic fallback, never bundled, never redistributed -- download at runtime or not at all. One file per country containing every level (~50 MB).',
     ),
 )
 
@@ -208,9 +208,9 @@ def _normalize(gdf, location, iso3, level, source):
     return out[[c for c in COLUMNS if c in out.columns]]
 
 
-def fetch_shapes(location, level=1, source=None, refresh=False, verbose=None):
+def download_shapes(location, level=1, source=None, refresh=False, verbose=None):
     """
-    Fetch administrative boundaries with full geometry, downloading and caching as needed.
+    Download administrative boundaries with full geometry from their publisher, and cache them.
 
     Requires the `[spatial]` extra. For centroids, areas and populations without any
     geospatial dependency, use `load_nodes()` instead -- it is bundled and instant.
@@ -238,10 +238,10 @@ def fetch_shapes(location, level=1, source=None, refresh=False, verbose=None):
     Example:
         ```python
         import starsim_data as ssd
-        gdf = ssd.fetch_shapes('kenya', level=1)
+        gdf = ssd.download_shapes('kenya', level=1)
         ```
     """
-    gpd = _require_spatial('fetch_shapes()')
+    gpd = _require_spatial('download_shapes()')
     verbose = sc.ifelse(verbose, ssd.options.verbose)
     level = ssd.parse_level(level)
     key = ssd.resolve(location)
@@ -259,7 +259,7 @@ def fetch_shapes(location, level=1, source=None, refresh=False, verbose=None):
             problems.append(f'{name}: publishes up to level {spec.max_level}')
             continue
         if (not spec.redistributable) and verbose:
-            print(f'Note: {name} is licensed for {spec.license.lower()}; the data you fetch must not be redistributed.')
+            print(f'Note: {name} is licensed for {spec.license.lower()}; the data you download must not be redistributed.')
         url      = spec.url.format(iso3=iso3, level=level)
         filename = spec.filename.format(iso3=iso3, level=level)
         try:
@@ -287,6 +287,12 @@ def fetch_shapes(location, level=1, source=None, refresh=False, verbose=None):
     raise KeyError(f'no boundaries for {key} ({iso3}) at level {level} from {wanted} ({detail})')
 
 
+
+def fetch_shapes(location, level=1, source=None, refresh=False, verbose=None):
+    """Not packaged: warns that the boundaries come from an external source, then calls `download_shapes()`."""
+    ssd.downloading._external('Administrative boundaries', 'UNOCHA, geoBoundaries or GADM', 'download_shapes()')
+    return download_shapes(location, level=level, source=source, refresh=refresh, verbose=verbose)
+
 # Centroids are taken in an equal-area projection and converted back: the centroid of a
 # polygon in raw degrees is pulled poleward and is simply the wrong point.
 EQUAL_AREA = 'ESRI:54009' # Mollweide
@@ -298,7 +304,7 @@ def measure(gdf):
     The centroid latitude and longitude, and the area in km², of each polygon.
 
     Args:
-        gdf (GeoDataFrame): polygons in WGS84, e.g. from `fetch_shapes()`.
+        gdf (GeoDataFrame): polygons in WGS84, e.g. from `download_shapes()`.
 
     Returns:
         tuple: arrays of latitudes, longitudes and areas, one entry per row.
@@ -318,7 +324,7 @@ def borders(gdf, tolerance=TOUCH_TOLERANCE):
     The pairs of polygons that share a border.
 
     Args:
-        gdf (GeoDataFrame): polygons in WGS84, e.g. from `fetch_shapes()`.
+        gdf (GeoDataFrame): polygons in WGS84, e.g. from `download_shapes()`.
         tolerance (float): polygons closer than this, in degrees, count as touching
             (default about 100 m, which absorbs slivers between neighboring polygons).
 

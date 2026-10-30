@@ -14,7 +14,7 @@ ssd.load('kenya', which='deaths')                # UN WPP mortality rates (tidy 
 ssd.load('kenya', kind='home')                   # a contact matrix (square DataFrame)
 ssd.provenance('prem')                           # where it came from, and its license
 ssd.plot('kenya')                                # eyeball it before it goes into a model
-ssd.fetch('kenya', which='deaths', years=(2000, 2025))  # annual data, downloaded on demand
+ssd.download('kenya', which='deaths', years=(2000, 2025))  # annual data, downloaded on demand
 ```
 
 Locations can be named however you like: `'Kenya'`, `'kenya'`, `'KE'`, `'KEN'` and `'Republic of Kenya'` are the same country, as are `'USA'`, `'US'`, `'united states'` and `'United States of America'`. ISO-2/ISO-3 codes, official names, common abbreviations (`UK`, `DRC`) and French/Spanish/Portuguese names all resolve; accents, case and punctuation are ignored, so `"Côte d'Ivoire"` and `'cote divoire'` both work. A name that doesn't match raises, with suggestions — it is never resolved to the nearest guess. Use `ssd.list_locations(which)` for the countries in a given dataset, `ssd.list_all_locations()` for every known location, and `ssd.resolve()`/`ssd.location_info()` to inspect the mapping.
@@ -49,9 +49,9 @@ These drop straight into Starsim: `deaths` matches `ss.Deaths`'s expected column
 
 **Not bundled:**
 
-- ⬇️ Annual resolution — the bundled store has every 10th year (1950, 1960, …, 2100). Use [`fetch()`](#data-that-isnt-bundled) for annual.
-- ⬇️ Life tables (`qx`, `lx`, `ex`, …) and the other WPP indicators (CDR, TFR, LEx, IMR, …) — available via [`fetch()`](#data-that-isnt-bundled).
-- ⬇️ Non-Medium projection variants (High, Low, Constant fertility, …) — available via [`fetch()`](#data-that-isnt-bundled), except for life tables, which the UN publishes for Medium only.
+- ⬇️ Annual resolution — the bundled store has every 10th year (1950, 1960, …, 2100). Use [`download()`](#data-that-isnt-bundled) for annual.
+- ⬇️ Life tables (`qx`, `lx`, `ex`, …) and the other WPP indicators (CDR, TFR, LEx, IMR, …) — available via [`download()`](#data-that-isnt-bundled).
+- ⬇️ Non-Medium projection variants (High, Low, Constant fertility, …) — available via [`download()`](#data-that-isnt-bundled), except for life tables, which the UN publishes for Medium only.
 - ❌ Subnational demographics (states, provinces, counties).
 - ❌ Age-specific migration (crude rate only) — the UN provides no age breakdown for it.
 - ❌ "Both sexes"/"Total" rows: Female + Male only.
@@ -94,16 +94,17 @@ ssd.fetch('USA:massachusetts', which='population_us')
 
 ## Data that isn't bundled
 
-`load()` never touches the network: everything it reads is inside the wheel, which is what makes it instant, usable offline and reproducible from a pinned version. Data too big for that is reached through a different verb, so the cost is visible at the call site.
+`load()` never touches the network: everything it reads is inside the wheel, which is what makes it instant, usable offline and reproducible from a pinned version. Data too big for that is reached through a different verb, so the cost is visible at the call site — and so is whose server it comes from:
 
-`ssd.fetch()` downloads the UN's public bulk CSVs (no API token needed) and filters them, returning the same schema `load()` does. It also downloads the contact sources that are not bundled (above).
+- `ssd.fetch()` gets the stores this package publishes with its releases but doesn't bundle (the contact sources above), checked against a pinned SHA-256.
+- `ssd.download()` gets data from its original publisher: here the UN's public bulk CSVs (no API token needed), filtered and returned in the same schema `load()` uses. `download_shapes()`, `download_nodes()` and `download_raster()` do the same for boundaries and WorldPop. These servers are outside this package's control, so they may be slow, change their files or be down. `fetch()` passes such requests on to `download()`, with a warning.
 
 ```python
-ssd.fetch('kenya', which='deaths', years=(2000, 2025))  # annual mx, not decadal
-ssd.fetch('kenya', which='life_table', years=2020)      # qx, lx, ex, ... with a glossary in .attrs
-ssd.fetch('kenya', which='births', variant='High')      # a different projection variant
-ssd.fetch('kenya', which='indicators', years=2020)      # CDR, TFR, LEx, IMR and ~50 more
-ssd.list_fetchable()                                    # what fetch() can get
+ssd.download('kenya', which='deaths', years=(2000, 2025))  # annual mx, not decadal
+ssd.download('kenya', which='life_table', years=2020)      # qx, lx, ex, ... with a glossary in .attrs
+ssd.download('kenya', which='births', variant='High')      # a different projection variant
+ssd.download('kenya', which='indicators', years=2020)      # CDR, TFR, LEx, IMR and ~50 more
+ssd.list_downloadable()                                 # what download() can get
 ```
 
 `years=` takes a single year, a `(start, end)` tuple as an inclusive range, or an explicit list. The downloads are large — 17 MB for the indicators, 145 MB per half of the life table — so they are cached and reused:
@@ -111,11 +112,11 @@ ssd.list_fetchable()                                    # what fetch() can get
 ```python
 ssd.cache_dir()          # where downloads go (override with ssd.options.cache_dir
                          # or the STARSIM_DATA_CACHE_DIR environment variable)
-ssd.cache_info()         # what's cached, from where, and when it was fetched
+ssd.cache_info()         # what's cached, from where, and when it was downloaded
 ssd.clear_cache()        # or clear_cache('wpp/*')
 ```
 
-Every cached file records where and when it was downloaded, and `fetch()` results carry the same in `.attrs['provenance']`.
+Every cached file records where and when it was downloaded, and `fetch()` and `download()` results carry the same in `.attrs['provenance']`.
 
 ## Plotting
 
@@ -161,13 +162,13 @@ ssd.plot('kenya', which='nodes', level=1)
 
 Columns are `nodeid`, `location`, `iso3`, `level`, `name`, `pcode`, `dot_name`, `parent`, `lat`, `lon`, `area_km2`, `population` and `source`. Two are worth knowing about: **`pcode`** is the join key — for most countries it is the humanitarian p-code that subnational health data is keyed on — and **`dot_name`** is the readable hierarchical path (`Kenya:Baringo`), whose first component is always a location `load()` accepts.
 
-Levels 0 and 1 are covered for 184 countries, built from UNOCHA COD-AB where it exists (~110 countries, and the source of the p-codes) and geoBoundaries CGAZ v6.0.0 elsewhere. The two disagree in places about how a country subdivides, so every row records which source it came from. Hong Kong, Macao and Puerto Rico have no boundaries in either source and are absent. `population` is UN WPP at level 0 and, at level 1, WorldPop's 2020 1 km raster summed within each unit when the table is built; other years and finer levels (`fetch_nodes('kenya', level=2)`) are a download, and live in the spatial extra below.
+Levels 0 and 1 are covered for 184 countries, built from UNOCHA COD-AB where it exists (~110 countries, and the source of the p-codes) and geoBoundaries CGAZ v6.0.0 elsewhere. The two disagree in places about how a country subdivides, so every row records which source it came from. Hong Kong, Macao and Puerto Rico have no boundaries in either source and are absent. `population` is UN WPP at level 0 and, at level 1, WorldPop's 2020 1 km raster summed within each unit when the table is built; other years and finer levels (`download_nodes('kenya', level=2)`) are a download, and live in the spatial extra below.
 
 `ssd.parse_level()` accepts `'admin1'`, `'ADM2'`, `'3'` or a bare integer, up to 5.
 
 ### Boundaries, rasters and maps: the spatial extra
 
-Actual polygons are far too big for a wheel, so they are fetched and cached, and they need the optional geospatial stack:
+Actual polygons are far too big for a wheel, so they are downloaded and cached, and they need the optional geospatial stack:
 
 ```bash
 pip install starsim_data[spatial]
@@ -175,14 +176,14 @@ pip install starsim_data[spatial]
 
 ```python
 ssd.list_shape_sources()                       # UNOCHA / geoBoundaries / GADM, and their terms
-gdf = ssd.fetch_shapes('kenya', level=2)       # 290 sub-counties, with geometry
-nodes = ssd.fetch_nodes('kenya', level=1)      # the node table, population filled from WorldPop
+gdf = ssd.download_shapes('kenya', level=2)       # 290 sub-counties, with geometry
+nodes = ssd.download_nodes('kenya', level=1)      # the node table, population filled from WorldPop
 ssd.choropleth('kenya', level=1)               # a filled map
 ```
 
-`fetch_shapes()` tries UNOCHA then geoBoundaries. **GADM is never tried automatically**: it is licensed for non-commercial use only, so it has to be asked for by name (`source='gadm'`), and nothing derived from it is ever bundled or redistributed. Shapes join to the node table on `pcode` and `dot_name`.
+`download_shapes()` tries UNOCHA then geoBoundaries. **GADM is never tried automatically**: it is licensed for non-commercial use only, so it has to be asked for by name (`source='gadm'`), and nothing derived from it is ever bundled or redistributed. Shapes join to the node table on `pcode` and `dot_name`.
 
-`fetch_nodes()` sums a WorldPop 1 km raster inside each unit. WorldPop's constrained estimates are modeled rather than counted and will not equal the UN WPP national total — about 1.2% low for Kenya in 2020 — so if your model needs them to agree, `ssd.rescale_to_national(nodes)` makes that choice explicit.
+`download_nodes()` sums a WorldPop 1 km raster inside each unit. WorldPop's constrained estimates are modeled rather than counted and will not equal the UN WPP national total — about 1.2% low for Kenya in 2020 — so if your model needs them to agree, `ssd.rescale_to_national(nodes)` makes that choice explicit.
 
 Together, `load_nodes()` and `distances()` are the inputs a gravity model needs (`P_i`, `P_j`, `D_ij`); the gravity formulation itself belongs in the model, not in a data package.
 

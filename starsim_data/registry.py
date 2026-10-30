@@ -84,7 +84,7 @@ class Dataset:
         name (str): the dataset name, as passed to `load(which=...)`.
         layout (str): how the values are stored; see `LAYOUTS`.
         tier (int): 0 if the dataset is bundled in the wheel, 1 if it is fetched or
-            downloaded and cached (see `access` for which).
+            downloaded and cached (see `access` for which, and `function` for how).
         levels (tuple): the administrative levels covered; `(0,)` for national data.
         sources (tuple): `Source` records, oldest revision first.
         license (str): the upstream data license, e.g. `'CC BY 3.0 IGO'`.
@@ -113,12 +113,18 @@ class Dataset:
         """How the data is reached, in the terms the documentation uses.
 
         `'bundled'` is inside the package and read by `load()`; `'fetched'` is a store this
-        package publishes, downloaded once and verified; `'downloaded'`
-        comes from its original publisher, such as the UN, and is cached.
+        package publishes, downloaded once by `fetch()` and verified; `'downloaded'`
+        comes from its original publisher, such as the UN, through `download()`, and is
+        cached.
         """
         if self.tier == 0:
             return 'bundled'
         return 'fetched' if any(s.url for s in self.sources) else 'downloaded'
+
+    @property
+    def function(self):
+        """The name of the function that gets this dataset: `'load'`, `'fetch'` or `'download'`."""
+        return dict(bundled='load', fetched='fetch', downloaded='download')[self.access]
 
     @property
     def level(self):
@@ -321,7 +327,7 @@ def datasets(tier=None):
     """Return every known dataset as `{name: Dataset}`.
 
     Args:
-        tier (int): if given, only datasets in this tier (0 bundled, 1 fetched).
+        tier (int): if given, only datasets in this tier (0 bundled, 1 fetched or downloaded).
 
     Returns:
         sciris.objdict: name -> `Dataset`, sorted by name.
