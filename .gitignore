@@ -111,3 +111,6 @@ docs/.cache/
 # Quarto's execution cache. Deliberately not committed: letting CI execute the code cells
 # afresh means the docs build also checks that the documented examples still run.
 docs/_freeze/
+
+# Quarto extensions, installed with `quarto add sciris/quartopydoc` (as CI does)
+docs/_extensions/

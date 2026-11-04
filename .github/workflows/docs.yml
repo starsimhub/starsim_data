@@ -27,6 +27,10 @@ jobs:
       - name: Set up Quarto
         uses: quarto-dev/quarto-actions/setup@v2
 
+      - name: Install quartopydoc's Quarto extensions (the authorship badge)
+        working-directory: docs
+        run: quarto add sciris/quartopydoc --no-prompt
+
       - name: Build docs
         run: great-docs build
 

@@ -81,7 +81,7 @@ include_in_header:
 
 # Each page's `authorship` frontmatter is shown as a badge at the top right, as on the
 # Starsim site. great-docs has no setting for a Quarto filter, so this script adds
-# user-guide/assets/authorship.lua to the generated _quarto.yml before rendering.
+# quartopydoc's authorship extension (in _extensions/sciris) to the build before rendering.
 pre_render: user-guide/assets/authorship.py
 
 # The changelog is CHANGELOG.md, included by 11-changelog.qmd, rather than the page

@@ -1,15 +1,17 @@
 """
-Register authorship.lua as a Quarto filter. Run by great-docs before rendering.
+Add the authorship filter (quartopydoc's extension, installed in docs/_extensions/sciris
+with `quarto add sciris/quartopydoc`) to the site that great-docs builds. Run by great-docs before rendering, in its build folder
+(docs/_quarto/default).
 
-great-docs writes _quarto.yml itself and has no setting for adding a filter, but Quarto
-reads the project config again after its pre-render scripts have run, so adding the
-filter here applies it to every page. The path is relative to the build directory, where
-great-docs puts a copy of docs/user-guide/.
+great-docs has no setting for adding a filter, but Quarto reads the project config again
+after its pre-render scripts have run, so naming the filter here applies it to every page.
+It is named by path, not as an extension, because Quarto finds extensions before the
+pre-render scripts run, and great-docs only copies its own into the build folder.
 """
 
 import pathlib
 
-FILTER = "user-guide/assets/authorship.lua"
+FILTER = "../../_extensions/sciris/authorship/authorship.lua"
 
 path = pathlib.Path("_quarto.yml")
 text = path.read_text(encoding="utf-8")
