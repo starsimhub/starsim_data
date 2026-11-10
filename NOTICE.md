@@ -4,7 +4,7 @@ This repository aggregates third-party demographic and contact-matrix datasets. 
 
 If you use these data, you must comply with the applicable upstream license and cite the corresponding paper.
 
-Of the contact matrices, only `prem2021` is bundled in the installed package. `prem2017`, `mistry2021` and `mistry2021_us` are distributed from this repository (in `fetched/`) and downloaded by `fetch()` on first use, as is `population_us`; they are redistributed under the same terms, below.
+Of the contact matrices, the installed package bundles `prem2021` and, in `prem/prem2017.h5`, the `prem2017` matrices for the locations `prem2021` lacks (both GPL-3.0). The full `prem2017`, `mistry2021` and `mistry2021_us` are distributed from this repository (in `fetched/`) and downloaded by `fetch()` on first use, as is `population_us`; they are redistributed under the same terms, below.
 
 ## Sources
 
@@ -68,3 +68,8 @@ These are **not** bundled with the package. They are downloaded to a local cache
 ## Provenance
 
 The **contact matrices** were derived from [epistorm/epydemix-data](https://github.com/epistorm/epydemix-data) (GPL-3.0 — full text in [licenses/LICENSE_EPYDEMIX](licenses/LICENSE_EPYDEMIX)), trimmed to national-level (level 0) matrices only and reorganized into a flattened file layout. Subnational data, the `litvinova_2025` source, and epydemix-data's own demographic/age-distribution files are not included; the **demographic data** in this package comes from the UN World Population Prospects (above) instead.
+
+**Modifications** (GPL-3.0 §5(a)), made by the Starsim Development Team:
+
+- 2026-07-10: trimmed epydemix-data to the national-level `prem2017`, `prem2021` and `mistry2021` matrices, reorganized into one folder per country (`raw_data/contact_matrices/`), and converted to HDF5 stores by `scripts/build_hdf5.py`. The contact-rate values are unchanged.
+- 2026-10-19: added the `mistry2021_us` matrices for each US state, and `population_us`, from a pinned commit of epydemix-data (`scripts/download_epydemix.py`).

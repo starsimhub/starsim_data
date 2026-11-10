@@ -139,7 +139,7 @@ This package builds on two others: [epydemix-data](https://github.com/epistorm/e
 
 ## License
 
-The code is licensed under the [MIT License](https://github.com/starsimhub/starsim_data/blob/main/LICENSE). The data keeps its original licenses: the UN WPP data is under [CC BY 3.0 IGO](https://population.un.org/wpp/), and the contact matrices under GPL-3.0 (`prem2017`, `prem2021`) and Apache-2.0 (`mistry2021`). See [NOTICE.md](https://github.com/starsimhub/starsim_data/blob/main/NOTICE.md) and [`licenses/`](https://github.com/starsimhub/starsim_data/blob/main/licenses) for details.
+The code is licensed under the [MIT License](https://github.com/starsimhub/starsim_data/blob/main/LICENSE). The data keeps its original licenses: the UN WPP data is under [CC BY 3.0 IGO](https://population.un.org/wpp/), the contact matrices under GPL-3.0 (`prem2017`, `prem2021`) and Apache-2.0 (`mistry2021`), and the node table under CC BY 3.0 IGO (UNOCHA) and CC BY 4.0 (geoBoundaries, WorldPop). See [NOTICE.md](https://github.com/starsimhub/starsim_data/blob/main/NOTICE.md) and [`licenses/`](https://github.com/starsimhub/starsim_data/blob/main/licenses) for details.
 
 ## AI disclosure
 
