@@ -15,9 +15,14 @@ def test_datasets():
     datasets = ssd.registry.datasets()
     assert set(datasets) == set(ssd.list_datasets()) # The registry and the listing agree
 
-    df = ssd.list_datasets(detailed=True)
-    assert set(df.columns) == {"dataset", "description", "layout", "access", "levels", "locations", "revisions", "license"} # The detailed listing is a frame
+    df = ssd.list_datasets(detailed='full')
+    assert set(df.columns) == {"dataset", "description", "layout", "access", "levels", "locations", "revisions", "license"} # The full listing is the whole registry
     assert len(df) == len(ssd.list_datasets()) # With a row per dataset
+    summary = ssd.list_datasets(detailed=True)
+    assert list(summary.columns) == ["dataset", "description", "access", "locations"] # The summary is the columns most people want
+    assert max(len(line) for line in summary.to_string().splitlines()) <= 80 # And fits a default pandas display
+    with pytest.raises(ValueError):
+        ssd.list_datasets(detailed='yes') # Not a recognized level of detail
 
     ssd.registry.refresh()
     assert set(ssd.registry.datasets()) == set(datasets) # refresh() clears the cache; the same datasets come back

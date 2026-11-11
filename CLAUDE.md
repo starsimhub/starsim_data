@@ -28,7 +28,7 @@ Markers are declared in `pyproject.toml`: `network`, `slow`, `integration`, `spa
 
 ### Rebuilding the bundled data
 
-The `.h5` files in `starsim_data/data/` are **committed build artifacts**, generated from `raw_data/` by `scripts/`. Never hand-edit them. Every script takes `--check` (validate without writing), which is what CI runs to stop the artifacts drifting from their sources:
+The `.h5` files in `starsim_data/data/` are **committed build artifacts**, generated from `raw_data/` by `scripts/`. Never hand-edit them. Every script takes `--check` (rebuild into a temp folder and compare with the committed files, writing nothing), which is what CI runs to stop the artifacts drifting from their sources:
 
 ```bash
 python scripts/build_locations.py --check     # derived columns of locations.csv, from pycountry

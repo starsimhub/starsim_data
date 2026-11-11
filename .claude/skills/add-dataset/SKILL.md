@@ -40,12 +40,12 @@ All fetched stores are listed in `scripts/build_hdf5.py`, which writes the manif
 
 - Add `name` to `FETCHED_SOURCES`, and bump `RELEASE` to a new `data-*` tag: the new store is downloaded from that GitHub release, which Cliff creates with `scripts/publish.py` once the change is on `main`.
 - `SOURCES[name]`: `source`, `source_url`, `via` (if it came through another project), `license`, `citation`, `note`. This is written into the store as its provenance.
-- `DESCRIPTIONS[name]`: one line for `list_datasets()`.
+- `DESCRIPTIONS[name]`: a short description for `list_datasets()`, about 35 characters, so its summary table fits an 80-column display (a test checks).
 - Contact matrices need nothing more than their CSVs and an `AGE_WIDTH` entry: sources are discovered from the file names.
-- Anything else needs a `build_<name>(check=False)` function, like `build_population_us()`. It writes one dataset per location key and a root `spec` attribute for the layout, for example `dict(layout='population', years=[...], sexes=[...], ages=[...], age_col='AgeGrp', value_col='Value')`, plus `provenance` from `stamp()`. Under `check`, it reads each value back and compares it with its CSV. Call it from `main()` when its name is passed to `--fetched`.
+- Anything else needs a `build_<name>(out_path, check=False)` function, like `build_population_us()`. It writes one dataset per location key and a root `spec` attribute for the layout, for example `dict(layout='population', years=[...], sexes=[...], ages=[...], age_col='AgeGrp', value_col='Value')`, plus `provenance` from `stamp()`. Under `check`, it reads each value back and compares it with its CSV. Call it from `main()` when its name is passed to `--fetched`, writing to `fetched_out` and adding its `(built, committed)` pair to `pairs`, so that `--check` compares it.
 - A bundled store goes into `starsim_data/data/` instead, needs an entry in `registry.DESCRIPTIONS`, and is discovered from its file. Bundling something new is Cliff's call (see Tier).
 
-Build only the new store: `python scripts/build_hdf5.py --check --fetched <name>`. Never rebuild a published store, since that changes its bytes and breaks its pinned download. Every run also rewrites the bundled `prem2021.h5` and `prem/prem2017.h5`, with a new build time and the same data, so restore them afterwards with `git restore starsim_data/data/prem2021.h5 starsim_data/data/prem/prem2017.h5` unless their data really changed.
+Build only the new store: `python scripts/build_hdf5.py --fetched <name>` (with `--check`, nothing is written). Never rebuild a published store, since that changes its bytes and breaks its pinned download. Every run also rewrites the bundled `prem2021.h5` and `prem/prem2017.h5`, with a new build time and the same data, so restore them afterwards with `git restore starsim_data/data/prem2021.h5 starsim_data/data/prem/prem2017.h5` unless their data really changed.
 
 Levels are worked out from the keys (`United_States:Massachusetts` is level 1). `fetch()` reads any fetched store with no further code, and `load()` points to it from other datasets of the same layout ("it is in fetch(...)").
 

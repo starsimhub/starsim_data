@@ -3,12 +3,12 @@ title: "Getting started"
 guide-section: "Getting started"
 tags: [Tutorial, Setup]
 authorship:
-  human: 20
-  ai: 80
+  human: 25
+  ai: 75
   note: Drafted by AI, revised by a human
 ---
 
-`starsim_data` gives you national demographic data, age-structured contact matrices and subnational administrative boundaries, ready to use in a disease model. This page walks through the main functions in the order you are likely to need them. None of the examples need an internet connection.
+`starsim_data` gives you national demographic data, age-structured contact matrices and subnational administrative units, ready to use in a disease model. This page walks through the main functions in the order you are likely to need them. None of the examples need an internet connection (though we have to admit, it seems pretty likely you have one).
 
 ## Installation
 
@@ -37,13 +37,15 @@ pip install -e starsim_data
 
 The package includes about 9 MB of data. The `[spatial]` option also installs `geopandas`, `pyogrio` and `rastertoolkit`, which you only need for the boundary shapes and population maps described in [Spatial data](spatial.qmd).
 
-## Listing what is available
+## What's available
 
 ```{python}
 import starsim_data as ssd
 
-ssd.list_datasets(detailed=True)[['dataset', 'description', 'access', 'locations']]
+ssd.list_datasets(detailed=True)
 ```
+
+`ssd.list_datasets()` on its own gives just the names, and `ssd.list_datasets(detailed='full')` adds each dataset's layout, administrative levels, revisions and license.
 
 The `access` column says how you get each dataset. **Bundled** data is inside the package and loads instantly, with no internet connection. **Fetched** data is prepared by this package but kept out of it to save space; it is downloaded from this package's own releases the first time you use it. **Downloaded** data comes from its original publisher, such as the UN. Both fetched and downloaded data are saved on your computer after the first use. [Bundled, fetched and downloaded data](access.qmd) explains the difference.
 

@@ -23,7 +23,7 @@ notes identify as a blocker to downstream reuse.
 
 ```python
 import starsim_data as ssd
-ssd.list_datasets(detailed=True)   # the registry as a dataframe
+ssd.list_datasets(detailed='full') # the registry as a dataframe
 ssd.registry.dataset('deaths')     # one descriptor
 ```
 """
@@ -60,16 +60,17 @@ ALIASES = {'contacts': 'prem'}
 # One-line descriptions of the bundled datasets. Everything else about a dataset is read
 # from the store itself; these are the only facts that are not in the data.
 DESCRIPTIONS = {
-    'births': 'Crude birth rate (per 1,000), UN WPP',
-    'deaths': 'Age/sex mortality rate m(x), 5-year abridged, UN WPP',
-    'migration': 'Crude net-migration rate (per 1,000), UN WPP',
-    'population': 'Population by 5-year age group and sex (persons), UN WPP',
-    'fertility': 'Age-specific fertility rate (births per 1,000 women), 5-year, UN WPP',
-    'nodes': 'Administrative units: centroids, areas, p-codes and hierarchy',
-    'adjacency': 'Administrative units that share a border, as pairs of nodeids',
-    'prem': 'Contact matrices by setting: prem2021, with prem2017 for the locations it lacks',
+    'births': 'Crude birth rate (UN WPP)',
+    'deaths': 'Mortality by age and sex (UN WPP)',
+    'migration': 'Net migration rate (UN WPP)',
+    'population': 'Population by age and sex (UN WPP)',
+    'fertility': 'Fertility by age of mother (UN WPP)',
+    'nodes': 'Admin units: centroids, areas, codes',
+    'adjacency': 'Admin units that share a border',
+    'prem': 'Contact matrices (Prem 2021 + 2017)',
+    'prem2021': 'Contact matrices (Prem 2021)',
 }
-MATRIX_DESCRIPTION = 'Age-structured contact matrix by setting'
+MATRIX_DESCRIPTION = 'Contact matrices by age and setting' # Short, so that list_datasets(detailed=True) fits a default pandas display
 
 
 @dc.dataclass(frozen=True)

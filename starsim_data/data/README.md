@@ -29,11 +29,13 @@ Note that this file must be read with `keep_default_na=False` (or with the `csv`
 To regenerate:
 
 ```bash
-python scripts/build_locations.py --check      # locations.csv derived columns
-python scripts/build_hdf5.py --check           # contact matrices, from raw_data/contact_matrices/
-python scripts/build_demographics.py --check   # demographics, from raw_data/demographics/
-python scripts/build_nodes.py --check          # node table, from the boundary sources
+python scripts/build_locations.py      # locations.csv derived columns
+python scripts/build_hdf5.py           # contact matrices, from raw_data/contact_matrices/
+python scripts/build_demographics.py   # demographics, from raw_data/demographics/
+python scripts/build_nodes.py          # node table, from the boundary sources
 ```
+
+Add `--check` to any of them to compare a rebuild with the committed files without writing anything.
 
 `build_nodes.py` is the odd one out: its inputs are too big for `raw_data/` and are downloaded into the package cache instead, so a cold rebuild pulls ~1.4 GB. That is why it is not part of the automatic reproducibility check in CI.
 

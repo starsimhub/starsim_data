@@ -23,14 +23,29 @@ Location naming is flexible: `'Kenya'`, `'kenya'`, `'KE'`, `'KEN'` and `'Republi
 
 ```bash
 pip install starsim_data # Standard usage
-pip install starsim_data[spatial] # With support for subnational maps and geospatial shape boundaries
+pip install starsim_data[spatial] # For geospatial data/mapping
 ```
 
 ---
 
 ## What's included
 
-`ssd.load()` returns a dataframe of the requested data.
+Everything is reached through a handful of functions. All of them take a location (`'kenya'`) and return a dataframe, except where noted:
+
+| Function | What it gives you | Internet? |
+|---|---|---|
+| `load(loc, which=...)` | Demographics and contact matrices bundled in the package (below) | Never |
+| `load_nodes(loc, level=...)` | Subnational units: names, p-codes, centers, areas, populations | Never |
+| `distances(loc, level=...)`, `adjacency(...)` | Distances between those units, and which share a border | Never |
+| `fetch(loc, which=...)` | Contact matrices not bundled for space, and US state populations | First use only |
+| `download(loc, which=...)` | UN data not bundled: every year, life tables, all indicators, other projections | First use only |
+| `download_shapes()`, `download_nodes()`, `download_raster()` | Boundary shapes (a `GeoDataFrame`), finer levels and other years, WorldPop grids (a file path); need `[spatial]` | First use only |
+| `plot(loc)` | A quick look at the data, as a figure | Never |
+| `choropleth(loc, level=...)` | A map of the units, colored by population; needs `[spatial]` | First use only |
+| `provenance(which)` | Source, license and citation for a dataset | Never |
+| `list_datasets()`, `list_locations(which)`, `resolve(loc)` | What's available, and which location a name resolves to | Never |
+
+`ssd.list_datasets(detailed=True)` lists every dataset with a short description, whether it is bundled, fetched or downloaded, and how many locations it covers. Anything fetched or downloaded is cached, so it is only downloaded once.
 
 ### Demographics (UN World Population Prospects 2024)
 
@@ -54,13 +69,13 @@ The average number of daily contacts between age groups, for five settings (`all
 
 | `which=` | Included | Age groups | Countries | Study |
 |---|---|---|---|---|
-| `contacts` (default) | ✅ | 5-year (`0–4, …, 75+`) | 187 | `prem2021`, plus `prem2017` for the ten countries it lacks |
+| `contacts` or `prem` (default) | ✅ | 5-year (`0–4, …, 75+`) | 187 | `prem2021`, plus `prem2017` for the ten countries it lacks |
 | `prem2021` | ✅ | 5-year | 177 | [Prem et al. 2021](https://journals.plos.org/ploscompbiol/article?id=10.1371/journal.pcbi.1009098) |
 | `prem2017` | ⬇️ `fetch()` | 5-year | 152 | [Prem et al. 2017](https://journals.plos.org/ploscompbiol/article?id=10.1371/journal.pcbi.1005697) |
 | `mistry2021` | ⬇️ `fetch()` | single year (`0–84+`) | 36 | [Mistry et al. 2021](https://www.nature.com/articles/s41467-020-20544-y) |
 | `mistry2021_us` | ⬇️ `fetch()` | single year (`0–84+`) | 50 US states and DC | [Mistry et al. 2021](https://www.nature.com/articles/s41467-020-20544-y) |
 
-The default, `prem2021`, is the authors' update of `prem2017`, using more surveys and newer data; for the ten countries it dropped (such as Japan and Australia), the default falls back to `prem2017`. The fetched sources are a few MB each, and are downloaded the first time you use them:
+`prem2021` is the authors' update of `prem2017`, using more surveys and newer data. The default (`contacts`, listed by `list_datasets()` as `prem`) uses `prem2021`, and falls back to `prem2017` for the ten countries it dropped (such as Japan and Australia). The fetched sources are a few MB each, and are downloaded the first time you use them:
 
 ```python
 ssd.fetch('japan', which='prem2017', kind='home')
@@ -69,7 +84,7 @@ ssd.fetch('United States:Massachusetts', which='mistry2021_us')        # a US st
 ssd.fetch('United States:Massachusetts', which='population_us')        # its population by single year of age
 ```
 
-Not every country is in every source. You can use e.g. `ssd.list_locations('mistry2021')` to lists which ones are.
+Not every country is in every source. You can use e.g. `ssd.list_locations('mistry2021')` to list which ones are.
 
 ### Geography
 
@@ -140,7 +155,7 @@ This package builds on two others: [epydemix-data](https://github.com/epistorm/e
 
 ## License
 
-The code is licensed under the [MIT License](https://github.com/starsimhub/starsim_data/blob/main/LICENSE). The data itself is licened under several different licenses. The UN WPP data is under [CC BY 3.0 IGO](https://population.un.org/wpp/), the contact matrices under GPL-3.0 (`prem2017`, `prem2021`) and Apache-2.0 (`mistry2021`), and the node table under CC BY 3.0 IGO (UNOCHA) and CC BY 4.0 (geoBoundaries, WorldPop). See [NOTICE.md](https://github.com/starsimhub/starsim_data/blob/main/NOTICE.md) and [`licenses/`](https://github.com/starsimhub/starsim_data/blob/main/licenses) for details.
+The code is licensed under the [MIT License](https://github.com/starsimhub/starsim_data/blob/main/LICENSE). The data itself is licensed under several different licenses. The UN WPP data is under [CC BY 3.0 IGO](https://population.un.org/wpp/), the contact matrices under GPL-3.0 (`prem2017`, `prem2021`) and Apache-2.0 (`mistry2021`), and the node table under CC BY 3.0 IGO (UNOCHA) and CC BY 4.0 (geoBoundaries, WorldPop). See [NOTICE.md](https://github.com/starsimhub/starsim_data/blob/main/NOTICE.md) and [`licenses/`](https://github.com/starsimhub/starsim_data/blob/main/licenses) for details.
 
 ## AI disclosure
 

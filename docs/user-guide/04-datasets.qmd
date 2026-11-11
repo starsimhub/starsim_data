@@ -13,10 +13,10 @@ This page lists the columns and units of each dataset. The examples are run when
 ```{python}
 import starsim_data as ssd
 
-ssd.list_datasets(detailed=True).drop(columns='license')
+ssd.list_datasets(detailed='full').drop(columns='license')
 ```
 
-Licenses are left out here to save space; they are listed in [Provenance](provenance.qmd), and in full in `NOTICE.md`.
+`layout` is how the data is shaped (the sections below describe each), `levels` the administrative levels it covers (0 for countries, 1 for states or provinces), and `revisions` the WPP revisions it is available for. Licenses are left out here to save space; they are listed in [Provenance](provenance.qmd), and in full in `NOTICE.md`.
 
 ## Demographics
 

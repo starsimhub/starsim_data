@@ -15,11 +15,11 @@ Re-run after adding a location, or to pick up a newer `pycountry`.
 
 ## build_hdf5.py
 
-Walks [`raw_data/contact_matrices/`](../raw_data/contact_matrices/) and writes one HDF5 file per dataset (contact source). Each store is keyed by location, with one dataset per contact setting; matrices are cast to `float32` and compressed with gzip9 + byte-shuffle. The sources in `BUNDLED` (`prem2021`) go into [`starsim_data/data/`](../starsim_data/data/), along with `prem/prem2017.h5`, the `prem2017` matrices for the ten locations `prem2021` lacks, which the default contact matrices use. The others are fetched on demand, so their stores go into [`fetched/`](../fetched/), outside the package, and are rebuilt only with `--fetched` (a rebuild changes their bytes, and `fetch()` downloads them from the GitHub release named in `RELEASE`, where they are assets). Every run rewrites the manifest `starsim_data/data/fetched.json` from the stores in `fetched/`.
+Walks [`raw_data/contact_matrices/`](../raw_data/contact_matrices/) and writes one HDF5 file per dataset (contact source). Each store is keyed by location, with one dataset per contact setting; matrices are cast to `float32` and compressed with gzip9 + byte-shuffle. The sources in `BUNDLED` (`prem2021`) go into [`starsim_data/data/`](../starsim_data/data/), along with `prem/prem2017.h5`, the `prem2017` matrices for the ten locations `prem2021` lacks, which the default contact matrices use. The others are fetched on demand, so their stores go into [`fetched/`](../fetched/), outside the package, and are rebuilt only with `--fetched` (a rebuild changes their bytes, and `fetch()` downloads them from the GitHub release named in `RELEASE`, where they are assets). Every run (except with `--check`) rewrites the manifest `starsim_data/data/fetched.json` from the stores in `fetched/`.
 
 ```bash
 python scripts/build_hdf5.py              # rebuild prem2021.h5 and the manifest
-python scripts/build_hdf5.py --check      # also round-trip validate against the CSVs
+python scripts/build_hdf5.py --check      # rebuild into a temp folder and compare with the committed files; writes nothing
 python scripts/build_hdf5.py --fetched    # also rebuild the stores in fetched/
 python scripts/build_hdf5.py --fetched population_us   # ...or only those named
 ```
@@ -48,10 +48,11 @@ python scripts/download_wpp.py --skip-existing  # only fetch missing series
 
 ## build_demographics.py
 
-Builds `demographics-<revision>.h5` (a group per series: `births`, `migration`, `deaths`, `population`, `fertility`) from the WPP CSVs in [`raw_data/demographics/`](../raw_data/demographics/) (produced by `download_wpp.py`, or downloaded manually), then:
+Builds `demographics-<revision>.h5` (a group per series: `births`, `migration`, `deaths`, `population`, `fertility`) from the WPP CSVs in [`raw_data/demographics/`](../raw_data/demographics/) (produced by `download_wpp.py`, or downloaded manually):
 
 ```bash
-python scripts/build_demographics.py --check
+python scripts/build_demographics.py           # build
+python scripts/build_demographics.py --check   # compare a rebuild with the committed store; writes nothing
 ```
 
 It classifies each WPP CSV by its columns (so exact filenames don't matter), filters to the package's countries and to decadal years 1950–2100, and writes tidy stores keyed by location. Birth and migration are crude national rates; deaths are age/sex-specific mortality (`mx`, 5-year abridged bins); population is by 5-year age groups and sex (absolute persons); fertility is the age-specific rate (`ASFR`, 5-year age groups of mother).
@@ -61,7 +62,8 @@ It classifies each WPP CSV by its columns (so exact filenames don't matter), fil
 Builds `nodes.h5` — the bundled node table: centroids, geodesic areas, p-codes and hierarchy for administrative levels 0 and 1, worldwide.
 
 ```bash
-python scripts/build_nodes.py --check    # ~1.4 GB of downloads on a cold cache
+python scripts/build_nodes.py            # ~1.4 GB of downloads on a cold cache
+python scripts/build_nodes.py --check    # compare a rebuild with the committed stores; writes nothing
 python scripts/build_nodes.py --limit 5  # a quick subset, for development
 ```
 

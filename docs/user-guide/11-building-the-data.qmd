@@ -30,12 +30,13 @@ starsim_data/
 
 Everything in `scripts/` requires `pip install -e ".[dev]"`, and `build_nodes.py` additionally requires `".[spatial]"`.
 
-Each script takes a `--check` flag, which rebuilds and then reads the result back through the loader to confirm that it is well formed. Using `--check` routinely is advisable, since a store that writes without error can still be unreadable.
+Each script takes a `--check` flag, which builds into a temporary folder, compares the result with the committed files, and reads them back through the loader, without writing anything. It fails if the committed data differs from what the raw data builds, which is what CI runs to keep the two in step. Run the script without `--check` to write the files, then with it to confirm.
 
 ## Contact matrices
 
 ```bash
-python scripts/build_hdf5.py --check
+python scripts/build_hdf5.py           # build
+python scripts/build_hdf5.py --check   # confirm the committed stores match a rebuild
 ```
 
 Reads the per-location CSVs in `raw_data/contact_matrices/` and writes one store per source, keyed by location, with one `float32` matrix per contact setting. The source CSVs were derived from [epydemix-data](https://github.com/epistorm/epydemix-data), trimmed to national level and reorganized into a flat layout. The US states' were added later by `scripts/download_epydemix.py`, from a pinned commit of epydemix-data, as folders named like `United_States__Massachusetts` (the `__` stands for the `:` of the location key), along with their populations in `raw_data/population_us.csv`, which this script also builds into `population_us.h5`.
@@ -59,7 +60,7 @@ This queries the UN WPP Data Portal API for the indicators the package uses, fil
 The CSVs are tracked in git, so the second step needs no token and no network:
 
 ```bash
-python scripts/build_demographics.py --check
+python scripts/build_demographics.py
 ```
 
 This classifies each CSV by its columns rather than by its filename, so bulk files downloaded manually from the WPP website work equally well. It writes `demographics-<revision>.h5` with one group per series.
@@ -70,7 +71,7 @@ The script warns about any location present in `locations.csv` that ends up with
 
 ```bash
 python scripts/download_wpp.py
-python scripts/build_demographics.py --revision 2026 --check
+python scripts/build_demographics.py --revision 2026
 ```
 
 This writes a new store alongside the existing one rather than replacing it. `load()` then uses the new revision by default, and `load(..., revision=2024)` continues to read the old one. Existing analyses that pinned a revision are unaffected.
@@ -90,7 +91,8 @@ Aliases are drawn from `pycountry`'s official and common names, its French, Span
 ## The node table
 
 ```bash
-python scripts/build_nodes.py --check     # roughly 1.4 GB on a cold cache
+python scripts/build_nodes.py             # roughly 1.4 GB on a cold cache
+python scripts/build_nodes.py --check     # confirm the committed stores match a rebuild
 python scripts/build_nodes.py --limit 5   # a subset, for development
 ```
 
@@ -109,7 +111,7 @@ Roughly the sequence to follow:
 1. Put the human-readable source in `raw_data/`, if it is small enough to track. If it is not, it should be fetched or downloaded rather than bundled.
 2. Write a build script that produces an `.h5` store with a `spec` attribute naming its layout, and a `provenance` attribute produced by `scripts/provenance.py`.
 3. If the shape is unlike anything already present, add a layout shaper and register it; otherwise reuse an existing layout. See [Architecture](architecture.qmd).
-4. Add a one-line description to `registry.DESCRIPTIONS`.
+4. Add a short description (about 35 characters, so `list_datasets(detailed=True)` fits on screen) to `registry.DESCRIPTIONS`.
 5. Add the source, its license and its citation to `NOTICE.md`, and the license text to `licenses/` if the license requires it.
 6. Add tests. At minimum: that the data loads, that its shape and units are as documented, and that its recorded license matches `NOTICE.md`.
 7. Add the build step to the reproducibility job in `.github/workflows/tests.yml`, unless the inputs are too large to download on every run.

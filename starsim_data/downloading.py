@@ -137,22 +137,22 @@ class Series:
 # `life_table` and `indicators` are download-only and return the upstream shape.
 SERIES = {
     'births': Series('indicators', 'crude', value_cols=('CBR',),
-                     description='Crude birth rate (per 1,000), annual'),
+                     description='Crude birth rate (UN WPP)'),
     'migration': Series('indicators', 'crude', value_cols=('CNMR',),
-                        description='Crude net-migration rate (per 1,000), annual'),
+                        description='Net migration rate (UN WPP)'),
     'deaths': Series('life_table', 'long', value_cols=('mx',), index_cols=('AgeGrpStart',),
                      sexes=('Female', 'Male'),
-                     description='Age/sex mortality rate m(x), 5-year abridged, annual'),
+                     description='Mortality by age and sex (UN WPP)'),
     'population': Series('population', 'population', value_cols=('PopFemale', 'PopMale'),
                          index_cols=('AgeGrpStart',),
-                         description='Population by 5-year age group and sex (persons), annual'),
+                         description='Population by age and sex (UN WPP)'),
     'fertility': Series('fertility', 'fertility', value_cols=('ASFR',), index_cols=('AgeGrpStart',),
-                        description='Age-specific fertility rate (births per 1,000 women), 5-year, annual'),
+                        description='Fertility by age of mother (UN WPP)'),
     'life_table': Series('life_table', 'long', value_cols=tuple(LIFE_TABLE_GLOSSARY),
                          index_cols=('AgeGrpStart',),
-                         description='Complete abridged life table (mx, qx, lx, ex, ...), annual'),
+                         description='Abridged life tables (UN WPP)'),
     'indicators': Series('indicators', 'wide',
-                         description='All WPP demographic indicators (CDR, TFR, LEx, IMR, ...)'),
+                         description='All demographic indicators (UN WPP)'),
 }
 
 

@@ -5,7 +5,7 @@
   "sha256": "e4931dd299355200007c411b26c915e6046ef7ee7e75c0648c80098b88a10b47",
   "bytes": 3213099,
   "layout": "matrix",
-  "description": "Age-structured contact matrix by setting",
+  "description": "Contact matrices (Mistry 2021)",
   "levels": [
    0
   ],
@@ -72,7 +72,7 @@
   "sha256": "61be5790b9627b2d6cf8396a2bebbb80cc24c006e172bd99aa695e09a2929a14",
   "bytes": 5181052,
   "layout": "matrix",
-  "description": "Contact matrices by setting for each US state, Mistry et al. 2021",
+  "description": "US contact matrices (Mistry 2021)",
   "levels": [
    1
   ],
@@ -154,7 +154,7 @@
   "sha256": "5cce6140e6ea430a9331dd990484de5709d37ff60171c4d3195f10c3dd5a55d8",
   "bytes": 196696,
   "layout": "population",
-  "description": "Population of each US state by single year of age (persons), US Census Bureau",
+  "description": "US population by age (Census)",
   "levels": [
    1
   ],
@@ -236,7 +236,7 @@
   "sha256": "1ee4391566d291ae6c81723a4494d7bdd6558b9a1158fab118b298b4309555ab",
   "bytes": 3149040,
   "layout": "matrix",
-  "description": "Age-structured contact matrix by setting",
+  "description": "Contact matrices (Prem 2017)",
   "levels": [
    0
   ],

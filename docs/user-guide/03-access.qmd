@@ -12,7 +12,7 @@ Every dataset in `starsim_data` is one of three kinds, and each kind has its own
 
 | | Comes from | How you get it | Internet needed | Same for everyone on a version? |
 |---|---|---|---|---|
-| **Bundled** | Inside the package | `load()`, `load_nodes()`, `distances()` | Never | Yes |
+| **Bundled** | Inside the package | `load()`, `load_nodes()`, `distances()`, `adjacency()` | Never | Yes |
 | **Fetched** | This package's releases | `fetch()` | First use only | Yes |
 | **Downloaded** | The original publisher | `download()`, `download_shapes()`, `download_nodes()`, `download_raster()` | First use only | Unless the publisher changes the file |
 
@@ -23,7 +23,7 @@ The `access` column of `list_datasets()` says which kind each dataset is:
 ```{python}
 import starsim_data as ssd
 
-ssd.list_datasets(detailed=True)[['dataset', 'access', 'levels', 'locations']]
+ssd.list_datasets(detailed=True)
 ```
 
 ## Bundled

@@ -2,11 +2,14 @@
 
 What's new in each version of `starsim_data`. The data is versioned along with the code: any change to the included data is a new version, so a given version always gives the same data.
 
-## Unreleased
+## Version 2.2.1 (2026-11-11)
 
 - `ssd.options.pandas = True` (or `STARSIM_DATA_PANDAS=1`) makes every function return plain pandas DataFrames instead of Sciris dataframes.
 - `ssd.load('kenya', which='contacts')` is another way to ask for the default contact matrices (`'prem'`).
 - The documentation's home page is now the README, followed by Getting started.
+- `ssd.list_datasets(detailed=True)` now gives a short table (name, description, access and location count) that fits in a default pandas display; `detailed='full'` gives every column, as `detailed=True` used to.
+- The README lists every function and what it gives you.
+- The build scripts' `--check` no longer writes anything: it rebuilds into a temporary folder and fails if the result differs from the committed data, so CI now catches data that has drifted from its sources. `build_nodes.py` stops if a geospatial dependency is missing, rather than writing a node table with no subnational populations.
 
 ## Version 2.2.0 (2026-10-30)
 

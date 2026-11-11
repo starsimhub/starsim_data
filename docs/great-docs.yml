@@ -56,16 +56,21 @@ jupyter: python3
 authors:
   - name: Starsim Development Team
     role: Author
+    github: starsimhub
     email: info@starsim.org
     homepage: https://starsim.org
   - name: Cliff Kerr
     role: Author
+    github: cliffckerr
   - name: Romesh Abeysuriya
     role: Author
+    github: RomeshA
   - name: Robyn Stuart
     role: Author
+    github: robynstuart
   - name: Christopher Lorton
     role: Author
+    github: clorton
 
 funding:
   name: "Gates Foundation"

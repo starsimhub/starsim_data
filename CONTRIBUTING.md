@@ -30,7 +30,7 @@ Adding a page means adding a `.qmd` file to `docs/user-guide/` with a `title` an
 
 ## Changing data
 
-The `.h5` files are build artifacts: never edit them by hand. Edit the sources in `raw_data/` and rebuild with the scripts in `scripts/` (its README describes each), checking the result with `--check`, which is what CI runs:
+The `.h5` files are build artifacts: never edit them by hand. Edit the sources in `raw_data/` and rebuild with the scripts in `scripts/` (its README describes each). Then run them with `--check`, which is what CI runs: it rebuilds into a temporary folder and fails if the result differs from the committed files, without writing anything.
 
 ```bash
 python scripts/build_hdf5.py --check

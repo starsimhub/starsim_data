@@ -10,7 +10,7 @@ It needs a **Bearer token** in `scripts/.env` (register free at the [UN WPP Data
 
 ```bash
 python scripts/download_wpp.py                 # writes raw_data/demographics/wpp_*.csv
-python scripts/build_demographics.py --check    # builds starsim_data/data/demographics-2024.h5
+python scripts/build_demographics.py            # builds starsim_data/data/demographics-2024.h5
 ```
 
 `download_wpp.py --skip-existing` re-fetches only the series whose CSVs are missing.

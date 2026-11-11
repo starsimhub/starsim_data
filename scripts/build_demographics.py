@@ -22,17 +22,19 @@ Usage:
 ```bash
 python scripts/build_demographics.py                 # read raw_data/demographics/
 python scripts/build_demographics.py --wpp DIR        # read a different input dir
-python scripts/build_demographics.py --check          # round-trip validate via the loader
+python scripts/build_demographics.py --check          # rebuild into a temp folder, compare with the committed store, and load it; writes nothing
 ```
 """
 
 import argparse
 import json
 import sys
+import tempfile
 import h5py
 import numpy as np
 import pandas as pd
 import sciris as sc
+import checking
 from provenance import stamp
 
 REPO          = sc.thispath(__file__).parent
@@ -208,12 +210,14 @@ def report_missing(f):
 
 
 def build(wpp_dir, revision=DEFAULT_REVISION, check=False):
-    """ Write demographics-<revision>.h5 from the WPP CSVs in `wpp_dir`, and optionally read it back """
-    OUT.mkdir(parents=True, exist_ok=True)
+    """ Write demographics-<revision>.h5 from the WPP CSVs in `wpp_dir`; with `check`, build it in a temporary folder and compare it with the committed one instead """
     print(f'Reading WPP CSVs from {wpp_dir}')
     data = _load_by_type(wpp_dir)
 
-    out_path = OUT / f'demographics-{revision}.h5'
+    committed = OUT / f'demographics-{revision}.h5'
+    tmp = tempfile.TemporaryDirectory() if check else None
+    out_path = sc.path(tmp.name)/committed.name if tmp else committed
+    OUT.mkdir(parents=True, exist_ok=True)
     with h5py.File(out_path, 'w') as f:
         if 'indicators' in data:
             write_crude(f, 'births', data['indicators'], 'CBR')
@@ -238,11 +242,12 @@ def build(wpp_dir, revision=DEFAULT_REVISION, check=False):
     print(f'  {out_path.name}: {out_path.stat().st_size/1e6:.2f} MB')
 
     if check:
+        try:
+            checking.report([(out_path, committed)])
+        finally:
+            tmp.cleanup()
         sys.path.insert(0, str(REPO))
-        import starsim_data as ssd # Imported here, from this repository rather than any installed copy, so the check reads the store just written
-        # The registry caches what it discovers in the data directory, so make it look
-        # again -- otherwise this would check whatever was there before the rebuild.
-        ssd.registry.refresh()
+        import starsim_data as ssd # Imported here, from this repository rather than any installed copy, so the check reads the committed store
         for which in ('births', 'migration', 'deaths', 'population', 'fertility'):
             if which in ssd.list_datasets():
                 loc = ssd.list_locations(which)[0]
@@ -257,7 +262,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument('--wpp',      type=sc.path, default=DEFAULT_WPP, help='input dir of WPP CSVs')
     parser.add_argument('--revision', default=DEFAULT_REVISION, help=f'UN WPP revision, written as demographics-<rev>.h5 (default: {DEFAULT_REVISION})')
-    parser.add_argument('--check',    action='store_true', help='round-trip validate via the loader')
+    parser.add_argument('--check',    action='store_true', help='rebuild into a temporary folder, compare with the committed store and load it, writing nothing')
     args = parser.parse_args()
     build(args.wpp, revision=args.revision, check=args.check)
     return

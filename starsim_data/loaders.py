@@ -65,20 +65,26 @@ def list_datasets(detailed=False, tier=None):
     """Return the available datasets: contact sources plus WPP demographic series.
 
     Args:
-        detailed (bool): if True, return a dataframe of the registry -- name, layout,
-            access (bundled, fetched or downloaded), admin level, location count, license
-            and revisions -- rather than just the names.
+        detailed (bool/str): if True, return a dataframe with each dataset's name,
+            description, access (bundled, fetched or downloaded) and location count, rather
+            than just the names; if 'full', also its layout, admin levels, revisions and
+            license.
         tier (int): restrict to one tier (0 bundled, 1 fetched, 2 downloaded).
 
     Returns:
-        list or sciris.dataframe: dataset names, or the ssd.registry.
+        list or sciris.dataframe: dataset names, or a table of them.
 
     Example:
         ```python
         import starsim_data as ssd
         'prem2021' in ssd.list_datasets() # Returns True
+        ssd.list_datasets(detailed=True) # A summary table
+        ssd.list_datasets(detailed='full') # Every column of the registry
         ```
     """
+    if detailed not in (False, True, 'full'):
+        errormsg = f"detailed must be False, True or 'full', not {detailed!r}"
+        raise ValueError(errormsg)
     known = ssd.registry.datasets(tier=tier)
     if not detailed:
         return list(known)
@@ -94,7 +100,10 @@ def list_datasets(detailed=False, tier=None):
             revisions   = sc.strjoin(ds.revisions),
             license     = ds.license,
         ))
-    return ssd.settings.dataframe(rows)
+    df = ssd.settings.dataframe(rows)
+    if detailed != 'full':
+        df = df[['dataset', 'description', 'access', 'locations']]
+    return df
 
 
 def _open(which, revision=None, path=None):

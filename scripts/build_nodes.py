@@ -36,7 +36,7 @@ Usage:
 
 ```bash
 python scripts/build_nodes.py            # -> starsim_data/data/nodes.h5
-python scripts/build_nodes.py --check    # rebuild and validate via the loader
+python scripts/build_nodes.py --check    # rebuild into a temp folder, compare with the committed stores, and load them; writes nothing
 python scripts/build_nodes.py --limit 5  # a quick subset, for development
 ```
 """
@@ -44,6 +44,7 @@ python scripts/build_nodes.py --limit 5  # a quick subset, for development
 import argparse
 import json
 import sys
+import tempfile
 import time
 import warnings
 import numpy as np
@@ -52,6 +53,7 @@ import h5py
 import geopandas as gpd
 import zstandard
 import sciris as sc
+import checking
 from provenance import stamp
 
 REPO          = sc.thispath(__file__).parent
@@ -166,6 +168,8 @@ def unit_populations(location, gdf):
     shapes['unit'] = [str(i) for i in range(len(shapes))]
     try:
         totals = ssd.aggregate_raster(raster, shapes, by='unit', nearest=ssd.rasters.COAST_DISTANCE)
+    except ImportError: # A missing dependency would blank every population, so it stops the build
+        raise
     except Exception as e: # One bad raster should not stop the build
         print(f'    {location}: no level-1 population (summing the raster failed: {e})', flush=True)
         return None
@@ -350,12 +354,19 @@ def build(limit=None, check=False):
     if missing:
         print(f'  WARNING: no boundaries found for {len(missing)}: {sorted(missing)}')
 
-    OUT.mkdir(parents=True, exist_ok=True)
-    write(rows, OUT / 'nodes.h5', population_year)
-    write_adjacency(adjacency, OUT / 'adjacency.h5')
+    # With check, write into a temporary folder and compare with the committed stores, so
+    # that checking never changes the repository
+    tmp = tempfile.TemporaryDirectory() if check else None
+    out = sc.path(tmp.name) if tmp else OUT
+    out.mkdir(parents=True, exist_ok=True)
+    write(rows, out / 'nodes.h5', population_year)
+    write_adjacency(adjacency, out / 'adjacency.h5')
 
     if check:
-        ssd.registry.refresh()
+        try:
+            checking.report([(out / name, OUT / name) for name in ['nodes.h5', 'adjacency.h5']], subset=bool(limit))
+        finally:
+            tmp.cleanup()
         # Check a country that was actually built -- `--limit` may have excluded Kenya.
         built = [r['location'] for r in rows if r['level'] == 1]
         where = 'Kenya' if 'Kenya' in built else built[0]
@@ -371,7 +382,7 @@ def build(limit=None, check=False):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument('--check', action='store_true', help='after building, load the result back and validate it')
+    parser.add_argument('--check', action='store_true', help='rebuild into a temporary folder, compare with the committed stores and load them, writing nothing')
     parser.add_argument('--limit', type=int, default=None, help='only build the first N locations (for development)')
     args = parser.parse_args()
     warnings.filterwarnings('ignore', category=RuntimeWarning) # Equal-area centroid noise

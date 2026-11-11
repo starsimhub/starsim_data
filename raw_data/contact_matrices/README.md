@@ -36,7 +36,8 @@ The country list and per-country ISO codes / available sources live in `starsim_
 These CSVs are the origin of the packaged contact-matrix data. After changing anything here (adding a country, a source, or correcting values), rebuild the bundled HDF5 stores:
 
 ```bash
-python scripts/build_hdf5.py --check
+python scripts/build_hdf5.py           # rebuild
+python scripts/build_hdf5.py --check   # confirm the committed stores match a rebuild
 ```
 
 Do **not** hand-edit the generated `starsim_data/data/*.h5` files — they are always regenerated from these CSVs.

@@ -29,7 +29,7 @@ the raw data changes; output is overwritten cleanly.
 matrices use. The other sources are fetched on demand (tier 1): their stores live in
 `fetched/` in the repository, outside the wheel, and `fetch()` downloads each from the
 GitHub release named in `RELEASE` below, where it is an asset, checking it against the
-SHA-256 in the manifest `starsim_data/data/fetched.json`. The manifest is rewritten on every run, from
+SHA-256 in the manifest `starsim_data/data/fetched.json`. The manifest is rewritten on every run but `--check`, from
 the stores in `fetched/`.
 
 The existing matrices are published and won't change; this script records how they were
@@ -43,7 +43,7 @@ Usage:
 
 ```bash
 python scripts/build_hdf5.py              # build the bundled stores and rewrite the manifest
-python scripts/build_hdf5.py --check      # also round-trip validate against CSVs
+python scripts/build_hdf5.py --check      # rebuild into a temp folder and compare with the committed stores; writes nothing
 python scripts/build_hdf5.py --fetched    # also rebuild every store in fetched/
 python scripts/build_hdf5.py --fetched population_us   # ...or just this one
 ```
@@ -52,10 +52,12 @@ python scripts/build_hdf5.py --fetched population_us   # ...or just this one
 import argparse
 import hashlib
 import json
+import tempfile
 import h5py
 import numpy as np
 import pandas as pd
 import sciris as sc
+import checking
 from provenance import stamp
 
 REPO     = sc.thispath(__file__).parent
@@ -79,10 +81,12 @@ FILL_PATH = OUT / 'prem' / f'{FILL}.h5'
 FETCHED_SOURCES = ['prem2017', 'mistry2021', 'mistry2021_us', 'population_us']
 RELEASE = 'data-2026.10'
 URL = 'https://github.com/starsimhub/starsim_data/releases/download/{release}/{store}'
-DESCRIPTION = 'Age-structured contact matrix by setting'
-DESCRIPTIONS = {
-    'mistry2021_us': 'Contact matrices by setting for each US state, Mistry et al. 2021',
-    'population_us': 'Population of each US state by single year of age (persons), US Census Bureau',
+DESCRIPTION = 'Contact matrices by age and setting'
+DESCRIPTIONS = { # Short, so that list_datasets(detailed=True) fits a default pandas display
+    'prem2017': 'Contact matrices (Prem 2017)',
+    'mistry2021': 'Contact matrices (Mistry 2021)',
+    'mistry2021_us': 'US contact matrices (Mistry 2021)',
+    'population_us': 'US population by age (Census)',
 }
 
 # Machine-readable counterpart to NOTICE.md, written into each store so that the
@@ -163,17 +167,16 @@ def read_matrix(path):
     return pd.read_csv(path, header=None).to_numpy(dtype=np.float32)
 
 
-def build_source(source, check=False, out_path=None, only=None):
+def build_source(source, out_path, check=False, only=None):
     """
-    Write `<source>.h5` for one contact source: into the package if bundled, else `fetched/`.
+    Write the store for one contact source.
 
     Args:
         source (str): the contact source, e.g. `'prem2021'`
+        out_path (path): where to write the store
         check (bool): read each matrix back and compare it with its CSV
-        out_path (path): where to write the store, if not the default place
         only (set): if given, write only these locations
     """
-    out_path = out_path or (OUT if source in BUNDLED else FETCHED) / f'{source}.h5'
     width = AGE_WIDTH.get(source)
     n_locations = 0
     n_ages = None
@@ -202,13 +205,12 @@ def build_source(source, check=False, out_path=None, only=None):
         f.attrs['provenance'] = json.dumps(prov)
 
     size = out_path.stat().st_size/1e6
-    print(f'  {out_path.relative_to(REPO)}: {n_locations} locations, {size:.2f} MB')
+    print(f'  {out_path.name}: {n_locations} locations, {size:.2f} MB')
     return
 
 
-def build_population_us(check=False):
-    """ Write `population_us.h5` into `fetched/`: a (year, sex, age) array per state, as WPP's population is stored """
-    out_path = FETCHED / 'population_us.h5'
+def build_population_us(out_path, check=False):
+    """ Write `population_us.h5`: a (year, sex, age) array per state, as WPP's population is stored """
     df = pd.read_csv(POP_US, keep_default_na=False)
     ages = sorted(df.age.unique())
     with h5py.File(out_path, 'w') as f:
@@ -223,15 +225,15 @@ def build_population_us(check=False):
         n_locations = df.location.nunique()
         prov = stamp('population_us', 'scripts/build_hdf5.py', n_locations=n_locations, **SOURCES['population_us'])
         f.attrs['provenance'] = json.dumps(prov)
-    print(f'  {out_path.relative_to(REPO)}: {n_locations} locations, {out_path.stat().st_size/1e6:.2f} MB')
+    print(f'  {out_path.name}: {n_locations} locations, {out_path.stat().st_size/1e6:.2f} MB')
     return
 
 
-def build_fill(check=False):
+def build_fill(out_path, check=False):
     """ Write the prem2017 matrices for the locations prem2021 lacks, for the default contacts """
-    FILL_PATH.parent.mkdir(exist_ok=True)
+    out_path.parent.mkdir(parents=True, exist_ok=True)
     only = locations_with(FILL) - locations_with(BASE)
-    build_source(FILL, check=check, out_path=FILL_PATH, only=only)
+    build_source(FILL, out_path, check=check, only=only)
     return
 
 
@@ -240,8 +242,8 @@ def sha256(path):
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
-def write_manifest():
-    """ Describe each store in `FETCHED_SOURCES` (from its file in `fetched/`) in `data/fetched.json` """
+def manifest_text():
+    """ Describe each store in `FETCHED_SOURCES`, from its file in `fetched/`, as the text of `data/fetched.json` """
     manifest = {}
     for source in sorted(FETCHED_SOURCES):
         path = FETCHED / f'{source}.h5'
@@ -258,19 +260,15 @@ def write_manifest():
                 locations   = locations,
                 provenance  = json.loads(f.attrs['provenance']),
             )
-    MANIFEST.write_text(json.dumps(manifest, indent=1, ensure_ascii=False) + '\n', encoding='utf-8')
-    print(f'  {MANIFEST.name}: {len(manifest)} fetched store(s)')
-    return
+    return json.dumps(manifest, indent=1, ensure_ascii=False) + '\n'
 
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--check',   action='store_true', help='round-trip validate HDF5 values against the source CSVs')
+    parser.add_argument('--check',   action='store_true', help='rebuild into a temporary folder and compare with the committed stores, writing nothing')
     parser.add_argument('--fetched', nargs='*', metavar='NAME', help='also rebuild these stores in fetched/, or all of them if none are named (only needed for a new fetched source)')
     args = parser.parse_args()
 
-    OUT.mkdir(parents=True, exist_ok=True)
-    FETCHED.mkdir(parents=True, exist_ok=True)
     sources = discover_sources()
     print(f'Found {len(sources)} dataset(s) in {CONTACT}: {sc.strjoin(sources)}')
     unlisted = [source for source in sources if source not in BUNDLED + FETCHED_SOURCES]
@@ -280,15 +278,43 @@ def main():
     if fetched == []: # --fetched on its own: all of them
         fetched = sources + ['population_us']
     fetched = fetched or []
+
+    # With --check, everything is built into a temporary folder and compared with the
+    # committed files, so that checking never changes the repository
+    tmp = tempfile.TemporaryDirectory() if args.check else None
+    out, fetched_out = (sc.path(tmp.name)/'data', sc.path(tmp.name)/'fetched') if tmp else (OUT, FETCHED)
+    out.mkdir(parents=True, exist_ok=True)
+    fetched_out.mkdir(parents=True, exist_ok=True)
+
+    pairs = [] # (built, committed) for each store
     for source in sources:
         if source in BUNDLED or source in fetched:
-            build_source(source, check=args.check)
+            folder, committed = (out, OUT) if source in BUNDLED else (fetched_out, FETCHED)
+            build_source(source, folder/f'{source}.h5', check=args.check)
+            pairs.append((folder/f'{source}.h5', committed/f'{source}.h5'))
     if 'population_us' in fetched:
-        build_population_us(check=args.check)
-    build_fill(check=args.check)
-    write_manifest()
-    if fetched:
-        print('The fetched stores were rebuilt: set a new tag in RELEASE, and create that release once this is on main.')
+        build_population_us(fetched_out/'population_us.h5', check=args.check)
+        pairs.append((fetched_out/'population_us.h5', FETCHED/'population_us.h5'))
+    fill = out/FILL_PATH.relative_to(OUT)
+    build_fill(fill, check=args.check)
+    pairs.append((fill, FILL_PATH))
+
+    text = manifest_text() # Always from the committed stores in fetched/
+    if args.check:
+        print('Comparing with the committed files:')
+        manifest_same = MANIFEST.read_text(encoding='utf-8') == text
+        print(f"  {MANIFEST.name}: {'matches a rebuild' if manifest_same else 'DIFFERS from a rebuild'}")
+        try:
+            checking.report(pairs)
+        finally:
+            tmp.cleanup()
+        if not manifest_same:
+            raise SystemExit(f'{MANIFEST.name} is out of date; rerun this script without --check and commit the result.')
+    else:
+        MANIFEST.write_text(text, encoding='utf-8')
+        print(f'  {MANIFEST.name}: {len(json.loads(text))} fetched store(s)')
+        if fetched:
+            print('The fetched stores were rebuilt: set a new tag in RELEASE, and create that release once this is on main.')
     print('Done.')
     return
 

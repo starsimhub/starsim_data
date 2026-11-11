@@ -53,15 +53,16 @@ jobs:
       - name: Install starsim_data
         run: pip install -e .[dev]
       # The bundled .h5 stores are build artifacts committed to the repo, so they can
-      # drift from the raw data they claim to be built from. Rebuilding and validating
-      # here is what keeps `raw_data/` the actual source of truth.
-      - name: Rebuild contact matrices and validate against the CSVs
+      # drift from the raw data they claim to be built from. Each --check rebuilds into a
+      # temporary folder and fails if the result differs from the committed files, which
+      # is what keeps `raw_data/` the actual source of truth.
+      - name: Contact matrices match a rebuild from the CSVs
         run: python scripts/build_hdf5.py --check
-      - name: Rebuild demographics and validate via the loader
+      - name: Demographics match a rebuild, and load
         run: python scripts/build_demographics.py --check
       - name: Check locations.csv is up to date
         run: python scripts/build_locations.py --check
-      - name: Tests still pass against the rebuilt data
+      - name: Tests pass
         run: pytest tests -q -m "not network"
 
   # The node table is deliberately left out of the job above: rebuilding it pulls ~420 MB
@@ -81,7 +82,7 @@ jobs:
           architecture: x64
       - name: Install starsim_data
         run: pip install -e .[dev,spatial]
-      - name: Rebuild the node table and validate via the loader
+      - name: Node table matches a rebuild, and loads
         run: python scripts/build_nodes.py --check
-      - name: Tests still pass against the rebuilt node table
+      - name: Tests pass
         run: pytest tests -q -m "not network"
