@@ -2,6 +2,11 @@
 
 What's new in each version of `starsim_data`. The data is versioned along with the code: any change to the included data is a new version, so a given version always gives the same data.
 
+## Version 2.2.2 (2026-11-11)
+
+- Republishes 2.2.1 through the release workflow, so that PyPI can verify where it was built. There are no other changes.
+- The documentation is rebuilt after each release, so it always shows the latest version.
+
 ## Version 2.2.1 (2026-11-11)
 
 - `ssd.options.pandas = True` (or `STARSIM_DATA_PANDAS=1`) makes every function return plain pandas DataFrames instead of Sciris dataframes.

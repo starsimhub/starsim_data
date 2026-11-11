@@ -5,6 +5,14 @@ on:
     branches:
       - main
   pull_request:
+  # Rebuild after a release, so the version badge beside the site title, which shows the
+  # latest GitHub release, is current. A run triggered this way is on main, which is the
+  # only branch the github-pages environment deploys from; a `release` trigger would run
+  # on the tag instead, and be refused.
+  workflow_run:
+    workflows: [Publish]
+    types: [completed]
+  workflow_dispatch:
 
 jobs:
   build-docs:
