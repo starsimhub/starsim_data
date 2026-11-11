@@ -1,7 +1,5 @@
 # Starsim Data
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://github.com/starsimhub/starsim_data/blob/main/LICENSE)
-
 This package provides demographic data, contact matrices, and administrative geography for [Starsim](https://starsim.org) (although it can of course be used for other applications as well). Commonly used data are available offline, while more detailed data are downloaded and cached. 
 
 ```python
@@ -138,7 +136,7 @@ This package builds on two others: [epydemix-data](https://github.com/epistorm/e
 
 ## Contributing
 
-[CONTRIBUTING.md](CONTRIBUTING.md) covers changing the code or the data, building the documentation, and making a release.
+[CONTRIBUTING.md](https://github.com/starsimhub/starsim_data/blob/main/CONTRIBUTING.md) covers changing the code or the data, building the documentation, and making a release.
 
 ## License
 

@@ -35,7 +35,7 @@ pip install -e starsim_data
 
 :::
 
-The package includes about 9 MB of data. The `[spatial]` option also installs `geopandas`, `pyogrio` and `rastertoolkit`, which you only need for the boundary shapes and population maps described in [Spatial data](user-guide/spatial.qmd).
+The package includes about 9 MB of data. The `[spatial]` option also installs `geopandas`, `pyogrio` and `rastertoolkit`, which you only need for the boundary shapes and population maps described in [Spatial data](spatial.qmd).
 
 ## Listing what is available
 
@@ -45,7 +45,7 @@ import starsim_data as ssd
 ssd.list_datasets(detailed=True)[['dataset', 'description', 'access', 'locations']]
 ```
 
-The `access` column says how you get each dataset. **Bundled** data is inside the package and loads instantly, with no internet connection. **Fetched** data is prepared by this package but kept out of it to save space; it is downloaded from this package's own releases the first time you use it. **Downloaded** data comes from its original publisher, such as the UN. Both fetched and downloaded data are saved on your computer after the first use. [Bundled, fetched and downloaded data](user-guide/access.qmd) explains the difference.
+The `access` column says how you get each dataset. **Bundled** data is inside the package and loads instantly, with no internet connection. **Fetched** data is prepared by this package but kept out of it to save space; it is downloaded from this package's own releases the first time you use it. **Downloaded** data comes from its original publisher, such as the UN. Both fetched and downloaded data are saved on your computer after the first use. [Bundled, fetched and downloaded data](access.qmd) explains the difference.
 
 ## Loading a dataset
 
@@ -82,7 +82,7 @@ You don't need to know the exact name the package uses. ISO codes, official name
 [ssd.resolve(name) for name in ["Côte d'Ivoire", 'cote divoire', 'Ivory Coast', 'CIV']]
 ```
 
-A name that doesn't match gives an error rather than a guess, though the error suggests what you might have meant: `ssd.load('Keyna', which='deaths')` gives "location 'Keyna' not found (did you mean: Kenya, China, Ghana?)". [Locations](user-guide/locations.qmd) has more on which names are recognized.
+A name that doesn't match gives an error rather than a guess, though the error suggests what you might have meant: `ssd.load('Keyna', which='deaths')` gives "location 'Keyna' not found (did you mean: Kenya, China, Ghana?)". [Locations](locations.qmd) has more on which names are recognized.
 
 ## Inspecting the data visually
 
@@ -119,7 +119,7 @@ The same information is attached to every frame returned by `load()`:
 deaths.attrs['provenance'].license
 ```
 
-[Provenance and reproducibility](user-guide/provenance.qmd) has more on this.
+[Provenance and reproducibility](provenance.qmd) has more on this.
 
 ## Subnational geography
 
@@ -134,7 +134,7 @@ nodes.head()
 ssd.distances('kenya', level=1).iloc[:4, :4].round(1)
 ```
 
-Center points, areas and the distances between units need no extra packages and no downloads. Boundary shapes, for drawing maps, are an optional extra described in [Spatial data](user-guide/spatial.qmd).
+Center points, areas and the distances between units need no extra packages and no downloads. Boundary shapes, for drawing maps, are an optional extra described in [Spatial data](spatial.qmd).
 
 ## Data that is not bundled
 
@@ -146,4 +146,4 @@ ssd.download('kenya', which='life_table', years=2020)      # qx, lx, ex, and the
 ssd.download('kenya', which='births', variant='High')      # a different projection variant
 ```
 
-[Bundled, fetched and downloaded data](user-guide/access.qmd) explains the difference, and is a good page to read next.
+[Bundled, fetched and downloaded data](access.qmd) explains the difference, and is a good page to read next.

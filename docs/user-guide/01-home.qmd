@@ -1,0 +1,9 @@
+---
+title: "Starsim Data"
+sidebar-title: "Home"
+guide-section: "Getting started"
+# The landing page is the README. Keep the include first in the body: pandoc turns the
+# README's leading `# Starsim Data` into the page title only if nothing comes before it.
+---
+
+{{< include ../../../README.md >}}

@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this is
 
-`starsim_data` distributes UN WPP demographics, contact matrices, and administrative geography for [Starsim](https://starsim.org) models. It returns dataframes and nothing else — no model code, no simulation logic. See `docs/user-guide/07-related-projects.qmd` for where that line is drawn and why.
+`starsim_data` distributes UN WPP demographics, contact matrices, and administrative geography for [Starsim](https://starsim.org) models. It returns dataframes and nothing else — no model code, no simulation logic. See `docs/user-guide/08-related-projects.qmd` for where that line is drawn and why.
 
 ## Commands
 
@@ -90,11 +90,11 @@ Code is MIT; each bundled dataset keeps its own upstream license (GPL-3.0 for th
 Narrative pages are `.qmd` files in `docs/user-guide/`, built by [Sciris' fork of great-docs](https://github.com/sciris/great-docs), with [quartopydoc](https://pypi.org/project/quartopydoc/) in place of quartodoc; use these rather than the upstream versions. Both are in the `docs` dependency group in `pyproject.toml` (a group rather than an extra because PyPI rejects URL dependencies in a published package's metadata). There is no navigation config to maintain: the sidebar comes from each page's `guide-section` frontmatter. The API reference is written by quartopydoc, from the `quartodoc:` block in `docs/great-docs.yml`, as one page per module; the module list is the only part to keep in step, and `test_config` fails if a module is missing from it. Styling that makes the site look like the Starsim docs (Raleway, the navbar title, bold sidebar sections) is in `docs/user-guide/assets/starsim-theme.html`, with `styles: widgets` leaving page content to the cosmo theme. Rules `tests/test_docs.py` enforces:
 
 - Every page needs `title` and a `guide-section` from `Getting started` / `The data` / `Internals`, and sections must stay **contiguous in filename order** — inserting a page in an earlier section means renumbering the later ones.
-- Renumbering is safe: site URLs strip the numeric prefix (`docs/user-guide/09-provenance.qmd` → `user-guide/provenance.html`), so cross-page links are written as bare `provenance.qmd`.
-- Only the landing page (`01-getting-started.qmd`) prefixes links with `user-guide/`.
+- Renumbering is safe: site URLs strip the numeric prefix (`docs/user-guide/10-provenance.qmd` → `user-guide/provenance.html`), so cross-page links are written as bare `provenance.qmd`.
+- The landing page, `01-home.qmd`, only includes `README.md`; great-docs renders it at the site root. No page prefixes links with `user-guide/`.
 - Executed `{python}` cells must not fetch anything; write downloading examples as static ` ```python ` blocks.
 
-`docs/user-guide/08-architecture.qmd` is the long-form version of the Architecture section above, and stays in step with the code by executing against it.
+`docs/user-guide/09-architecture.qmd` is the long-form version of the Architecture section above, and stays in step with the code by executing against it.
 
 ### Keeping the docs in step
 
@@ -108,6 +108,6 @@ Docs are part of a change, not a follow-up to it. Before treating any change as 
 4. Update the hand-maintained places that count or list pages: the "N narrative pages" sentence in `CHANGELOG.md`, and the per-file table in `tests/README.md` when tests change.
 5. Run `pytest tests/test_docs.py`, then `great-docs build` if Quarto is available. The tests catch frontmatter, dead cross-links and accidental network use; only a real build catches a cell that raises.
 
-**When code changes:** the API reference regenerates itself, but prose does not. A new dataset, layout or source touches `docs/user-guide/03-datasets.qmd` (schema), `docs/user-guide/06-datasources.qmd` (coverage, licensing, limitations) and `NOTICE.md`; a new extension point touches `docs/user-guide/08-architecture.qmd`. Docs cells execute against the package at build time, so a stale *example* fails docs CI — but a stale *sentence* will not, and nothing will catch it for you.
+**When code changes:** the API reference regenerates itself, but prose does not. A new dataset, layout or source touches `docs/user-guide/04-datasets.qmd` (schema), `docs/user-guide/07-datasources.qmd` (coverage, licensing, limitations) and `NOTICE.md`; a new extension point touches `docs/user-guide/09-architecture.qmd`. Docs cells execute against the package at build time, so a stale *example* fails docs CI — but a stale *sentence* will not, and nothing will catch it for you.
 
 README links to the built site are `https://starsimhub.github.io/starsim_data/user-guide/<name>.html`.

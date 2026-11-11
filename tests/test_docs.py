@@ -59,9 +59,9 @@ def test_links():
     """
     Links point at real pages, allowing for the numeric prefix and the landing page.
 
-    The first page is the site landing page: it renders at the site root while its
-    siblings render under `user-guide/`, so its links carry that prefix. Every other page
-    links to plain siblings.
+    The first page is the site landing page, which includes the README: it renders at
+    the site root while its siblings render under `user-guide/`, so it has no relative
+    links of its own. Every other page links to plain siblings.
     """
     sc.heading("Testing cross-page links")
     for page in pages():
@@ -70,10 +70,11 @@ def test_links():
             assert "/" not in name, f"{page.name} links to {target}, which is not a guide page"
             assert list(DOCS.glob(f"[0-9][0-9]-{name}")), f"{page.name} links to {target}, which does not exist"
 
-    # A `user-guide/` prefix on any other page would be a broken link
-    for page in pages()[1:]:
+    # A `user-guide/` prefix would be a broken link
+    for page in pages():
         assert "](user-guide/" not in page.read_text(), f"{page.name} should link to plain siblings, not via user-guide/"
-    assert "](user-guide/" in pages()[0].read_text() # The landing page does use it
+    body = pages()[0].read_text().split("---", 2)[2].strip()
+    assert body == "{{< include ../../../README.md >}}" # The landing page is the README, and only it, so its heading becomes the title
 
 
 @sc.timer()

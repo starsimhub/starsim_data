@@ -6,6 +6,7 @@ What's new in each version of `starsim_data`. The data is versioned along with t
 
 - `ssd.options.pandas = True` (or `STARSIM_DATA_PANDAS=1`) makes every function return plain pandas DataFrames instead of Sciris dataframes.
 - `ssd.load('kenya', which='contacts')` is another way to ask for the default contact matrices (`'prem'`).
+- The documentation's home page is now the README, followed by Getting started.
 
 ## Version 2.2.0 (2026-10-30)
 

@@ -5,9 +5,8 @@
 # Preview with: great-docs preview
 #
 # This file is in docs/, and paths in it are relative to docs/. The narrative pages and
-# their assets live in docs/user-guide/. The README is not used for the site -- it remains
-# the front door on GitHub and PyPI -- because the first User Guide page is the landing
-# page instead (see `homepage` below).
+# their assets live in docs/user-guide/. The landing page is the README, included by the
+# first User Guide page, 01-home.qmd (see `homepage` below).
 
 parser: google
 
@@ -22,8 +21,8 @@ dynamic: false
 # Pages are ordered by filename prefix and grouped by their `guide-section` frontmatter.
 #
 # One consequence to know about: the landing page renders at the site root while its
-# siblings render under user-guide/, so cross-page links in 01-getting-started.qmd
-# carry a `user-guide/` prefix. Every other page links to plain siblings.
+# siblings render under user-guide/, so it must not link to them with plain relative
+# links. It is only the README, whose links to the site are absolute URLs.
 user_guide: user-guide
 homepage: user_guide
 
@@ -84,7 +83,7 @@ include_in_header:
 # quartopydoc's authorship extension (in _extensions/sciris) to the build before rendering.
 pre_render: user-guide/assets/authorship.py
 
-# The changelog is CHANGELOG.md, included by 11-changelog.qmd, rather than the page
+# The changelog is CHANGELOG.md, included by 12-changelog.qmd, rather than the page
 # great-docs generates from GitHub Releases: the releases here are data assets, not notes.
 changelog:
   enabled: false
