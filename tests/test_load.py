@@ -50,6 +50,32 @@ def test_matrix():
 
 
 @sc.timer()
+def test_contacts_alias():
+    """ which='contacts' is another name for the default contact matrices """
+    sc.heading("Testing the contacts alias")
+    df = ssd.load("kenya", which="contacts")
+    assert df.equals(ssd.load("kenya", which="prem"))
+    assert "contacts" not in ssd.list_datasets() # An alias, not a dataset of its own
+    return df
+
+
+@sc.timer()
+def test_pandas_option():
+    """ options.pandas returns plain pandas DataFrames with the same contents """
+    sc.heading("Testing the pandas option")
+    sdf = ssd.load(location="Kenya", which="prem2021")
+    with ssd.options.context(pandas=True):
+        pdf = ssd.load(location="Kenya", which="prem2021")
+        nodes = ssd.load_nodes("kenya", level=1)
+    assert type(pdf) is pd.DataFrame # Plain pandas, not a subclass
+    assert type(nodes) is pd.DataFrame # Applies beyond load()
+    assert pdf.equals(pd.DataFrame(sdf)) # Same data either way
+    assert pdf.attrs['provenance'] == sdf.attrs['provenance'] # Provenance still attached
+    assert isinstance(ssd.load(location="Kenya", which="prem2021"), sc.dataframe) # Restored on exit
+    return pdf
+
+
+@sc.timer()
 def test_location_names():
     """ Any spelling, code or alias of a location loads the same matrix """
     sc.heading("Testing location matching")
@@ -188,6 +214,8 @@ if __name__ == "__main__":
 
     listing  = test_listing()
     matrix   = test_matrix()
+    contacts = test_contacts_alias()
+    pandas   = test_pandas_option()
     names    = test_location_names()
     kinds    = test_kinds()
     default  = test_default_contacts()

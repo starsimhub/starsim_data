@@ -2,34 +2,37 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://github.com/starsimhub/starsim_data/blob/main/LICENSE)
 
-Demographic data, contact matrices and administrative geography for disease modeling with [Starsim](https://starsim.org), ready to use with one function call and no internet connection.
+This package provides demographic data, contact matrices, and administrative geography for [Starsim](https://starsim.org) (although it can of course be used for other applications as well). Commonly used data are available offline, while more detailed data are downloaded and cached. 
 
 ```python
 import starsim_data as ssd
 
-ssd.list_datasets()                    # what's available
+ssd.list_datasets()                    # What's available
 ssd.load('kenya', which='deaths')      # UN mortality rates by age and sex
-ssd.load('kenya', kind='home')         # a contact matrix for household contacts
+ssd.load('kenya', which='contacts')    # A contact matrix
 ssd.load_nodes('kenya', level=1)       # Kenya's 47 counties: locations, areas, populations
-ssd.provenance('prem')                 # where the data came from, and how to cite it
-ssd.plot('kenya')                      # check it by eye before it goes into a model
+ssd.provenance('prem')                 # Where the data came from, and how to cite it
+ssd.plot('kenya')                      # See what the data look like before
 ```
 
-Countries can be named however you like: `'Kenya'`, `'kenya'`, `'KE'`, `'KEN'` and `'Republic of Kenya'` all work, as do common abbreviations (`'USA'`, `'UK'`, `'DRC'`) and names with or without accents (`"Côte d'Ivoire"`, `'cote divoire'`). A name that isn't recognized gives an error with suggestions, rather than a guess.
+Location naming is flexible: `'Kenya'`, `'kenya'`, `'KE'`, `'KEN'` and `'Republic of Kenya'` all work, as do common abbreviations (`'USA'`, `'UK'`, `'DRC'`) and names with or without accents (`"Côte d'Ivoire"`, `'cote divoire'`).
 
 **Documentation:** <https://starsim.org/starsim_data>
 
 ## Installation
 
+*Note: `starsim_data` is installed as part of Starsim, so typically you don't need to install it separately.*
+
 ```bash
-pip install starsim_data
+pip install starsim_data # Standard usage
+pip install starsim_data[spatial] # With support for subnational maps and geospatial shape boundaries
 ```
 
 ---
 
 ## What's included
 
-`ssd.load()` returns a dataframe that works like a [pandas](https://pandas.pydata.org) one.
+`ssd.load()` returns a dataframe of the requested data.
 
 ### Demographics (UN World Population Prospects 2024)
 
@@ -53,13 +56,13 @@ The average number of daily contacts between age groups, for five settings (`all
 
 | `which=` | Included | Age groups | Countries | Study |
 |---|---|---|---|---|
-| `prem` (default) | ✅ | 5-year (`0–4, …, 75+`) | 187 | `prem2021`, plus `prem2017` for the ten countries it lacks |
+| `contacts` (default) | ✅ | 5-year (`0–4, …, 75+`) | 187 | `prem2021`, plus `prem2017` for the ten countries it lacks |
 | `prem2021` | ✅ | 5-year | 177 | [Prem et al. 2021](https://journals.plos.org/ploscompbiol/article?id=10.1371/journal.pcbi.1009098) |
 | `prem2017` | ⬇️ `fetch()` | 5-year | 152 | [Prem et al. 2017](https://journals.plos.org/ploscompbiol/article?id=10.1371/journal.pcbi.1005697) |
 | `mistry2021` | ⬇️ `fetch()` | single year (`0–84+`) | 36 | [Mistry et al. 2021](https://www.nature.com/articles/s41467-020-20544-y) |
 | `mistry2021_us` | ⬇️ `fetch()` | single year (`0–84+`) | 50 US states and DC | [Mistry et al. 2021](https://www.nature.com/articles/s41467-020-20544-y) |
 
-The default, `prem2021`, is the authors' update of `prem2017`, using more surveys and newer data; for the ten countries it dropped (such as Japan and Australia), the default falls back to `prem2017`. The other sources are a few MB each, and are downloaded the first time you use them:
+The default, `prem2021`, is the authors' update of `prem2017`, using more surveys and newer data; for the ten countries it dropped (such as Japan and Australia), the default falls back to `prem2017`. The fetched sources are a few MB each, and are downloaded the first time you use them:
 
 ```python
 ssd.fetch('japan', which='prem2017', kind='home')
@@ -68,11 +71,11 @@ ssd.fetch('United States:Massachusetts', which='mistry2021_us')        # a US st
 ssd.fetch('United States:Massachusetts', which='population_us')        # its population by single year of age
 ```
 
-Not every country is in every source; `ssd.list_locations('mistry2021')` lists the ones that are.
+Not every country is in every source. You can use e.g. `ssd.list_locations('mistry2021')` to lists which ones are.
 
 ### Geography
 
-For spatial models, the **node table** describes each country and its states or provinces, for 184 countries: where each one is, how big it is, how many people live there, and which others it borders. It is included in the package and needs no extra software:
+For spatial models, the **node table** describes each country and its states or provinces, for 184 countries: basic geography, how many people live there, and which others it borders. It is included in the package and needs no extra software:
 
 ```python
 ssd.load_nodes('kenya', level=1)       # 47 counties: name, latitude/longitude, area, population
@@ -100,10 +103,10 @@ Boundaries come from [UNOCHA](https://data.humdata.org/dataset/?dataseries_name=
 
 ## Data that isn't included
 
-`load()` never uses the internet, so it is instant, works offline, and gives everyone the same data for a given version of the package. Data that isn't included comes one of two ways, and the function name tells you which:
+`load()` uses data bundled in the package. For data that isn't included, there are two "tiers" of download:
 
-- **`fetch()`** downloads data that this package prepares and publishes, but doesn't include to save space: the contact matrices above. It is the same for everyone on a version.
-- **`download()`** gets data from the organization that publishes it, such as the UN. These servers are outside this package's control, so they may be slow, change their data, or be unavailable. `download_shapes()`, `download_nodes()` and `download_raster()` do the same for boundaries and WorldPop.
+- **`fetch()`** downloads data that this package stores on GitHub as a release asset, but doesn't bundle with the install for space reasons. These are the contact matrices above, plus US state population sizes.
+- **`download()`** downloads data directly from the original source, such as the UN. These servers are outside this package's control, so they may be slow, change their data, or be unavailable. `download_shapes()`, `download_nodes()` and `download_raster()` do the same for boundaries and WorldPop.
 
 ```python
 ssd.download('kenya', which='deaths', years=(2000, 2025))   # annual rather than every 10 years
@@ -112,7 +115,7 @@ ssd.download('kenya', which='births', variant='High')       # the UN's High proj
 ssd.download('kenya', which='indicators', years=2020)       # TFR, life expectancy, IMR and ~50 more
 ```
 
-The UN's files are large (up to a few hundred MB), so everything downloaded is saved on your computer and reused next time; `ssd.cache_info()` shows what has been saved, and `ssd.clear_cache()` deletes it.
+The UN's files are large (up to a few hundred MB), so everything downloaded is cached; `ssd.cache_info()` shows what has been saved, and `ssd.clear_cache()` deletes it.
 
 ## Checking the data
 
@@ -131,7 +134,7 @@ ssd.provenance('deaths').license        # 'CC BY 3.0 IGO'
 
 ## Related projects
 
-This package builds on two others: [epydemix-data](https://github.com/epistorm/epydemix-data), where the contact matrices come from, and [laser-init](https://github.com/laser-base/laser-init), which sets up spatial models for [LASER](https://github.com/laser-base/laser-generic) and is where the approach to boundaries and populations comes from. [Related projects](https://starsimhub.github.io/starsim_data/user-guide/related-projects.html) compares them, and other ways of getting the same data.
+This package builds on two others: [epydemix-data](https://github.com/epistorm/epydemix-data), where the contact matrices come from, and [laser-init](https://github.com/laser-base/laser-init), which sets up spatial models for [LASER](https://github.com/laser-base/laser-generic) and is where the approach to boundaries and populations comes from. See [Related projects](https://starsimhub.github.io/starsim_data/user-guide/related-projects.html) for more information.
 
 ## Contributing
 
@@ -139,8 +142,8 @@ This package builds on two others: [epydemix-data](https://github.com/epistorm/e
 
 ## License
 
-The code is licensed under the [MIT License](https://github.com/starsimhub/starsim_data/blob/main/LICENSE). The data keeps its original licenses: the UN WPP data is under [CC BY 3.0 IGO](https://population.un.org/wpp/), the contact matrices under GPL-3.0 (`prem2017`, `prem2021`) and Apache-2.0 (`mistry2021`), and the node table under CC BY 3.0 IGO (UNOCHA) and CC BY 4.0 (geoBoundaries, WorldPop). See [NOTICE.md](https://github.com/starsimhub/starsim_data/blob/main/NOTICE.md) and [`licenses/`](https://github.com/starsimhub/starsim_data/blob/main/licenses) for details.
+The code is licensed under the [MIT License](https://github.com/starsimhub/starsim_data/blob/main/LICENSE). The data itself is licened under several different licenses. The UN WPP data is under [CC BY 3.0 IGO](https://population.un.org/wpp/), the contact matrices under GPL-3.0 (`prem2017`, `prem2021`) and Apache-2.0 (`mistry2021`), and the node table under CC BY 3.0 IGO (UNOCHA) and CC BY 4.0 (geoBoundaries, WorldPop). See [NOTICE.md](https://github.com/starsimhub/starsim_data/blob/main/NOTICE.md) and [`licenses/`](https://github.com/starsimhub/starsim_data/blob/main/licenses) for details.
 
 ## AI disclosure
 
-Many tokens (mainly from Claude Opus 5.5) were harmed in the making of this repo. We believe in transparency around AI use. On most pages you will see a small marker like "🧠5% 🤖95%". This means that humans wrote 5% of the content, and AI wrote the other 95% (hover for details).
+Many tokens (mainly from Claude Opus 5.5) were harmed in the making of this repo. We believe in transparency around AI use. On most pages you will see a small marker like "🧠5% 🤖95%". This means that humans wrote 5% of the content, and AI wrote the other 95% (hover for details). We know reading AI-generated text can get tiring, so our long-term goal is to replace as much of it as possible.

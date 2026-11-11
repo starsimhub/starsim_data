@@ -152,13 +152,13 @@ def distances(location=None, level=1, nodes=None, units='km', index='dot_name'):
     np.fill_diagonal(matrix, 0.0)
 
     labels = list(nodes[index])
-    return sc.dataframe(matrix * UNITS[units], index=labels, columns=labels)
+    return ssd.settings.dataframe(matrix * UNITS[units], index=labels, columns=labels)
 
 
 def _shape_adjacency(group, key, spec, opts):
     """The pairs of units that share a border, as a frame of `level`, `a` and `b` (nodeids, a < b)."""
     data = group[key][()]
-    return sc.dataframe(data, columns=spec['columns'])
+    return ssd.settings.dataframe(data, columns=spec['columns'])
 
 
 ssd.registry.register_layout('adjacency', _shape_adjacency)
@@ -207,7 +207,7 @@ def adjacency(location=None, level=1, nodes=None, index='dot_name'):
         pairs = np.asarray(nodes.attrs['borders'], dtype=int).reshape(-1, 2)
         matrix = np.zeros((len(nodes), len(nodes)), dtype=bool)
         matrix[pairs[:, 0], pairs[:, 1]] = True
-        return sc.dataframe(matrix | matrix.T, index=labels, columns=labels)
+        return ssd.settings.dataframe(matrix | matrix.T, index=labels, columns=labels)
 
     # Otherwise, the bundled borders
     adj = ssd.registry.datasets().get('adjacency')
@@ -223,4 +223,4 @@ def adjacency(location=None, level=1, nodes=None, index='dot_name'):
     matrix[pairs.a.to_numpy(), pairs.b.to_numpy()] = True
     matrix |= matrix.T
     ids = nodes.nodeid.to_numpy().astype(int)
-    return sc.dataframe(matrix[np.ix_(ids, ids)], index=labels, columns=labels)
+    return ssd.settings.dataframe(matrix[np.ix_(ids, ids)], index=labels, columns=labels)

@@ -53,6 +53,10 @@ FETCHED_MANIFEST = 'fetched.json'
 # the locations it lacks, which are bundled in a store of their own in this subfolder.
 PREM = dict(name='prem', base='prem2021', fill='prem/prem2017.h5')
 
+# Other names a dataset can be asked for by, e.g. `load('kenya', which='contacts')`.
+# An alias is resolved by `dataset()`; it is not listed as a dataset of its own.
+ALIASES = {'contacts': 'prem'}
+
 # One-line descriptions of the bundled datasets. Everything else about a dataset is read
 # from the store itself; these are the only facts that are not in the data.
 DESCRIPTIONS = {
@@ -345,12 +349,13 @@ def datasets(tier=None):
 
 
 def dataset(name):
-    """Return the `Dataset` descriptor for `name`.
+    """Return the `Dataset` descriptor for `name`, which may be an alias (see `ALIASES`).
 
     Raises:
         ValueError: if the dataset is unknown; the message lists close matches.
     """
     known = datasets()
+    name = ALIASES.get(name, name)
     if name in known:
         return known[name]
     hint = ssd.locations._did_you_mean(name, known)

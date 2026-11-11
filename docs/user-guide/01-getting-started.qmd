@@ -54,7 +54,7 @@ deaths = ssd.load('kenya', which='deaths')
 deaths.head()
 ```
 
-The result is a `sciris.dataframe`, which is a kind of `pandas.DataFrame`, so everything you do with pandas works. The column names are the UN's own: `Time`, `Sex`, `AgeGrpStart` and `mx` are the names used in World Population Prospects, and also the names Starsim's demographic modules expect.
+The result is a `sciris.dataframe`, which is a kind of `pandas.DataFrame`, so everything you do with pandas works. To get plain pandas DataFrames instead, set `ssd.options.pandas = True` (or the `STARSIM_DATA_PANDAS` environment variable). The column names are the UN's own: `Time`, `Sex`, `AgeGrpStart` and `mx` are the names used in World Population Prospects, and also the names Starsim's demographic modules expect.
 
 Contact matrices are square, with rows and columns labeled by the start age of each age group:
 

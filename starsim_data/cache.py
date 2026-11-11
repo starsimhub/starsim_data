@@ -184,7 +184,7 @@ def cache_info():
             url        = prov.get('url', ''),
             downloaded = prov.get('downloaded', ''),
         ))
-    return sc.dataframe(rows, columns=['file', 'size', 'bytes', 'url', 'downloaded'])
+    return ssd.settings.dataframe(rows, columns=['file', 'size', 'bytes', 'url', 'downloaded'])
 
 
 def clear_cache(pattern=None, verbose=None):

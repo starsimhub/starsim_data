@@ -150,7 +150,7 @@ def list_shape_sources():
     rows = []
     for s in SOURCES.values():
         rows.append(dict(source=s.name, max_level=s.max_level, license=s.license, redistributable=s.redistributable, universal=s.universal, note=s.note))
-    return sc.dataframe(rows)
+    return ssd.settings.dataframe(rows)
 
 
 def _read_unocha(path, iso3, level, gpd):

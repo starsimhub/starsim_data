@@ -3,7 +3,7 @@ Package-level settings.
 
 Everything here is optional: the bundled data (tier 0) needs no configuration at all.
 These settings exist for the parts that touch the filesystem or the network -- the
-download cache used by `fetch()` and `download()`.
+download cache used by `fetch()` and `download()` -- and for the type of dataframe returned.
 
 Settings are read from the environment at import time but *acted on* lazily, so nothing
 here creates a directory, opens a file or emits a warning merely because the package was
@@ -13,15 +13,17 @@ imported. The cache directory is not created until something is actually cached.
 import starsim_data as ssd
 ssd.options.cache_dir = '/fast/scratch/wpp'   # or set STARSIM_DATA_CACHE_DIR
 ssd.options(verbose=False)                     # quieten downloads
+ssd.options.pandas = True                      # plain pandas DataFrames, not Sciris ones
 with ssd.options.context(cache_dir='/tmp/x'):  # temporarily
     ssd.download('kenya', which='deaths')
 ```
 """
 
 import contextlib
+import pandas as pd
 import sciris as sc
 
-__all__ = ['options']
+__all__ = ['options', 'dataframe']
 
 
 class Options(sc.objdict):
@@ -57,6 +59,9 @@ class Options(sc.objdict):
 
         optdesc.verbose = 'Whether to report progress while downloading.'
         options.verbose = sc.parse_env('STARSIM_DATA_VERBOSE', True, bool)
+
+        optdesc.pandas = 'Whether to return plain pandas DataFrames rather than Sciris dataframes.'
+        options.pandas = sc.parse_env('STARSIM_DATA_PANDAS', False, bool)
 
         return optdesc, options
 
@@ -110,3 +115,13 @@ class Options(sc.objdict):
 
 
 options = Options()
+
+
+def dataframe(*args, **kwargs):
+    """Make the dataframe this package returns: an `sc.dataframe`, or a `pd.DataFrame` if `options.pandas` is set.
+
+    Takes the same arguments as `pd.DataFrame`. Every function that builds a dataframe
+    for the caller goes through this, so the option applies everywhere.
+    """
+    cls = pd.DataFrame if options.pandas else sc.dataframe
+    return cls(*args, **kwargs)

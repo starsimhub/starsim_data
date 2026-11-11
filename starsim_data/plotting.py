@@ -150,7 +150,7 @@ def _panels(location, which, level=None):
     and it is not there, that is an error, not a blank panel.
     """
     summary = which is None
-    names = SUMMARY if summary else sc.tolist(which)
+    names = SUMMARY if summary else [ssd.registry.ALIASES.get(n, n) for n in sc.tolist(which)]
     known = ssd.registry.datasets()
     plottable = sorted(n for n, d in known.items() if (d.tier == 0) and (d.layout in PLOTTERS))
 

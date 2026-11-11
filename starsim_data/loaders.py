@@ -94,7 +94,7 @@ def list_datasets(detailed=False, tier=None):
             revisions   = sc.strjoin(ds.revisions),
             license     = ds.license,
         ))
-    return sc.dataframe(rows)
+    return ssd.settings.dataframe(rows)
 
 
 def _open(which, revision=None, path=None):
@@ -171,21 +171,21 @@ def _shape_matrix(group, key, spec, opts):
         raise KeyError(f'kind {kind!r} not available for {key!r}')
     mat = np.asarray(group[f'{key}/{kind}'][:], dtype=np.float32)
     ages = spec.get('ages')
-    return sc.dataframe(mat, index=ages, columns=ages)
+    return ssd.settings.dataframe(mat, index=ages, columns=ages)
 
 
 def _shape_crude(group, key, spec, opts):
     """One national value per year, e.g. the crude birth rate."""
     years  = np.asarray(spec['years'])
     values = np.asarray(group[key][:], dtype=np.float32)
-    return sc.dataframe({'Time': years, spec['value_col']: values})
+    return ssd.settings.dataframe({'Time': years, spec['value_col']: values})
 
 
 def _shape_year_sex_age(group, key, spec, opts):
     """A (year, sex, age) array, melted into a tidy dataframe with WPP-native columns."""
     arr = np.asarray(group[key][:], dtype=np.float32)
     ny, ns, na = arr.shape
-    df = sc.dataframe({
+    df = ssd.settings.dataframe({
         'Time':            np.repeat(spec['years'], ns * na),
         'Sex':             np.tile(np.repeat(spec['sexes'], na), ny),
         spec['age_col']:   np.tile(spec['ages'], ny * ns),
@@ -198,7 +198,7 @@ def _shape_year_age(group, key, spec, opts):
     """A (year, age) array, melted into a tidy dataframe, e.g. age-specific fertility."""
     arr = np.asarray(group[key][:], dtype=np.float32)
     ny, na = arr.shape
-    df = sc.dataframe({
+    df = ssd.settings.dataframe({
         'Time':            np.repeat(spec['years'], na),
         spec['age_col']:   np.tile(spec['ages'], ny),
         spec['value_col']: arr.reshape(-1),
@@ -209,7 +209,7 @@ def _shape_year_age(group, key, spec, opts):
 def _shape_nodes(group, key, spec, opts):
     """The node table for one location: one row per administrative unit."""
     arr = group[key][:]
-    df = sc.dataframe({name: arr[name] for name in arr.dtype.names})
+    df = ssd.settings.dataframe({name: arr[name] for name in arr.dtype.names})
     for col in df.columns:
         if df[col].dtype == object: # h5py hands back bytes for vlen strings
             df[col] = df[col].str.decode('utf-8')
@@ -238,8 +238,8 @@ def load(location, which='prem', kind='all', revision=None, level=None):
         location (str): location name, ISO-2/ISO-3 code, official name or alias, e.g.
             `'Kenya'`, `'KE'`, `'KEN'`; case-, accent- and punctuation-insensitive.
         which (str): dataset -- the contact matrices (`'prem'`, the default, which
-            is `'prem2021'` or, for the ten locations it lacks, `'prem2017'`; or
-            `'prem2021'` itself), or a demographic series (`'births'`, `'deaths'`,
+            is `'prem2021'` or, for the ten locations it lacks, `'prem2017'`, and
+            can also be asked for as `'contacts'`; or `'prem2021'` itself), or a demographic series (`'births'`, `'deaths'`,
             `'migration'`, `'population'`, `'fertility'`). See `list_datasets()`; all of `'prem2017'`
             and `'mistry2021'` are fetched with `fetch()`, and annual series are
             downloaded with `download()`.

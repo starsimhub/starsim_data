@@ -268,7 +268,7 @@ def _shape(df, series, which):
             out[col] = out[col].astype(np.int64)
         elif pd.api.types.is_numeric_dtype(out[col]):
             out[col] = out[col].astype(np.float32)
-    return sc.dataframe(out)
+    return ssd.settings.dataframe(out)
 
 
 def download(location, which='deaths', years=None, variant=DEFAULT_VARIANT, revision=None,

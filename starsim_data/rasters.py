@@ -360,7 +360,7 @@ def fetch_nodes(location, level=1, year=None, source=None, refresh=False, verbos
 def _nodes_from_shapes(shapes):
     """A node table, as the bundled one is built, from the polygons of one level."""
     lat, lon, area = ssd.shapes.measure(shapes)
-    out = sc.dataframe(shapes.drop(columns='geometry').reset_index(drop=True))
+    out = ssd.settings.dataframe(shapes.drop(columns='geometry').reset_index(drop=True))
     out['parent']     = out['location']
     out['lat']        = lat
     out['lon']        = lon

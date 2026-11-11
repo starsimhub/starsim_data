@@ -2,6 +2,11 @@
 
 What's new in each version of `starsim_data`. The data is versioned along with the code: any change to the included data is a new version, so a given version always gives the same data.
 
+## Unreleased
+
+- `ssd.options.pandas = True` (or `STARSIM_DATA_PANDAS=1`) makes every function return plain pandas DataFrames instead of Sciris dataframes.
+- `ssd.load('kenya', which='contacts')` is another way to ask for the default contact matrices (`'prem'`).
+
 ## Version 2.2.0 (2026-10-30)
 
 - **The function name says where data comes from.** `ssd.fetch()` now gets only the data this package publishes but doesn't include to save space (`prem2017`, `mistry2021`, `mistry2021_us` and `population_us`), which is the same for everyone on a version. Data that comes straight from the organization that publishes it has its own function, `ssd.download()`, e.g. `ssd.download('kenya', which='deaths', years=(2000, 2025))` for annual UN data. `download_shapes()`, `download_nodes()` and `download_raster()` do the same for boundaries and WorldPop. These servers are outside this package's control, so they may be slow or unavailable.
